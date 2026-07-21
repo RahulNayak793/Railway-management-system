@@ -39,8 +39,8 @@ const Navbar = ({ onToggleSidebar }) => {
   if (!user) return null;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-[#00285a] bg-[#003366] text-white">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full border-b border-[#00285a] bg-[#003366] text-white flex-shrink-0 shadow-md">
+      <div className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8">
         
         {/* Left Side: Hamburger & Brand */}
         <div className="flex items-center space-x-4">

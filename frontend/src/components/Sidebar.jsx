@@ -30,9 +30,12 @@ import {
   BarChart3
 } from 'lucide-react';
 
-const Sidebar = ({ isOpen, onClose }) => {
+const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const isDrawerOpen = isOpen !== undefined ? isOpen : mobileOpen;
+  const handleClose = onClose || onCloseMobile;
   
   if (!user) return null;
 
@@ -127,11 +130,11 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const handleLinkClick = () => {
-    if (onClose) onClose();
+    if (handleClose) handleClose();
   };
 
   return (
-    <aside className={`fixed top-16 bottom-0 left-0 z-40 w-64 ${isPassenger ? 'bg-white border-r border-slate-200 text-slate-800' : 'bg-[#091b35] border-r border-[#0d2a52] text-[#b3c4dc]'} flex flex-col justify-between py-6 transition-transform duration-300 ease-in-out md:sticky md:top-16 md:translate-x-0 h-[calc(100vh-4rem)] ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside className={`fixed top-16 bottom-0 left-0 z-40 w-64 ${isPassenger ? 'bg-white border-r border-slate-200 text-slate-800' : 'bg-[#091b35] border-r border-[#0d2a52] text-[#b3c4dc]'} flex flex-col justify-between py-6 transition-transform duration-300 ease-in-out md:sticky md:top-16 md:translate-x-0 h-[calc(100vh-4rem)] ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       
       {/* Fixed User Profile Card at Top */}
       {!isPassenger && (

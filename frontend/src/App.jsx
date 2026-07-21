@@ -74,12 +74,14 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 const PassengerLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-      <div className="flex flex-1 relative overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full max-w-7xl mx-auto">
-          {children}
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {children}
+          </div>
         </main>
       </div>
       <ChatbotWidget />
@@ -90,12 +92,14 @@ const PassengerLayout = ({ children }) => {
 const StaffLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-      <div className="flex flex-1 relative overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full max-w-7xl mx-auto">
-          {children}
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {children}
+          </div>
         </main>
       </div>
       <ChatbotWidget />
@@ -106,12 +110,14 @@ const StaffLayout = ({ children }) => {
 const AdminLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-      <div className="flex flex-1 relative overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full max-w-7xl mx-auto">
-          {children}
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {children}
+          </div>
         </main>
       </div>
       <ChatbotWidget />
