@@ -289,7 +289,7 @@ const PassengerDashboard = () => {
             <Sparkles className="h-3 w-3 animate-pulse" />
             <span>Premium Passenger Service</span>
           </div>
-          <h1 className="text-xl md:text-3xl font-light text-slate-350">
+          <h1 className="text-xl md:text-3xl font-semibold text-indigo-200 tracking-wide">
             Welcome back,
           </h1>
           <h2 className="text-3xl md:text-5xl font-black bg-gradient-to-r from-white via-slate-100 to-primary-300 bg-clip-text text-transparent tracking-tight">
@@ -525,12 +525,12 @@ const PassengerDashboard = () => {
             {/* Class / Quota */}
             <div className="relative md:col-span-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2 pl-1">Class</label>
-              <div className="flex items-center bg-white rounded-2xl px-4 py-3.5 text-slate-850 border border-slate-200 focus-within:ring-2 focus-within:ring-primary-500/15 focus-within:border-primary-500 transition duration-200 shadow-sm">
-                <Users className="h-4.5 w-4.5 text-slate-400 mr-2 flex-shrink-0" />
+              <div className="flex items-center bg-white rounded-2xl px-3 py-3.5 text-slate-850 border border-slate-200 focus-within:ring-2 focus-within:ring-primary-500/15 focus-within:border-primary-500 transition duration-200 shadow-sm">
+                <Users className="h-4.5 w-4.5 text-slate-400 mr-1.5 flex-shrink-0" />
                 <select
                   value={quota}
                   onChange={(e) => setQuota(e.target.value)}
-                  className="w-full text-sm bg-transparent focus:outline-none font-bold cursor-pointer text-slate-800"
+                  className="w-full text-xs md:text-sm bg-transparent focus:outline-none font-bold cursor-pointer text-slate-800 pr-1"
                 >
                   <option value="GN">All Classes</option>
                   <option value="LD">Ladies (LD)</option>
