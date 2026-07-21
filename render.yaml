@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: railway-management-system
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production

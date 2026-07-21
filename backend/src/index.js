@@ -38,12 +38,31 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
 
-// Base Route
-app.get('/', (req, res) => {
+const path = require('path');
+
+// Serve compiled frontend production build files if dist folder exists
+const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDistPath));
+
+// Base API Status Route
+app.get('/api', (req, res) => {
   res.json({
     message: 'Welcome to the Railway Management System API',
     status: 'healthy',
-    mode: process.env.SUPABASE_URL.includes('mockproject.supabase.co') ? 'MOCK_DATABASE' : 'LIVE_DATABASE'
+    mode: (process.env.SUPABASE_URL && process.env.SUPABASE_URL.includes('mockproject.supabase.co')) || !process.env.SUPABASE_URL ? 'MOCK_DATABASE' : 'LIVE_DATABASE'
+  });
+});
+
+// Single-page application fallback for production deployment
+app.get('*', (req, res, next) => {
+  if (req.url.startsWith('/api')) return next();
+  res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
+    if (err) {
+      res.json({
+        message: 'Railway Management System API is running smoothly.',
+        status: 'healthy'
+      });
+    }
   });
 });
 
