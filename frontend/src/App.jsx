@@ -36,18 +36,13 @@ import StaffReports from './pages/StaffReports';
 import StaffAnnouncements from './pages/StaffAnnouncements';
 
 import AdminDashboard from './pages/AdminDashboard';
-import AdminTrains from './pages/AdminTrains';
 import AdminRoutes from './pages/AdminRoutes';
 import AdminSchedules from './pages/AdminSchedules';
 import AdminStations from './pages/AdminStations';
 import AdminClasses from './pages/AdminClasses';
 import AdminUsers from './pages/AdminUsers';
 import AdminStaff from './pages/AdminStaff';
-import AdminBookings from './pages/AdminBookings';
 import AdminPayments from './pages/AdminPayments';
-import AdminCancellations from './pages/AdminCancellations';
-import AdminReports from './pages/AdminReports';
-import AdminAnalytics from './pages/AdminAnalytics';
 import AdminPolicies from './pages/AdminPolicies';
 
 // Protected Route Wrapper
@@ -355,7 +350,7 @@ function App() {
               <Route path="/admin/trains" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminLayout>
-                    <AdminTrains />
+                    <StaffSchedules />
                   </AdminLayout>
                 </ProtectedRoute>
               } />
@@ -404,7 +399,7 @@ function App() {
               <Route path="/admin/bookings" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminLayout>
-                    <AdminBookings />
+                    <StaffBookings />
                   </AdminLayout>
                 </ProtectedRoute>
               } />
@@ -418,14 +413,14 @@ function App() {
               <Route path="/admin/cancellations" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminLayout>
-                    <AdminCancellations />
+                    <StaffRefunds />
                   </AdminLayout>
                 </ProtectedRoute>
               } />
               <Route path="/admin/cancellation" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminLayout>
-                    <AdminCancellations />
+                    <StaffRefunds />
                   </AdminLayout>
                 </ProtectedRoute>
               } />
@@ -439,14 +434,14 @@ function App() {
               <Route path="/admin/reports" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminLayout>
-                    <AdminReports />
+                    <StaffReports />
                   </AdminLayout>
                 </ProtectedRoute>
               } />
               <Route path="/admin/analytics" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminLayout>
-                    <AdminAnalytics />
+                    <StaffReports />
                   </AdminLayout>
                 </ProtectedRoute>
               } />
