@@ -72,7 +72,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error', details: err.message });
 });
 
-// Start Server
-app.listen(port, () => {
-  console.log(`🚀 Railway Management System API running at http://localhost:${port}`);
-});
+// Export app for serverless deployment
+if (require.main === module) {
+  // Start Server locally
+  app.listen(port, () => {
+    console.log(`🚀 Railway Management System API running at http://localhost:${port}`);
+  });
+}
+
+module.exports = app;
