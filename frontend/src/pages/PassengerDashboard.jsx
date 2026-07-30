@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { indianStations } from '../utils/stationsData';
+import TrainSearchForm from '../components/TrainSearchForm';
 
 const PassengerDashboard = () => {
   const { user } = useAuth();
@@ -292,15 +293,18 @@ const PassengerDashboard = () => {
           <h1 className="text-xl md:text-3xl font-semibold text-indigo-200 tracking-wide">
             Welcome back,
           </h1>
-          <h2 className="text-3xl md:text-5xl font-black bg-gradient-to-r from-white via-slate-100 to-primary-300 bg-clip-text text-transparent tracking-tight">
-            {user?.full_name || 'Rahul Kumar'}! 👋
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight">
+            <span className="bg-gradient-to-r from-white via-slate-100 to-primary-300 bg-clip-text text-transparent">
+              {user?.full_name || 'Rahul Kumar'}!
+            </span>
+            <span className="ml-3 inline-block">👋</span>
           </h2>
           <p className="text-slate-400 text-xs md:text-sm font-medium pt-1">
             Plan your journey, book tickets and manage your bookings easily.
           </p>
 
           {/* Quick Shortcuts Bar */}
-          <div className="flex flex-wrap gap-2 pt-2">
+          <div className="flex flex-wrap justify-center md:justify-start gap-2 pt-2">
             {[
               { label: 'Search Trains', path: '/passenger/search', icon: Search },
               { label: 'PNR Status', path: '/passenger/pnr', icon: FileText },
@@ -391,168 +395,9 @@ const PassengerDashboard = () => {
         </div>
 
         {/* Form elements */}
-        <form onSubmit={handleSearch} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end relative">
-            
-            {/* From Station */}
-            <div className="relative md:col-span-3 station-search-container">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2 pl-1">From</label>
-              <div className="flex items-center bg-white rounded-2xl px-4 py-3.5 text-slate-850 border border-slate-200 focus-within:ring-2 focus-within:ring-primary-500/15 focus-within:border-primary-500 transition duration-200 shadow-sm">
-                <MapPin className="h-4.5 w-4.5 text-slate-400 mr-2.5 flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Mumbai (BCT)"
-                  value={source}
-                  onChange={(e) => {
-                    setSource(e.target.value);
-                    setSourceCode('');
-                    setShowSourceList(true);
-                  }}
-                  onFocus={() => setShowSourceList(true)}
-                  className="w-full text-sm bg-transparent focus:outline-none placeholder:text-slate-400 font-bold text-slate-800"
-                  required
-                />
-              </div>
-              
-              {/* Desktop Swap Button floating between From and To */}
-              <button 
-                type="button" 
-                onClick={swapStations} 
-                className="absolute right-[-21px] top-[34px] z-20 h-10 w-10 rounded-full bg-white hover:bg-slate-50 border border-slate-200 flex items-center justify-center transition-all duration-300 hover:shadow-md hover:border-primary-200 active:scale-90 shadow-sm hidden md:flex"
-                title="Swap stations"
-              >
-                <ArrowRightLeft className={`h-4.5 w-4.5 text-primary-600 transition-transform duration-500 ${isSwapping ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Autocomplete list */}
-              {showSourceList && (
-                <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-2xl z-30 text-slate-800 py-1.5 text-xs font-semibold scrollbar-thin">
-                  {filteredSourceStations.length === 0 ? (
-                    <div className="px-4 py-2.5 text-slate-400">No stations found</div>
-                  ) : (
-                    filteredSourceStations.map(s => (
-                      <div
-                        key={s.id}
-                        onClick={() => {
-                          setSource(`${s.station_name} (${s.station_code})`);
-                          setSourceCode(s.station_code);
-                          setShowSourceList(false);
-                        }}
-                        className="px-4 py-2.5 hover:bg-primary-50/70 hover:text-primary-950 cursor-pointer flex justify-between border-b border-slate-50 last:border-0"
-                      >
-                        <span>{s.station_name}</span>
-                        <span className="font-mono text-slate-400 font-bold">{s.station_code}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Mobile Swap Button displayed centered only on small screens */}
-            <div className="flex items-center justify-center md:hidden py-1">
-              <button 
-                type="button" 
-                onClick={swapStations} 
-                className="h-10 w-10 rounded-full bg-white hover:bg-slate-50 border border-slate-200 flex items-center justify-center transition active:scale-90 shadow-md"
-                title="Swap stations"
-              >
-                <ArrowRightLeft className={`h-4.5 w-4.5 text-primary-600 transition-transform duration-500 ${isSwapping ? 'rotate-180' : ''}`} />
-              </button>
-            </div>
-
-            {/* To Station */}
-            <div className="relative md:col-span-3 station-search-container">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2 pl-1">To</label>
-              <div className="flex items-center bg-white rounded-2xl px-4 py-3.5 text-slate-850 border border-slate-200 focus-within:ring-2 focus-within:ring-primary-500/15 focus-within:border-primary-500 transition duration-200 shadow-sm">
-                <MapPin className="h-4.5 w-4.5 text-slate-400 mr-2.5 flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="New Delhi (NDLS)"
-                  value={destination}
-                  onChange={(e) => {
-                    setDestination(e.target.value);
-                    setDestCode('');
-                    setShowDestList(true);
-                  }}
-                  onFocus={() => setShowDestList(true)}
-                  className="w-full text-sm bg-transparent focus:outline-none placeholder:text-slate-400 font-bold text-slate-800"
-                  required
-                />
-              </div>
-
-              {/* Autocomplete list */}
-              {showDestList && (
-                <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-2xl z-30 text-slate-800 py-1.5 text-xs font-semibold scrollbar-thin">
-                  {filteredDestStations.length === 0 ? (
-                    <div className="px-4 py-2.5 text-slate-400">No stations found</div>
-                  ) : (
-                    filteredDestStations.map(s => (
-                      <div
-                        key={s.id}
-                        onClick={() => {
-                          setDestination(`${s.station_name} (${s.station_code})`);
-                          setDestCode(s.station_code);
-                          setShowDestList(false);
-                        }}
-                        className="px-4 py-2.5 hover:bg-primary-50/70 hover:text-primary-950 cursor-pointer flex justify-between border-b border-slate-50 last:border-0"
-                      >
-                        <span>{s.station_name}</span>
-                        <span className="font-mono text-slate-400 font-bold">{s.station_code}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Journey Date */}
-            <div className="relative md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2 pl-1">Journey Date</label>
-              <div className="flex items-center bg-white rounded-2xl px-4 py-3.5 text-slate-850 border border-slate-200 focus-within:ring-2 focus-within:ring-primary-500/15 focus-within:border-primary-500 transition duration-200 shadow-sm">
-                <Calendar className="h-4.5 w-4.5 text-slate-400 mr-2.5 flex-shrink-0" />
-                <input
-                  type="date"
-                  value={travelDate}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setTravelDate(e.target.value)}
-                  className="w-full text-sm bg-transparent focus:outline-none font-bold cursor-pointer text-slate-800"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Class / Quota */}
-            <div className="relative md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-2 pl-1">Class</label>
-              <div className="flex items-center bg-white rounded-2xl px-3 py-3.5 text-slate-850 border border-slate-200 focus-within:ring-2 focus-within:ring-primary-500/15 focus-within:border-primary-500 transition duration-200 shadow-sm">
-                <Users className="h-4.5 w-4.5 text-slate-400 mr-1.5 flex-shrink-0" />
-                <select
-                  value={quota}
-                  onChange={(e) => setQuota(e.target.value)}
-                  className="w-full text-xs md:text-sm bg-transparent focus:outline-none font-bold cursor-pointer text-slate-800 pr-1"
-                >
-                  <option value="GN">All Classes</option>
-                  <option value="LD">Ladies (LD)</option>
-                  <option value="SR">Sr. Citizen</option>
-                  <option value="HP">Divyangjan</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Search Button */}
-            <div className="relative md:col-span-2">
-              <button
-                type="submit"
-                className="w-full flex items-center justify-center space-x-2 rounded-2xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 px-4 py-[14px] font-black text-sm text-white shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30 transition-all duration-300 active:scale-[0.98] border border-primary-600/10"
-              >
-                <Search className="h-4.5 w-4.5" />
-                <span>Search Trains</span>
-              </button>
-            </div>
-
-          </div>
-        </form>
+        <div className="bg-white/50 backdrop-blur-md rounded-b-3xl">
+          <TrainSearchForm />
+        </div>
       </div>
 
       {/* Grid of 6 Shortcuts cards */}

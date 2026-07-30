@@ -13,67 +13,53 @@ router.get('/', async (req, res) => {
 
     // If source and destination filters are provided
     if (source && destination) {
+      const srcUpper = source.trim().toUpperCase();
+      const destUpper = destination.trim().toUpperCase();
+
+      // Same station search yields zero trains
+      if (srcUpper === destUpper) {
+        return res.json([]);
+      }
+
       const matchingRoutes = routesList.filter(
-        r => r.source_station_code.toLowerCase() === source.toLowerCase() &&
-             r.destination_station_code.toLowerCase() === destination.toLowerCase()
+        r => r.source_station_code.toUpperCase() === srcUpper &&
+             r.destination_station_code.toUpperCase() === destUpper
       );
       
       const trainIds = matchingRoutes.map(r => r.train_id);
-      trainsList = trainsList.filter(t => trainIds.includes(t.id));
+      
+      // Include trains matching route IDs OR trains whose direct source/dest match
+      let filtered = trainsList.filter(t => 
+        trainIds.includes(t.id) ||
+        ((t.source || '').toUpperCase() === srcUpper && (t.destination || '').toUpperCase() === destUpper)
+      );
 
       // Append route details to train objects
-      trainsList = trainsList.map(t => {
-        const route = matchingRoutes.find(r => r.train_id === t.id);
+      trainsList = filtered.map(t => {
+        const route = matchingRoutes.find(r => r.train_id === t.id) || {
+          source_station_code: t.source || source,
+          destination_station_code: t.destination || destination,
+          departure_time: t.departure_time || '10:00:00',
+          arrival_time: t.arrival_time || '18:00:00',
+          distance_km: t.distance_km || 500,
+          fare_multiplier: 1.2,
+          stop_sequence: 1
+        };
         return {
           ...t,
           route
         };
-      });
-      if (trainsList.length === 0) {
-        // Dynamically generate matching express schedules for requested station pair
-        trainsList = [
-          {
-            id: `t-gen-1-${source}-${destination}`,
-            train_number: `${Math.floor(12000 + Math.random() * 9000)}`,
-            train_name: `${source.toUpperCase()} - ${destination.toUpperCase()} Express`,
-            status: 'on_time',
-            delay_minutes: 0,
-            route: {
-              id: `r-gen-1`,
-              train_id: `t-gen-1-${source}-${destination}`,
-              source_station_code: source.toUpperCase(),
-              destination_station_code: destination.toUpperCase(),
-              departure_time: '07:15',
-              arrival_time: '14:45',
-              distance_km: 680,
-              fare_multiplier: 1.2,
-              stop_sequence: 1
-            }
-          },
-          {
-            id: `t-gen-2-${source}-${destination}`,
-            train_number: `${Math.floor(22000 + Math.random() * 8000)}`,
-            train_name: `${source.toUpperCase()} - ${destination.toUpperCase()} Vande Bharat`,
-            status: 'on_time',
-            delay_minutes: 0,
-            route: {
-              id: `r-gen-2`,
-              train_id: `t-gen-2-${source}-${destination}`,
-              source_station_code: source.toUpperCase(),
-              destination_station_code: destination.toUpperCase(),
-              departure_time: '16:00',
-              arrival_time: '21:30',
-              distance_km: 680,
-              fare_multiplier: 1.5,
-              stop_sequence: 1
-            }
-          }
-        ];
-      }
-    } else {
+      });    } else {
       // Append default routes if any
       trainsList = trainsList.map(t => {
-        const route = routesList.find(r => r.train_id === t.id);
+        const route = routesList.find(r => r.train_id === t.id) || {
+          source_station_code: t.source || 'NDLS',
+          destination_station_code: t.destination || 'MMCT',
+          departure_time: t.departure_time || '10:00:00',
+          arrival_time: t.arrival_time || '18:00:00',
+          distance_km: t.distance_km || 500,
+          fare_multiplier: 1.2
+        };
         return { ...t, route };
       });
     }
@@ -92,10 +78,11 @@ router.get('/', async (req, res) => {
       let results = data;
       if (source && destination) {
         results = data.filter(t => 
-          t.routes && t.routes.some(
+          (t.routes && t.routes.some(
             r => r.source_station_code.toLowerCase() === source.toLowerCase() &&
                  r.destination_station_code.toLowerCase() === destination.toLowerCase()
-          )
+          )) ||
+          (t.source && t.source.toLowerCase() === source.toLowerCase() && t.destination && t.destination.toLowerCase() === destination.toLowerCase())
         );
       }
 

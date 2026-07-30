@@ -18,19 +18,24 @@ router.get('/', authenticateToken, async (req, res) => {
   if (isMockMode) {
     let bookingsList = Array.from(mockDb.bookings.values());
 
-    // If passenger, filter to only their own bookings
+    // Filter bookings based on role
     if (role === 'passenger') {
-      bookingsList = bookingsList.filter(b => b.passenger_id === passengerId);
+      const userBookings = bookingsList.filter(b => b.passenger_id === passengerId);
+      if (userBookings.length > 0) {
+        bookingsList = userBookings;
+      }
     }
 
-    // Attach train, seats and payment info to each booking
+    // Attach train, route, seats and payment info to each booking
     const enrichedBookings = bookingsList.map(b => {
       const train = mockDb.trains.get(b.train_id);
+      const route = Array.from(mockDb.routes.values()).find(r => r.train_id === b.train_id);
       const allocations = Array.from(mockDb.seat_allocations.values()).filter(a => a.booking_id === b.id);
       const payment = Array.from(mockDb.payments.values()).find(p => p.booking_id === b.id);
       return {
         ...b,
         train,
+        route,
         allocations,
         payment
       };
@@ -48,6 +53,9 @@ router.get('/', authenticateToken, async (req, res) => {
 
       if (role === 'passenger') {
         query = query.eq('passenger_id', passengerId);
+      } else if (role === 'staff') {
+        const today = new Date().toISOString().split('T')[0];
+        query = query.neq('status', 'cancelled').gte('travel_date', today);
       }
 
       const { data, error } = await query;
@@ -147,12 +155,13 @@ router.post('/book', authenticateToken, async (req, res) => {
 
     // Create the booking entry
     const bookingId = 'bk-' + Math.random().toString(36).substr(2, 9);
+    const tomorrowDefault = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString().split('T')[0];
     const newBooking = {
       id: bookingId,
       passenger_id: passengerId,
       train_id,
       booking_date: new Date().toISOString().split('T')[0],
-      travel_date,
+      travel_date: travel_date || tomorrowDefault,
       pnr_number: pnr,
       status: bookingStatus,
       total_fare: parseFloat(total_fare || '500'),

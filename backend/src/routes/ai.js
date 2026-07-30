@@ -6,6 +6,13 @@ const { isMockMode, mockDb } = require('../config/supabase');
 router.get('/recommendations', async (req, res) => {
   const { source, destination, history } = req.query;
 
+  if (source && destination && source.trim().toUpperCase() === destination.trim().toUpperCase()) {
+    return res.json({
+      recommendedTrains: [],
+      insights: 'Source and destination stations cannot be the same.'
+    });
+  }
+
   // Let's analyze query parameters and return a smart recommended itinerary list
   const recommendations = [
     {
@@ -61,6 +68,58 @@ router.post('/predict-delay', async (req, res) => {
   });
 });
 
+// 3. AI Ticket Confirmation Probability Predictor
+router.post('/predict-confirmation', async (req, res) => {
+  const { pnr, current_status, travel_class, quota, travel_date } = req.body;
+
+  let probabilityPercent = 95;
+  let statusLevel = 'High';
+  let recommendation = 'High probability of confirmation before chart preparation.';
+
+  const statusStr = (current_status || '').toUpperCase();
+
+  if (statusStr.includes('RAC')) {
+    probabilityPercent = 92;
+    statusLevel = 'High';
+    recommendation = 'RAC seats are almost guaranteed to convert to full confirmed berths during final chart preparation.';
+  } else if (statusStr.includes('W/L') || statusStr.includes('WAITING') || statusStr.includes('WL')) {
+    const numMatch = statusStr.match(/\d+/);
+    const wlNumber = numMatch ? parseInt(numMatch[0]) : 15;
+
+    if (wlNumber <= 5) {
+      probabilityPercent = 89;
+      statusLevel = 'High';
+      recommendation = 'Low waitlist number. High chance of berth allocation as cancellation trends peak 24 hours before travel.';
+    } else if (wlNumber <= 15) {
+      probabilityPercent = 74;
+      statusLevel = 'Medium';
+      recommendation = 'Moderate waitlist number. We recommend monitoring cancellation trends or booking an alternative Tatkal ticket as backup.';
+    } else if (wlNumber <= 30) {
+      probabilityPercent = 48;
+      statusLevel = 'Medium';
+      recommendation = 'Consider booking Tatkal quota or alternative train 12951 running on the same corridor.';
+    } else {
+      probabilityPercent = 22;
+      statusLevel = 'Low';
+      recommendation = 'Low confirmation likelihood. Please consider booking an alternative train or Vande Bharat Express.';
+    }
+  }
+
+  return res.json({
+    pnr: pnr || '6543210987',
+    current_status: current_status || 'W/L 12',
+    probabilityPercent,
+    statusLevel,
+    recommendation,
+    historicalTrends: [
+      { daysBefore: 7, probability: Math.max(10, probabilityPercent - 25) },
+      { daysBefore: 3, probability: Math.max(20, probabilityPercent - 12) },
+      { daysBefore: 1, probability: probabilityPercent },
+      { daysBefore: 0, probability: Math.min(99, probabilityPercent + 5) }
+    ]
+  });
+});
+
 // 3. Chatbot Support
 router.post('/chatbot', async (req, res) => {
   const { message, pnr, session_history } = req.body;
@@ -72,37 +131,90 @@ router.post('/chatbot', async (req, res) => {
   const query = message.toLowerCase();
   let reply = '';
   let intent = 'general';
+  let quickActions = [];
 
-  if (query.includes('status') || query.includes('where is') || query.includes('track')) {
-    intent = 'tracking';
-    reply = "I can help you track trains! You can view current schedules directly on the 'Track Train' dashboard. To track a live train, please input the train number like 12952 (Rajdhani) to view live position coordinates.";
-  } else if (query.includes('pnr') || query.includes('ticket') || query.includes('status of booking')) {
+  // PNR 10-digit pattern recognition
+  const pnrMatch = message.match(/\b\d{10}\b/);
+
+  if (pnrMatch || query.includes('pnr') || query.includes('ticket status') || query.includes('check status')) {
     intent = 'pnr_check';
-    if (pnr) {
-      reply = `I looked up PNR ${pnr}. Your reservation status is currently CONFIRMED. Your journey is scheduled on coach A1, seat 12 (Lower Berth).`;
-    } else {
-      reply = "To check your booking details, please type your 10-digit PNR number or visit the 'My Bookings' tab where you can retrieve PNR codes.";
-    }
-  } else if (query.includes('cancel') || query.includes('refund')) {
-    intent = 'cancellation';
-    reply = "Under the Railway Board guidelines, cancellations initiated 48 hours prior to departure receive a full refund minus a clerkage fee. Go to your Passenger Dashboard -> 'My Bookings' to cancel your ticket.";
-  } else if (query.includes('food') || query.includes('meal') || query.includes('catering')) {
+    const searchedPnr = pnrMatch ? pnrMatch[0] : (pnr || '2345678901');
+    reply = `🤖 **PNR Status Lookup for ${searchedPnr}**:\n• Train: 12952 Rajdhani Express\n• Route: New Delhi (NDLS) → Mumbai Central (MMCT)\n• Status: **CONFIRMED (CNF)**\n• Coach: **B1**, Seat: **24 (Lower Berth)**\n\nWould you like to pre-order meals for your seat or view your full E-Ticket?`;
+    quickActions = [
+      { label: 'View E-Ticket', route: `/passenger/ticket/${searchedPnr}` },
+      { label: 'Order Seat Meals', route: `/passenger/catering?pnr=${searchedPnr}` }
+    ];
+  } else if (query.includes('emergency') || query.includes('sos') || query.includes('medical') || query.includes('police') || query.includes('rpf') || query.includes('security')) {
+    intent = 'emergency_sos';
+    reply = "🚨 **EMERGENCY SOS ASSISTANCE**:\nIf you or a co-passenger need immediate medical aid, RPF security protection, or onboard maintenance, tap below to broadcast an instant 1-Click SOS Alert to the Train Superintendent & Control Room.";
+    quickActions = [
+      { label: 'Broadcast SOS Alert', action: 'trigger_sos' }
+    ];
+  } else if (query.includes('food') || query.includes('meal') || query.includes('catering') || query.includes('dinner') || query.includes('lunch') || query.includes('breakfast')) {
     intent = 'catering';
-    reply = "Pre-ordered catering services are available in AC classes on Rajdhani and Shatabdi trains. You can choose Veg/Non-Veg preferences during the checkout seat booking details form.";
+    reply = "🍱 **E-Catering Seat Delivery**:\nYou can order hot Veg Thalis, Jain meals, Biryani, and beverages delivered straight to your train berth at upcoming stations (New Delhi, Jaipur, Mumbai Central).";
+    quickActions = [
+      { label: 'Order Food Now', route: '/passenger/catering' }
+    ];
+  } else if (query.includes('status') || query.includes('track') || query.includes('where is') || query.includes('delay') || query.includes('late')) {
+    intent = 'tracking';
+    reply = "🚆 **Live Train Tracking & Delays**:\nYou can monitor real-time GPS position, speed, upcoming stations, and delay predictions for all major trains in real time.";
+    quickActions = [
+      { label: 'Track Live Train Position', route: '/passenger/track' },
+      { label: 'View Station Departures', route: '/passenger/live-station' }
+    ];
+  } else if (query.includes('cancel') || query.includes('refund') || query.includes('policy')) {
+    intent = 'cancellation';
+    reply = "💳 **Ticket Cancellation & Refund Rules**:\n• Cancellation >48h before departure: Full refund minus flat clerkage fee.\n• 48h to 12h: 25% deduction.\n• 12h to 4h: 50% deduction.\nRefunds are credited directly to your Rail Wallet within 10 seconds of cancellation!";
+    quickActions = [
+      { label: 'My Bookings & Cancellation', route: '/passenger/bookings' },
+      { label: 'Check Wallet Balance', route: '/passenger/wallet' }
+    ];
+  } else if (query.includes('wallet') || query.includes('balance') || query.includes('pay')) {
+    intent = 'wallet';
+    reply = "👛 **Rail Wallet**:\nUse Rail Wallet to enjoy **0% payment gateway surcharge** on all train bookings and seat catering orders with instant refund processing!";
+    quickActions = [
+      { label: 'Open Rail Wallet', route: '/passenger/wallet' }
+    ];
   } else {
-    reply = "Hello! I am RailBot, your AI Assistant. I can help you search trains, check PNR status, explain seat berth configurations, assist in ticket cancellations, and predict train delays. How can I help you today?";
+    reply = "Hello! I am **RailBot**, your intelligent AI Railway Assistant.\n\nI can assist you with:\n1. Live Train Tracking & Delays\n2. 10-Digit PNR Status & Berth Prediction\n3. E-Catering Seat Meal Orders\n4. Ticket Cancellations & Refunds\n5. Emergency SOS Broadcasts";
+    quickActions = [
+      { label: 'Check PNR Status', route: '/passenger/pnr' },
+      { label: 'Order Seat Meals', route: '/passenger/catering' },
+      { label: 'Live Train Position', route: '/passenger/track' }
+    ];
   }
 
   return res.json({
     reply,
     intent,
+    quickActions,
     suggestedQuestions: [
-      "Where is my train?",
-      "How to cancel my ticket?",
-      "Predict delay for Rajdhani 12952",
-      "What are the catering options?"
+      "Track Rajdhani 12952",
+      "Check PNR 2345678901",
+      "Order food for seat",
+      "Emergency SOS help",
+      "Cancellation policy"
+    ]
+  });
+});
+
+// 5. AI Dynamic Fare & Surge Price Trends
+router.get('/fare-trends', (req, res) => {
+  const { train_number = '12952' } = req.query;
+  res.json({
+    train_number,
+    currentPriceMultiplier: 1.05,
+    recommendation: 'Prices are projected to increase by 15% in the next 48 hours as berth availability drops below 20 seats.',
+    historicalPrices: [
+      { date: '15 Days Prior', price: 1350 },
+      { date: '10 Days Prior', price: 1380 },
+      { date: '5 Days Prior', price: 1420 },
+      { date: 'Today', price: 1450 },
+      { date: 'Projected Tatkal', price: 1720 }
     ]
   });
 });
 
 module.exports = router;
+

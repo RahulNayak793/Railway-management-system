@@ -16,9 +16,28 @@ const StaffSchedules = () => {
     setLoading(true);
     try {
       const res = await api.get('/trains');
-      setTrains(res.data);
-      if (res.data.length > 0 && !selectedTrain) {
-        handleSelectTrain(res.data[0]);
+      let apiTrains = res.data || [];
+      
+      const storedStaffTrains = JSON.parse(localStorage.getItem('added_staff_trains') || '[]');
+      const formattedStaff = storedStaffTrains.map(s => ({
+        id: s.id,
+        train_number: s.trainNo,
+        train_name: s.trainName,
+        status: s.status === 'On Time' ? 'on_time' : 'delayed',
+        delay_minutes: 0,
+        route: { departure_time: s.depTime, destination_station_code: s.to }
+      }));
+
+      const existingIds = new Set(apiTrains.map(t => t.id));
+      formattedStaff.forEach(st => {
+        if (!existingIds.has(st.id)) {
+          apiTrains.push(st);
+        }
+      });
+
+      setTrains(apiTrains);
+      if (apiTrains.length > 0 && !selectedTrain) {
+        handleSelectTrain(apiTrains[0]);
       }
     } catch (err) {
       console.error(err);

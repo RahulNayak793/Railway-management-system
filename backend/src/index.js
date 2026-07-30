@@ -27,6 +27,9 @@ const supportRoutes = require('./routes/support');
 const feedbackRoutes = require('./routes/feedback');
 const adminRoutes = require('./routes/admin');
 const aiRoutes = require('./routes/ai');
+const notificationsRoutes = require('./routes/notifications');
+const cateringRoutes = require('./routes/catering');
+const sosRoutes = require('./routes/sos');
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
@@ -37,6 +40,9 @@ app.use('/api/support', supportRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/catering', cateringRoutes);
+app.use('/api/sos', sosRoutes);
 
 const path = require('path');
 

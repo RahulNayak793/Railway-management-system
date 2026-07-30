@@ -7,14 +7,15 @@ import {
   Info, AlertCircle
 } from 'lucide-react';
 import api from '../services/api';
+import TrainSearchForm from '../components/TrainSearchForm';
 
 const SearchTrainResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const source = searchParams.get('source') || 'NDLS';
-  const destination = searchParams.get('destination') || 'MMCT';
-  const travelDate = searchParams.get('date') || '2026-07-24';
+  const source = searchParams.get('source') || '';
+  const destination = searchParams.get('destination') || '';
+  const travelDate = searchParams.get('date') || '';
   const passengers = searchParams.get('passengers') || '1';
   const quota = searchParams.get('quota') || 'GN';
 
@@ -29,13 +30,6 @@ const SearchTrainResults = () => {
   const [trainTypes, setTrainTypes] = useState([]);
   const [priceRange, setPriceRange] = useState(3000);
   const [sortBy, setSortBy] = useState('price');
-
-  // Modify Search Modal states
-  const [showModifyModal, setShowModifyModal] = useState(false);
-  const [modSource, setModSource] = useState(source);
-  const [modDest, setModDest] = useState(destination);
-  const [modDate, setModDate] = useState(travelDate);
-  const [modQuota, setModQuota] = useState(quota);
 
   // Selected schedule modal state
   const [activeScheduleTrain, setActiveScheduleTrain] = useState(null);
@@ -53,11 +47,52 @@ const SearchTrainResults = () => {
   // Fetch trains on mount
   useEffect(() => {
     const fetchTrains = async () => {
+      if (source && destination && source.trim().toUpperCase() === destination.trim().toUpperCase()) {
+        setTrains([]);
+        setFilteredTrains([]);
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        const res = await api.get(`/trains?source=${source}&destination=${destination}`);
-        setTrains(res.data);
-        setFilteredTrains(res.data);
+        const queryStr = source && destination ? `?source=${source}&destination=${destination}` : '';
+        const res = await api.get(`/trains${queryStr}`);
+        let fetched = res.data || [];
+
+        // Merge persistent staff trains from localStorage
+        const storedStaffTrains = JSON.parse(localStorage.getItem('added_staff_trains') || '[]');
+        const existingTrainNumbers = new Set(fetched.map(f => f.train_number));
+
+        storedStaffTrains.forEach(st => {
+          if (!existingTrainNumbers.has(st.trainNo)) {
+            const matchesRoute = !source || !destination || 
+              (st.source || 'NDLS').toUpperCase() === source.toUpperCase() ||
+              (st.to || 'MMCT').toUpperCase() === destination.toUpperCase();
+
+            if (matchesRoute) {
+              fetched.unshift({
+                id: st.id,
+                train_number: st.trainNo,
+                train_name: st.trainName,
+                status: st.status === 'On Time' ? 'on_time' : 'delayed',
+                delay_minutes: 0,
+                source: st.source || source || 'NDLS',
+                destination: st.to || destination || 'MMCT',
+                route: {
+                  source_station_code: st.source || source || 'NDLS',
+                  destination_station_code: st.to || destination || 'MMCT',
+                  departure_time: st.depTime || '10:00:00',
+                  arrival_time: '18:00:00',
+                  distance_km: 500,
+                  fare_multiplier: 1.2
+                }
+              });
+            }
+          }
+        });
+
+        setTrains(fetched);
+        setFilteredTrains(fetched);
       } catch (err) {
         console.error(err);
       } finally {
@@ -67,9 +102,9 @@ const SearchTrainResults = () => {
     fetchTrains();
   }, [source, destination]);
 
-  // Fetch AI Recommendations on mount
   useEffect(() => {
     const fetchRecommendations = async () => {
+      if (!source || !destination) return;
       setLoadingAi(true);
       try {
         const res = await api.get(`/ai/recommendations?source=${source}&destination=${destination}`);
@@ -244,39 +279,23 @@ const SearchTrainResults = () => {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 font-sans space-y-6 animate-slide-in">
       
-      {/* Route & Date Banner */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-3xl bg-gradient-to-tr from-slate-950 via-slate-900 to-primary-950 p-6 text-white shadow-xl border border-white/5 relative overflow-hidden">
-        <div className="absolute top-[-50px] right-[-50px] h-48 w-48 rounded-full bg-primary-500/10 blur-[80px]" />
-        
-        <div className="flex items-center space-x-4 relative z-10">
-          <div className="rounded-xl bg-white/10 border border-white/10 p-3">
-            <Train className="h-6 w-6 text-primary-400" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-2 text-lg font-extrabold tracking-tight">
-              <span>{source}</span>
-              <ArrowRight className="h-4 w-4 text-primary-400" />
-              <span>{destination}</span>
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-350 mt-1 font-semibold">
-              <span>Travel: <strong className="text-white font-mono">{travelDate}</strong></span>
-              <span>•</span>
-              <span>Passengers: <strong className="text-white">{passengers}</strong></span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <Award className="h-3.5 w-3.5 text-amber-400" />
-                Quota: <strong className="text-white">{getQuotaName(quota)}</strong>
-              </span>
-            </div>
-          </div>
-        </div>
-        <button 
-          onClick={() => setShowModifyModal(true)}
-          className="rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-5 py-2.5 text-xs font-bold transition-all relative z-10 flex items-center space-x-1.5 active:scale-95"
-        >
-          <SlidersHorizontal className="h-3.5 w-3.5" />
-          <span>Modify Search</span>
-        </button>
+      {/* Search Form Inline Banner */}
+      <div className="rounded-3xl bg-white border border-slate-200 shadow-sm relative overflow-visible z-20">
+        <TrainSearchForm 
+          initialData={{
+            source: source,
+            sourceCode: source,
+            destination: destination,
+            destCode: destination,
+            travelDate: travelDate,
+            passengers: passengers,
+            quota: quota
+          }}
+          onSearchSubmit={(data) => {
+            navigate(`/passenger/search?source=${data.source}&destination=${data.destination}&date=${data.date}&passengers=${data.passengers}&quota=${data.quota}`);
+          }}
+          darkVariant={false}
+        />
       </div>
 
       {/* Main Grid: Filters & Results */}
@@ -746,87 +765,6 @@ const SearchTrainResults = () => {
               </button>
             </div>
 
-          </div>
-        </div>
-      )}
-
-      {/* Modify Search Modal */}
-      {showModifyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 w-full max-w-md shadow-2xl border border-slate-100 space-y-5 animate-scale-in">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-base font-black text-slate-800">Modify Train Search</h3>
-              <button onClick={() => setShowModifyModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              setShowModifyModal(false);
-              navigate(`/passenger/search?source=${modSource}&destination=${modDest}&date=${modDate}&passengers=${passengers}&quota=${modQuota}`);
-            }} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">From Station Code</label>
-                <input
-                  type="text"
-                  value={modSource}
-                  onChange={(e) => setModSource(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold font-mono text-slate-800 focus:outline-none focus:border-primary-500"
-                  placeholder="e.g. NDLS"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">To Station Code</label>
-                <input
-                  type="text"
-                  value={modDest}
-                  onChange={(e) => setModDest(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold font-mono text-slate-800 focus:outline-none focus:border-primary-500"
-                  placeholder="e.g. MMCT"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Journey Date</label>
-                <input
-                  type="date"
-                  value={modDate}
-                  onChange={(e) => setModDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-primary-500"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Quota</label>
-                <select
-                  value={modQuota}
-                  onChange={(e) => setModQuota(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-primary-500"
-                >
-                  <option value="GN">General Quota (GN)</option>
-                  <option value="TQ">Tatkal Quota (TQ)</option>
-                  <option value="LD">Ladies Quota (LD)</option>
-                  <option value="SR">Senior Citizen (SR)</option>
-                  <option value="HP">Divyangjan / Disabled (HP)</option>
-                </select>
-              </div>
-              <div className="flex justify-end space-x-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModifyModal(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-500 rounded-xl text-xs font-bold hover:bg-slate-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold shadow-md shadow-primary-600/20 active:scale-95 transition"
-                >
-                  Update Search
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

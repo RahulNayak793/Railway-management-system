@@ -10,7 +10,8 @@ const SeatSelection = () => {
   const { user } = useAuth();
 
   const trainId = searchParams.get('train_id') || 't1';
-  const travelDate = searchParams.get('date') || '2026-07-24';
+  const tomorrowStr = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString().split('T')[0];
+  const travelDate = searchParams.get('date') || tomorrowStr;
   const coachClass = searchParams.get('class') || '3A';
   const initialPassengersCount = parseInt(searchParams.get('passengers') || '1');
   const baseFare = parseInt(searchParams.get('fare') || '750');

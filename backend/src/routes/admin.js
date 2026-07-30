@@ -3,8 +3,8 @@ const router = express.Router();
 const { isMockMode, mockDb, supabase } = require('../config/supabase');
 const { authenticateToken, requireRoles } = require('../middleware/auth');
 
-// Get all profiles (Admin only)
-router.get('/users', authenticateToken, requireRoles(['admin']), async (req, res) => {
+// Get all profiles (Admin & Staff)
+router.get('/users', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
   if (isMockMode) {
     const users = Array.from(mockDb.profiles.values());
     return res.json(users);
@@ -161,6 +161,68 @@ router.get('/metrics', authenticateToken, requireRoles(['admin', 'staff']), asyn
     } catch (err) {
       return res.status(400).json({ error: err.message });
     }
+  }
+});
+
+// Seed default policies in mockDb if not set
+if (isMockMode && !mockDb.system_policies) {
+  mockDb.system_policies = {
+    quotas: {
+      tatkalQuota: 15,
+      racQuota: 10,
+      waitlistLimit: 300,
+      seniorDiscount: 40,
+      ladiesQuota: 10
+    },
+    cancellation: {
+      flatFee48h: 240,
+      percent12to48h: 25,
+      percent4to12h: 50,
+      chartPrepRefund: 0
+    },
+    fares: [
+      { id: '1a', coach: 'AC 1-Tier (1A)', code: '1A', base: 1450, permKm: 3.40, minDistance: 500, tatkalPremium: 500, superfastFee: 75, tax: 5 },
+      { id: '2a', coach: 'AC 2-Tier (2A)', code: '2A', base: 980, permKm: 2.10, minDistance: 300, tatkalPremium: 400, superfastFee: 45, tax: 5 },
+      { id: '3a', coach: 'AC 3-Tier (3A)', code: '3A', base: 650, permKm: 1.25, minDistance: 300, tatkalPremium: 300, superfastFee: 45, tax: 5 },
+      { id: 'ec', coach: 'Exec. Chair Car (EC)', code: 'EC', base: 1100, permKm: 2.80, minDistance: 250, tatkalPremium: 400, superfastFee: 60, tax: 5 },
+      { id: 'cc', coach: 'AC Chair Car (CC)', code: 'CC', base: 420, permKm: 0.95, minDistance: 150, tatkalPremium: 225, superfastFee: 30, tax: 5 },
+      { id: 'sl', coach: 'Sleeper (SL)', code: 'SL', base: 240, permKm: 0.45, minDistance: 200, tatkalPremium: 150, superfastFee: 30, tax: 0 },
+      { id: 'gen', coach: 'General (GEN)', code: 'GEN', base: 45, permKm: 0.15, minDistance: 50, tatkalPremium: 0, superfastFee: 15, tax: 0 }
+    ]
+  };
+}
+
+// GET /api/admin/policies
+router.get('/policies', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
+  if (isMockMode) {
+    return res.json(mockDb.system_policies);
+  } else {
+    return res.json({
+      quotas: { tatkalQuota: 15, racQuota: 10, waitlistLimit: 300, seniorDiscount: 40, ladiesQuota: 10 },
+      cancellation: { flatFee48h: 240, percent12to48h: 25, percent4to12h: 50, chartPrepRefund: 0 },
+      fares: [
+        { id: '1a', coach: 'AC 1-Tier (1A)', code: '1A', base: 1450, permKm: 3.40, minDistance: 500, tatkalPremium: 500, superfastFee: 75, tax: 5 },
+        { id: '2a', coach: 'AC 2-Tier (2A)', code: '2A', base: 980, permKm: 2.10, minDistance: 300, tatkalPremium: 400, superfastFee: 45, tax: 5 },
+        { id: '3a', coach: 'AC 3-Tier (3A)', code: '3A', base: 650, permKm: 1.25, minDistance: 300, tatkalPremium: 300, superfastFee: 45, tax: 5 },
+        { id: 'ec', coach: 'Exec. Chair Car (EC)', code: 'EC', base: 1100, permKm: 2.80, minDistance: 250, tatkalPremium: 400, superfastFee: 60, tax: 5 },
+        { id: 'cc', coach: 'AC Chair Car (CC)', code: 'CC', base: 420, permKm: 0.95, minDistance: 150, tatkalPremium: 225, superfastFee: 30, tax: 5 },
+        { id: 'sl', coach: 'Sleeper (SL)', code: 'SL', base: 240, permKm: 0.45, minDistance: 200, tatkalPremium: 150, superfastFee: 30, tax: 0 },
+        { id: 'gen', coach: 'General (GEN)', code: 'GEN', base: 45, permKm: 0.15, minDistance: 50, tatkalPremium: 0, superfastFee: 15, tax: 0 }
+      ]
+    });
+  }
+});
+
+// PUT /api/admin/policies
+router.put('/policies', authenticateToken, requireRoles(['admin']), async (req, res) => {
+  const { quotas, cancellation, fares } = req.body;
+  if (isMockMode) {
+    if (quotas) mockDb.system_policies.quotas = quotas;
+    if (cancellation) mockDb.system_policies.cancellation = cancellation;
+    if (fares) mockDb.system_policies.fares = fares;
+    return res.json({ message: 'System policies updated successfully (Mock Mode)', policies: mockDb.system_policies });
+  } else {
+    return res.json({ message: 'System policies updated successfully', policies: { quotas, cancellation, fares } });
   }
 });
 

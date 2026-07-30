@@ -23,6 +23,10 @@ import PassengerPayments from './pages/PassengerPayments';
 import PassengerNotifications from './pages/PassengerNotifications';
 import PassengerPNRStatus from './pages/PassengerPNRStatus';
 import ProfileSettings from './pages/ProfileSettings';
+import PassengerWallet from './pages/PassengerWallet';
+import PassengerCatering from './pages/PassengerCatering';
+import EmergencySOSModal from './components/EmergencySOSModal';
+import { Radio, ShieldAlert } from 'lucide-react';
 
 import StaffDashboard from './pages/StaffDashboard';
 import StaffSchedules from './pages/StaffSchedules';
@@ -61,10 +65,16 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    if (user.role === 'admin') return <Navigate to="/admin" replace />;
-    if (user.role === 'staff') return <Navigate to="/staff" replace />;
-    return <Navigate to="/passenger" replace />;
+  const userRole = (user.role || 'passenger').toLowerCase();
+
+  if (allowedRoles && allowedRoles.length > 0) {
+    const normalizedAllowed = allowedRoles.map(r => r.toLowerCase());
+    const isAllowed = normalizedAllowed.includes(userRole) || (userRole === 'admin');
+    if (!isAllowed) {
+      if (userRole === 'admin') return <Navigate to="/admin" replace />;
+      if (userRole === 'staff') return <Navigate to="/staff" replace />;
+      return <Navigate to="/passenger" replace />;
+    }
   }
 
   return children;
@@ -73,8 +83,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 // Responsive Layout Wrappers
 const PassengerLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sosOpen, setSosOpen] = useState(false);
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50 relative">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
@@ -84,6 +95,17 @@ const PassengerLayout = ({ children }) => {
           </div>
         </main>
       </div>
+
+      {/* Floating Emergency SOS Button */}
+      <button
+        onClick={() => setSosOpen(true)}
+        className="fixed bottom-6 right-24 z-40 px-4 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-2xl shadow-rose-600/40 border border-rose-400/40 flex items-center space-x-2 transition active:scale-95 group animate-pulse"
+      >
+        <Radio className="h-4 w-4 text-white group-hover:rotate-12 transition" />
+        <span>Emergency SOS</span>
+      </button>
+
+      <EmergencySOSModal isOpen={sosOpen} onClose={() => setSosOpen(false)} />
       <ChatbotWidget />
     </div>
   );
@@ -230,6 +252,13 @@ function App() {
                   </PassengerLayout>
                 </ProtectedRoute>
               } />
+              <Route path="/passenger/catering" element={
+                <ProtectedRoute allowedRoles={['passenger']}>
+                  <PassengerLayout>
+                    <PassengerCatering />
+                  </PassengerLayout>
+                </ProtectedRoute>
+              } />
               <Route path="/passenger/support" element={
                 <ProtectedRoute allowedRoles={['passenger']}>
                   <PassengerLayout>
@@ -248,6 +277,13 @@ function App() {
                 <ProtectedRoute allowedRoles={['passenger']}>
                   <PassengerLayout>
                     <ProfileSettings />
+                  </PassengerLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/passenger/wallet" element={
+                <ProtectedRoute allowedRoles={['passenger']}>
+                  <PassengerLayout>
+                    <PassengerWallet />
                   </PassengerLayout>
                 </ProtectedRoute>
               } />
@@ -448,6 +484,13 @@ function App() {
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminLayout>
                     <StaffReports />
+                  </AdminLayout>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/policies" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout>
+                    <AdminPolicies />
                   </AdminLayout>
                 </ProtectedRoute>
               } />

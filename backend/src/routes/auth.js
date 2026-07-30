@@ -172,7 +172,21 @@ router.post('/forgot-password', async (req, res) => {
 // Get User Profile
 router.get('/me', authenticateToken, async (req, res) => {
   if (isMockMode) {
-    const profile = mockDb.profiles.get(req.user.id);
+    let profile = mockDb.profiles.get(req.user.id);
+    if (!profile) {
+      profile = Array.from(mockDb.profiles.values()).find(p => p.email === req.user.email);
+    }
+    if (!profile) {
+      profile = {
+        id: req.user.id,
+        email: req.user.email || 'staff@railway.com',
+        role: req.user.email?.includes('passenger') ? 'passenger' : req.user.email?.includes('admin') ? 'admin' : 'staff',
+        full_name: 'Railway System User',
+        phone: '+91 9876543210',
+        created_at: new Date().toISOString()
+      };
+      mockDb.profiles.set(req.user.id, profile);
+    }
     return res.json({ user: profile });
   } else {
     try {

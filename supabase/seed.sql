@@ -10,7 +10,15 @@ INSERT INTO public.stations (station_code, station_name) VALUES
 ('GWL', 'Gwalior Junction'),
 ('BOM', 'Mumbai CSMT'),
 ('DEL', 'Delhi Junction'),
-('PAT', 'Patna Junction')
+('PAT', 'Patna Junction'),
+('RKMP', 'Rani Kamalapati'),
+('DNR', 'Danapur'),
+('YPR', 'Yesvantpur'),
+('MAS', 'Chennai Central'),
+('ADI', 'Ahmedabad'),
+('KCVL', 'Kochuveli'),
+('MYS', 'Mysuru'),
+('SBC', 'KSR Bengaluru')
 ON CONFLICT (station_code) DO NOTHING;
 
 -- Seed Trains
@@ -19,7 +27,16 @@ INSERT INTO public.trains (id, train_number, train_name, status, delay_minutes) 
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', '12002', 'Shatabdi Express', 'delayed', 15),
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', '22436', 'Vande Bharat Express', 'on_time', 0),
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', '12301', 'Kolkata Rajdhani', 'cancelled', 0),
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15', '12050', 'Gatimaan Express', 'on_time', 0)
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15', '12050', 'Gatimaan Express', 'on_time', 0),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16', '12001', 'Shatabdi Express', 'on_time', 0),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17', '12295', 'Sanghamitra Express', 'on_time', 0),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18', '12627', 'Karnataka Express', 'on_time', 0),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a19', '12649', 'Sampark Kranti Express', 'on_time', 0),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a20', '12951', 'Mumbai Rajdhani Express', 'on_time', 0),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a21', '12622', 'Tamil Nadu Express', 'on_time', 0),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', '12953', 'August Kranti Rajdhani Express', 'on_time', 0),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a23', '12009', 'Shatabdi Express', 'on_time', 0),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a24', '16316', 'Kochuveli Express', 'on_time', 0)
 ON CONFLICT (train_number) DO NOTHING;
 
 -- Seed Routes
@@ -33,7 +50,16 @@ INSERT INTO public.routes (train_id, source_station_code, destination_station_co
 -- Kolkata Rajdhani: Howrah to New Delhi
 ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', 'HWH', 'NDLS', '16:55:00', '10:00:00', 1450.00, 1.50, 1),
 -- Gatimaan Express: Hazrat Nizamuddin to Agra Cantt
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15', 'NZM', 'AGC', '08:10:00', '09:50:00', 188.00, 1.10, 1);
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15', 'NZM', 'AGC', '08:10:00', '09:50:00', 188.00, 1.10, 1),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16', 'NDLS', 'RKMP', '06:00:00', '14:25:00', 707.00, 1.20, 1),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17', 'SBC', 'DNR', '09:00:00', '09:00:00', 2600.00, 1.20, 1),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18', 'SBC', 'NDLS', '19:20:00', '09:00:00', 2400.00, 1.20, 1),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a19', 'YPR', 'NZM', '13:50:00', '08:20:00', 2378.00, 1.20, 1),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a20', 'MMCT', 'NDLS', '17:00:00', '08:32:00', 1384.00, 1.50, 1),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a21', 'NDLS', 'MAS', '21:05:00', '06:15:00', 2182.00, 1.30, 1),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'MMCT', 'NZM', '17:10:00', '09:43:00', 1377.00, 1.50, 1),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a23', 'MMCT', 'ADI', '06:20:00', '12:45:00', 493.00, 1.30, 1),
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a24', 'KCVL', 'MYS', '16:45:00', '11:15:00', 825.00, 1.00, 1);
 
 -- Seed Seats for trains
 -- We will write a function to generate seats programmatically to avoid an overly verbose SQL insert
@@ -83,6 +109,15 @@ SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12');
 SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13');
 SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14');
 SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15');
+SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16');
+SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17');
+SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18');
+SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a19');
+SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a20');
+SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a21');
+SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22');
+SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a23');
+SELECT seed_train_seats('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a24');
 
 -- Clean up seeding function
 DROP FUNCTION seed_train_seats;

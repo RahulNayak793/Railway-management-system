@@ -28,8 +28,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-      console.warn('Unauthorized or expired token. Logging out user.');
+    if (error.response && error.response.status === 401) {
+      console.warn('Unauthorized token. Logging out user.');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       if (window.location.pathname !== '/login') {
