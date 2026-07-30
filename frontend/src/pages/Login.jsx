@@ -512,6 +512,9 @@ const Login = () => {
                     <input
                       type="email"
                       required
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      inputMode="email"
                       placeholder="name@company.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
