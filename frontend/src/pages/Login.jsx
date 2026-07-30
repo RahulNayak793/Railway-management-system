@@ -145,6 +145,8 @@ const Login = () => {
     setFormLoading(true);
     setError(null);
 
+    const cleanEmail = email ? email.trim().toLowerCase() : '';
+
     if (isSignUp && role === 'staff') {
       setError(lang === 'hi' ? 'कर्मचारी खाते स्वयं-पंजीकृत नहीं किए जा सकते। कृपया व्यवस्थापक से संपर्क करें।' : 'Staff accounts cannot be self-registered. Please contact the administrator.');
       setFormLoading(false);
@@ -154,7 +156,7 @@ const Login = () => {
     try {
       if (isSignUp) {
         const user = await signup({
-          email,
+          email: cleanEmail,
           password,
           full_name: fullName,
           role,
@@ -162,7 +164,7 @@ const Login = () => {
         });
         redirectUser(user.role);
       } else {
-        const user = await login(email, password);
+        const user = await login(cleanEmail, password);
         redirectUser(user.role);
       }
     } catch (err) {

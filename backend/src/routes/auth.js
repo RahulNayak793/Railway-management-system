@@ -87,30 +87,28 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
+  const cleanEmail = email ? email.trim().toLowerCase() : '';
+
   if (isMockMode) {
-    // Find mock profile by email
-    const profile = Array.from(mockDb.profiles.values()).find(p => p.email === email);
+    // Find mock profile by email or phone
+    let profile = Array.from(mockDb.profiles.values()).find(
+      p => (p.email && p.email.trim().toLowerCase() === cleanEmail) || 
+           (p.phone && p.phone.replace(/\D/g, '') === cleanEmail.replace(/\D/g, ''))
+    );
+
     if (!profile) {
-      // Create a default demo account if they input test accounts
-      if (email.includes('@railway.com') || email.includes('admin') || email.includes('staff') || email.includes('passenger')) {
-        const role = email.includes('admin') ? 'admin' : email.includes('staff') ? 'staff' : 'passenger';
-        const demoId = 'usr-demo-' + role;
-        const newDemo = {
-          id: demoId,
-          email,
-          role,
-          full_name: role.toUpperCase() + ' User',
-          phone: '+919999999999',
-          created_at: new Date().toISOString()
-        };
-        mockDb.profiles.set(demoId, newDemo);
-        const token = generateMockToken(newDemo);
-        return res.json({
-          session: { access_token: token },
-          user: newDemo
-        });
-      }
-      return res.status(400).json({ error: 'Invalid email or password' });
+      // Auto-provision personal mobile / custom email logins on the fly
+      const detectedRole = cleanEmail.includes('admin') ? 'admin' : cleanEmail.includes('staff') ? 'staff' : 'passenger';
+      const newMockId = 'usr-mobile-' + Math.random().toString(36).substr(2, 9);
+      profile = {
+        id: newMockId,
+        email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@railway.com`,
+        role: detectedRole,
+        full_name: cleanEmail.split('@')[0].toUpperCase() || 'Mobile User',
+        phone: '+91 9876543210',
+        created_at: new Date().toISOString()
+      };
+      mockDb.profiles.set(newMockId, profile);
     }
 
     const token = generateMockToken(profile);
