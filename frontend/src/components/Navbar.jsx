@@ -42,16 +42,38 @@ const Navbar = ({ onToggleSidebar }) => {
   if (!user) return null;
 
   return (
-    <header
-      className="sticky top-0 z-50 w-full flex-shrink-0"
-      style={{
-        background: 'rgba(10, 18, 40, 0.85)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
-      }}
-    >
+    <>
+      {/* Top Official IRCTC Announcement Ticker */}
+      <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-slate-300 text-[11px] font-semibold py-1 px-4 border-b border-white/10 flex items-center justify-between overflow-hidden">
+        <div className="flex items-center space-x-2 shrink-0">
+          <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">
+            IRCTC Official
+          </span>
+          <span className="hidden sm:inline text-slate-400 font-mono">CRIS Verified</span>
+        </div>
+
+        <div className="flex-1 overflow-hidden mx-4 text-center">
+          <p className="truncate text-slate-300 font-medium animate-pulse">
+            📢 <strong className="text-white">IRCTC Bulletin:</strong> Travel insurance up to ₹10 Lakhs available for ₹0.45/passenger • Railway Helpline: <strong className="text-amber-300">139</strong> • AC Tatkal: 10:00 AM | Non-AC Tatkal: 11:00 AM
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-3 shrink-0 text-[10px] text-slate-400">
+          <span className="hidden md:inline font-mono text-emerald-400 font-bold">● 100% SSL Encrypted</span>
+          <span className="bg-white/10 px-2 py-0.5 rounded text-white font-bold font-mono">139 Help</span>
+        </div>
+      </div>
+
+      <header
+        className="sticky top-0 z-50 w-full flex-shrink-0"
+        style={{
+          background: 'rgba(10, 18, 40, 0.85)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
+        }}
+      >
       <div className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8">
 
         {/* Left: Hamburger + Brand */}
@@ -161,6 +183,7 @@ const Navbar = ({ onToggleSidebar }) => {
         </div>
       </div>
     </header>
+  </>
   );
 };
 
