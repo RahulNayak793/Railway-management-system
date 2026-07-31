@@ -1,13 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CreditCard, Search, ArrowUpRight, CheckCircle, Clock } from 'lucide-react';
+import api from '../services/api';
 
 const AdminPayments = () => {
-  const [payments, setPayments] = useState([
-    { id: 'tx-1', pnr: '6543210981', passengerName: 'Ramesh Kumar', gate: 'UPI (PhonePe)', amount: '₹ 1,250', time: '17 Jul 2026, 10:15 AM', status: 'Success' },
-    { id: 'tx-2', pnr: '6543210982', passengerName: 'Suresh Patel', gate: 'NetBanking (SBI)', amount: '₹ 780', time: '17 Jul 2026, 09:40 AM', status: 'Success' },
-    { id: 'tx-3', pnr: '6543210983', passengerName: 'Anita Sharma', gate: 'Credit Card (HDFC)', amount: '₹ 560', time: '17 Jul 2026, 08:12 AM', status: 'Pending' },
-    { id: 'tx-4', pnr: '6543210984', passengerName: 'Vikram Singh', gate: 'Debit Card (ICICI)', amount: '₹ 980', time: '16 Jul 2026, 09:20 PM', status: 'Success' }
-  ]);
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    const fetchAdminPayments = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get('/bookings');
+        const list = (res.data || []).map((b, idx) => ({
+          id: b.payment?.payment_gateway_id || `tx-${idx + 1}`,
+          pnr: b.pnr_number,
+          passengerName: b.allocations?.[0]?.passenger_name || 'Passenger',
+          gate: b.payment?.payment_method || 'Rail Wallet / Online',
+          amount: `₹ ${b.total_fare || 500}`,
+          time: b.created_at ? new Date(b.created_at).toLocaleString() : b.booking_date,
+          status: b.status === 'cancelled' ? 'Refunded' : 'Success'
+        }));
+        setPayments(list);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAdminPayments();
+  }, []);
+
+  const filtered = payments.filter(p => !query || p.pnr.includes(query) || p.passengerName.toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 font-sans space-y-6 animate-slide-in">
@@ -28,26 +52,37 @@ const AdminPayments = () => {
             <input
               type="text"
               placeholder="Search payments PNR..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               className="bg-transparent focus:outline-none placeholder:text-slate-400 font-semibold"
             />
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-left">
-            <thead className="bg-slate-50/50">
-              <tr>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Transaction ID</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">PNR Reference</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Passenger</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Payment Gateway</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Amount Paid</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Timestamp</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
-              {payments.map((p) => (
+          {loading ? (
+            <div className="text-center py-12 text-slate-400 text-xs font-bold">
+              Loading financial transactions audit feed...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 text-xs font-bold">
+              No matching transaction records found.
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-slate-200 text-left">
+              <thead className="bg-slate-50/50">
+                <tr>
+                  <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Transaction ID</th>
+                  <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">PNR Reference</th>
+                  <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Passenger</th>
+                  <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Payment Gateway</th>
+                  <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Amount Paid</th>
+                  <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Timestamp</th>
+                  <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {filtered.map((p) => (
                 <tr key={p.id} className="hover:bg-slate-55/50 transition">
                   <td className="px-6 py-4 text-sm font-black text-slate-500 font-mono">{p.id}</td>
                   <td className="px-6 py-4 text-sm font-black text-slate-800 font-mono">{p.pnr}</td>
@@ -66,6 +101,7 @@ const AdminPayments = () => {
               ))}
             </tbody>
           </table>
+          )}
         </div>
       </div>
     </div>

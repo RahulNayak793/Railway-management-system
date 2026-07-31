@@ -10,18 +10,20 @@ const PassengerPayments = () => {
     setLoading(true);
     try {
       const res = await api.get('/bookings');
-      // Create high-fidelity payment records from bookings list
+      // Map real payment records from user bookings list
       const paymentRecords = (res.data || []).map((b, idx) => {
-        // Generate consistent txn id based on booking id
-        const txnId = `TXN-${b.id.toUpperCase().substring(0, 8)}`;
+        const txnId = b.payment?.payment_gateway_id || `TXN-${b.id.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 10)}`;
+        const actualMethod = b.payment?.payment_method || b.payment_method || (b.payment?.id ? 'Online Payment' : 'Paid');
+        const trainName = b.train?.train_name ? `${b.train.train_name} (#${b.train.train_number || ''})` : 'Train Journey';
+        
         return {
-          id: `pay-${idx}`,
+          id: b.id || `pay-${idx}`,
           txnId,
           pnr: b.pnr_number,
-          trainName: b.train?.train_name || 'Rajdhani Express',
-          amount: b.total_fare,
-          date: b.booking_date,
-          method: idx % 3 === 0 ? 'UPI / Google Pay' : idx % 3 === 1 ? 'Credit Card (Visa)' : 'Net Banking',
+          trainName,
+          amount: b.total_fare || b.payment?.amount || 500,
+          date: b.booking_date || (b.created_at ? b.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
+          method: actualMethod,
           status: b.status === 'cancelled' ? 'Refunded' : 'Success'
         };
       });
