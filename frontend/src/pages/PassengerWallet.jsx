@@ -34,7 +34,20 @@ const PassengerWallet = () => {
   // Persistent Transactions History (Strictly RailWallet transactions)
   const [transactions, setTransactions] = useState(() => {
     const savedTxns = localStorage.getItem('railway_wallet_transactions');
-    return savedTxns ? JSON.parse(savedTxns) : [];
+    if (!savedTxns) return [];
+    try {
+      const parsed = JSON.parse(savedTxns);
+      // Filter out non-wallet transactions (like old direct PNR- entries)
+      const cleanRailWalletTxns = parsed.filter(t => 
+        (t.reference && (t.reference.startsWith('RW') || t.reference.startsWith('UPI/'))) ||
+        (t.title && t.title.toLowerCase().includes('rail wallet')) ||
+        (t.title && t.title.toLowerCase().includes('money added'))
+      );
+      localStorage.setItem('railway_wallet_transactions', JSON.stringify(cleanRailWalletTxns));
+      return cleanRailWalletTxns;
+    } catch (e) {
+      return [];
+    }
   });
 
   // Sync balance to localStorage whenever it changes
@@ -73,13 +86,13 @@ const PassengerWallet = () => {
       setBalance(newBalance);
       localStorage.setItem('railway_wallet_balance', newBalance.toString());
       
-      const txnRef = `TXN/${Math.floor(100000000000 + Math.random() * 900000000000)}`;
+      const txnRef = `RW-TXN/${Math.floor(100000000000 + Math.random() * 900000000000)}`;
       setLastTxnRef(txnRef);
 
       const newTxn = {
         id: `txn-${Date.now()}`,
         type: 'credit',
-        title: `Money Added via ${paymentMethod.toUpperCase()}`,
+        title: `Money Added to Rail Wallet via ${paymentMethod.toUpperCase()}`,
         date: new Date().toISOString(),
         amount: amount,
         status: 'success',
