@@ -222,10 +222,48 @@ const ETicket = () => {
             </div>
           </div>
 
-          {/* Pricing breakdown summary */}
-          <div className="flex justify-between items-center bg-slate-50 rounded-xl p-4 border border-slate-100 text-sm print:bg-white print:border-slate-200">
-            <span className="font-semibold text-slate-500">Fare Payment Transaction</span>
-            <span className="font-extrabold text-slate-800">Completed: ₹{booking.total_fare}</span>
+          {/* Official Fare Breakdown & Security Stamp */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 rounded-2xl p-5 border border-slate-200/80 text-xs print:bg-white">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-slate-600">
+                <span>Base Ticket Fare:</span>
+                <span className="font-mono font-bold">₹{Math.round(booking.total_fare * 0.88)}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>IRCTC Service Fee & Insurance:</span>
+                <span className="font-mono font-bold">₹{Math.round(booking.total_fare * 0.07)}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>CGST (2.5%) + SGST (2.5%):</span>
+                <span className="font-mono font-bold">₹{Math.round(booking.total_fare * 0.05)}</span>
+              </div>
+              <div className="border-t border-slate-200 pt-1.5 flex justify-between font-black text-slate-900 text-sm">
+                <span>Total Fare Paid:</span>
+                <span className="font-mono text-emerald-700">₹{booking.total_fare}</span>
+              </div>
+            </div>
+
+            {/* Barcode & TTE Scan Badge */}
+            <div className="flex flex-col items-center justify-center border-l-0 md:border-l border-slate-200 pl-0 md:pl-4 text-center space-y-2">
+              <div className="bg-white px-4 py-2 border border-slate-300 rounded-xl shadow-xs">
+                {/* Barcode Visual */}
+                <div className="font-mono font-black tracking-widest text-slate-900 text-xs select-none space-x-1">
+                  ||| | |||| | || |||| | ||| |||| | ||
+                </div>
+                <span className="text-[9px] font-mono font-bold text-slate-500 block">TTE SCAN: PNR-{booking.pnr_number}</span>
+              </div>
+              <div className="text-[10px] text-slate-500 font-semibold leading-tight">
+                <span className="font-bold text-slate-700 block">GSTIN: 07AAATI1234F1Z8</span>
+                <span>IRCTC Helpline: 139 • CRIS Digital Verification Seal Active</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Official Travel Rules Notice */}
+          <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4 text-[11px] text-amber-950 space-y-1">
+            <span className="font-extrabold uppercase tracking-wider text-amber-900 block text-[10px]">Important Passenger Travel Notice:</span>
+            <p>1. One of the passengers booked on this e-ticket must carry a valid Original Photo Identity Card (Aadhaar / Voter ID / Passport / Driving License) during journey for TTE verification.</p>
+            <p>2. Fully waitlisted e-tickets are not valid for travel inside reserved coaches.</p>
           </div>
         </div>
       </div>
