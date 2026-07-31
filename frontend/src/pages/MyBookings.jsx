@@ -259,13 +259,13 @@ const MyBookings = () => {
                     </button>
                   )}
 
-                  {b.status !== 'cancelled' && (
+                  {b.status !== 'cancelled' && !isCompleted && (
                     <button
                       onClick={() => navigate(`/passenger/catering?pnr=${b.pnr_number}`)}
                       className="px-4 py-2 rounded-xl border border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 text-xs font-bold transition flex items-center space-x-1.5"
                     >
                       <Utensils className="h-3.5 w-3.5 text-amber-700" />
-                      <span>{isCompleted ? 'Meal Orders' : 'Order Seat Meals'}</span>
+                      <span>Order Seat Meals</span>
                     </button>
                   )}
 
