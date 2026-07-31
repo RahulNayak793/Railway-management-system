@@ -244,9 +244,29 @@ router.get('/:id/seats', async (req, res) => {
 
   if (isMockMode) {
     // Get all seats for train
-    const seats = Array.from(mockDb.seats.values()).filter(
+    let seats = Array.from(mockDb.seats.values()).filter(
       s => s.train_id === id && s.coach_class === coach_class
     );
+
+    // If no seats exist for this specific train and class, generate 24 standard berths on the fly
+    if (seats.length === 0) {
+      const coachNum = coach_class === 'SL' ? 'S1' : coach_class === '3A' ? 'B1' : coach_class === '2A' ? 'A1' : 'H1';
+      seats = Array.from({ length: 24 }).map((_, idx) => {
+        const seatNum = idx + 1;
+        const berthType = seatNum % 6 === 1 || seatNum % 6 === 2 ? 'LB' : seatNum % 6 === 3 || seatNum % 6 === 4 ? 'MB' : 'UB';
+        const sId = `${id}-${coachNum}-${seatNum}`;
+        const newSeat = {
+          id: sId,
+          train_id: id,
+          coach_class,
+          coach_number: coachNum,
+          seat_number: seatNum,
+          berth_type: berthType
+        };
+        mockDb.seats.set(sId, newSeat);
+        return newSeat;
+      });
+    }
 
     // Get allocations for this date
     const allocations = Array.from(mockDb.seat_allocations.values()).filter(
