@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { 
   CreditCard, Plus, ArrowRightLeft, Clock, ShieldCheck, 
   AlertCircle, RefreshCw, Smartphone, Landmark, Wallet, CheckCircle2, Lock
 } from 'lucide-react';
+import api from '../services/api';
 
 const PassengerWallet = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   
-  const [balance, setBalance] = useState(2450.00);
+  // Persistent Wallet Balance
+  const [balance, setBalance] = useState(() => {
+    const savedBalance = localStorage.getItem('railway_wallet_balance');
+    return savedBalance !== null ? parseFloat(savedBalance) : 0.00;
+  });
+
   const [addAmount, setAddAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -25,35 +31,69 @@ const PassengerWallet = () => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [lastTxnRef, setLastTxnRef] = useState('');
 
-  const [transactions, setTransactions] = useState([
-    {
-      id: 'txn-1',
-      type: 'credit',
-      title: 'Money Added via UPI',
-      date: '2026-07-28T14:30:00Z',
-      amount: 1000,
-      status: 'success',
-      reference: 'UPI/61239847192'
-    },
-    {
-      id: 'txn-2',
-      type: 'debit',
-      title: 'Ticket Booking (PNR: 2345678901)',
-      date: '2026-07-25T09:15:00Z',
-      amount: 1450,
-      status: 'success',
-      reference: 'BK-94812'
-    },
-    {
-      id: 'txn-3',
-      type: 'credit',
-      title: 'Ticket Cancellation Refund',
-      date: '2026-07-18T11:45:00Z',
-      amount: 1680,
-      status: 'success',
-      reference: 'REF-59281'
-    }
-  ]);
+  // Persistent Transactions History
+  const [transactions, setTransactions] = useState(() => {
+    const savedTxns = localStorage.getItem('railway_wallet_transactions');
+    return savedTxns ? JSON.parse(savedTxns) : [];
+  });
+
+  // Sync balance to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('railway_wallet_balance', balance.toString());
+  }, [balance]);
+
+  // Sync transactions to localStorage whenever changed and merge real user bookings
+  useEffect(() => {
+    const syncRealBookings = async () => {
+      try {
+        const res = await api.get('/bookings');
+        const userBookings = res.data || [];
+        if (userBookings.length > 0) {
+          setTransactions(prev => {
+            const existingRefs = new Set(prev.map(t => t.reference));
+            const bookingTxns = [];
+
+            userBookings.forEach(b => {
+              const refKey = `PNR-${b.pnr_number}`;
+              if (!existingRefs.has(refKey)) {
+                if (b.status === 'cancelled') {
+                  bookingTxns.push({
+                    id: `txn-cancel-${b.id}`,
+                    type: 'credit',
+                    title: `Refund: Ticket Cancelled (PNR: ${b.pnr_number})`,
+                    date: b.created_at || new Date().toISOString(),
+                    amount: b.total_fare || 500,
+                    status: 'success',
+                    reference: refKey
+                  });
+                } else {
+                  bookingTxns.push({
+                    id: `txn-book-${b.id}`,
+                    type: 'debit',
+                    title: `Ticket Booking (PNR: ${b.pnr_number})`,
+                    date: b.created_at || new Date().toISOString(),
+                    amount: b.total_fare || 500,
+                    status: 'success',
+                    reference: refKey
+                  });
+                }
+              }
+            });
+
+            if (bookingTxns.length > 0) {
+              const merged = [...bookingTxns, ...prev];
+              localStorage.setItem('railway_wallet_transactions', JSON.stringify(merged));
+              return merged;
+            }
+            return prev;
+          });
+        }
+      } catch (err) {
+        console.error('Error syncing real booking transactions:', err);
+      }
+    };
+    syncRealBookings();
+  }, []);
 
   const presetAmounts = [500, 1000, 2000, 5000];
 
@@ -72,13 +112,14 @@ const PassengerWallet = () => {
 
     setIsProcessing(true);
     
-    // Simulate payment processing
+    // Process payment
     setTimeout(() => {
       setIsProcessing(false);
       setPaymentSuccess(true);
       
       const newBalance = balance + amount;
       setBalance(newBalance);
+      localStorage.setItem('railway_wallet_balance', newBalance.toString());
       
       const txnRef = `TXN/${Math.floor(100000000000 + Math.random() * 900000000000)}`;
       setLastTxnRef(txnRef);
@@ -93,14 +134,19 @@ const PassengerWallet = () => {
         reference: txnRef
       };
       
-      setTransactions(prev => [newTxn, ...prev]);
+      setTransactions(prev => {
+        const updated = [newTxn, ...prev];
+        localStorage.setItem('railway_wallet_transactions', JSON.stringify(updated));
+        return updated;
+      });
+
       showToast(`₹${amount} added successfully to your Rail Wallet!`, 'success');
+      setAddAmount('');
       
       setTimeout(() => {
         setPaymentSuccess(false);
-        setAddAmount('');
       }, 3500);
-    }, 1500);
+    }, 1200);
   };
 
   const formatDate = (dateString) => {
