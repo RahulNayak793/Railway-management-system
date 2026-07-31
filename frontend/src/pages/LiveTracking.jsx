@@ -89,25 +89,44 @@ const LiveTracking = () => {
     }
   };
 
+  const [userBookings, setUserBookings] = useState([]);
+
   useEffect(() => {
-    const loadDefault = async () => {
-      if (trainIdFromParam) {
-        setLoading(true);
-        try {
-          const res = await api.get('/trains');
-          const matched = res.data.find(t => t.id === trainIdFromParam);
-          if (matched) {
-            setActiveTrain(matched);
-            setProgress(35);
-          }
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setLoading(false);
+    const fetchBookingsAndDefault = async () => {
+      setLoading(true);
+      try {
+        const [trainsRes, bookingsRes] = await Promise.all([
+          api.get('/trains'),
+          api.get('/bookings').catch(() => ({ data: [] }))
+        ]);
+
+        const allTrains = trainsRes.data || [];
+        const bookingsData = (bookingsRes.data || []).filter(b => b.status !== 'cancelled');
+        setUserBookings(bookingsData);
+
+        let targetTrain = null;
+        if (trainIdFromParam) {
+          targetTrain = allTrains.find(t => t.id === trainIdFromParam);
+        } else if (bookingsData.length > 0) {
+          const bookedTrainId = bookingsData[0].train_id || bookingsData[0].train?.id;
+          targetTrain = allTrains.find(t => t.id === bookedTrainId) || bookingsData[0].train;
         }
+
+        if (!targetTrain && allTrains.length > 0) {
+          targetTrain = allTrains[0];
+        }
+
+        if (targetTrain) {
+          setActiveTrain(targetTrain);
+          setProgress(35);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
-    loadDefault();
+    fetchBookingsAndDefault();
   }, [trainIdFromParam]);
 
   // Speed and Progress simulator interval
@@ -241,6 +260,67 @@ const LiveTracking = () => {
           </button>
         </form>
       </div>
+
+      {/* Booked Trains Quick Tracking Bar */}
+      {userBookings.length > 0 && (
+        <div className="bg-gradient-to-r from-slate-900 via-[#003366] to-slate-900 text-white rounded-2xl p-5 shadow-lg border border-blue-900/40 space-y-3">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+            <div className="flex items-center space-x-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <h2 className="text-xs font-black tracking-wide uppercase">Your Active Booked Journeys</h2>
+            </div>
+            <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold border border-emerald-500/30">
+              {userBookings.length} Booked Train{userBookings.length > 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {userBookings.map((b) => {
+              const trainName = b.train?.train_name || 'Rajdhani Express';
+              const trainNo = b.train?.train_number || '12952';
+              const isSelected = activeTrain && (activeTrain.id === b.train_id || activeTrain.train_number === trainNo);
+
+              return (
+                <div
+                  key={b.id}
+                  onClick={() => {
+                    const matched = b.train || { id: b.train_id, train_name: trainName, train_number: trainNo, status: 'on_time' };
+                    setActiveTrain(matched);
+                    setProgress(28 + Math.floor(Math.random() * 30));
+                  }}
+                  className={`cursor-pointer rounded-xl p-3.5 border transition-all flex items-center justify-between ${
+                    isSelected
+                      ? 'bg-white/20 border-emerald-400 shadow-md ring-1 ring-emerald-400'
+                      : 'bg-white/5 border-white/10 hover:bg-white/15'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="h-9 w-9 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs">
+                      <Train className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-black text-white">{trainName}</span>
+                        <span className="text-[10px] bg-white/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono font-bold">#{trainNo}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 font-medium mt-0.5">PNR: {b.pnr_number} • Date: {b.travel_date}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition ${
+                      isSelected ? 'bg-emerald-400 text-slate-950 shadow' : 'bg-white/10 text-white hover:bg-white/25'
+                    }`}
+                  >
+                    {isSelected ? 'Tracking' : 'Track'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-20">
