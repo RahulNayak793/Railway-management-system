@@ -118,13 +118,43 @@ router.post('/book', authenticateToken, async (req, res) => {
   const pnr = generatePNR();
 
   if (isMockMode) {
-    const train = mockDb.trains.get(train_id);
-    if (!train) return res.status(404).json({ error: 'Train not found' });
+    let train = mockDb.trains.get(train_id);
+    if (!train) {
+      train = {
+        id: train_id,
+        train_number: '23456',
+        train_name: 'Express Special',
+        source: 'NDLS',
+        destination: 'MMCT',
+        total_seats: 120,
+        status: 'on_time'
+      };
+      mockDb.trains.set(train_id, train);
+    }
 
     // 1. Check seat availability for this train & coach class
-    const seats = Array.from(mockDb.seats.values()).filter(
+    let seats = Array.from(mockDb.seats.values()).filter(
       s => s.train_id === train_id && s.coach_class === coach_class
     );
+
+    if (seats.length === 0) {
+      const coachNum = coach_class === 'SL' ? 'S1' : coach_class === '3A' ? 'B1' : coach_class === '2A' ? 'A1' : 'H1';
+      seats = Array.from({ length: 24 }).map((_, idx) => {
+        const seatNum = idx + 1;
+        const berthType = seatNum % 6 === 1 || seatNum % 6 === 2 ? 'LB' : seatNum % 6 === 3 || seatNum % 6 === 4 ? 'MB' : 'UB';
+        const sId = `${train_id}-${coachNum}-${seatNum}`;
+        const newSeat = {
+          id: sId,
+          train_id,
+          coach_class,
+          coach_number: coachNum,
+          seat_number: seatNum,
+          berth_type: berthType
+        };
+        mockDb.seats.set(sId, newSeat);
+        return newSeat;
+      });
+    }
 
     // Filter out seats already booked on this travel date
     const bookedSeatIds = Array.from(mockDb.seat_allocations.values())
