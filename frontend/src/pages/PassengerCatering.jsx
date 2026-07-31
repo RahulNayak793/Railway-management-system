@@ -51,10 +51,10 @@ const PassengerCatering = () => {
       console.warn('Catering fetch fallback triggered');
       // Fallback menu data
       const mockMenus = [
-        { id: 'm1', name: 'Deluxe North Indian Thali', price: 240, category: 'Thali', type: 'veg', rating: 4.8, station: 'New Delhi (NDLS)', description: 'Paneer Butter Masala, Dal Makhani, Jeera Rice, 2 Butter Naan, Sweet & Salad' },
-        { id: 'm2', name: 'Butter Chicken Meal Box', price: 290, category: 'Main Course', type: 'non-veg', rating: 4.9, station: 'New Delhi (NDLS)', description: 'Tender Butter Chicken with Jeera Rice, Garlic Naan & Gulab Jamun' },
-        { id: 'm3', name: 'Chole Bhature Special', price: 160, category: 'Snacks', type: 'veg', rating: 4.7, station: 'New Delhi (NDLS)', description: '2 Fluffy Bhature with Spiced Chickpeas & Mint Chutney' },
-        { id: 'm4', name: 'Jain Special Satvik Thali', price: 220, category: 'Thali', type: 'jain', rating: 4.9, station: 'New Delhi (NDLS)', description: 'No Onion No Garlic Paneer, Yellow Dal, Chapati, Basmati Rice & Kheer' }
+        { id: 'm1', name: 'Deluxe North Indian Thali', price: 240, category: 'Thali', type: 'veg', rating: 4.8, description: 'Paneer Butter Masala, Dal Makhani, Jeera Rice, 2 Butter Naan, Sweet & Salad' },
+        { id: 'm2', name: 'Butter Chicken Meal Box', price: 290, category: 'Main Course', type: 'non-veg', rating: 4.9, description: 'Tender Butter Chicken with Jeera Rice, Garlic Naan & Gulab Jamun' },
+        { id: 'm3', name: 'Chole Bhature Special', price: 160, category: 'Snacks', type: 'veg', rating: 4.7, description: '2 Fluffy Bhature with Spiced Chickpeas & Mint Chutney' },
+        { id: 'm4', name: 'Jain Special Satvik Thali', price: 220, category: 'Thali', type: 'jain', rating: 4.9, description: 'No Onion No Garlic Paneer, Yellow Dal, Chapati, Basmati Rice & Kheer' }
       ];
       setMenuItems(mockMenus.filter(m => filter === 'all' || m.type === filter));
     } finally {
@@ -202,32 +202,11 @@ const PassengerCatering = () => {
           {/* Station & Filter Control Panel */}
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
             
-            {/* Step 1: Station Selector Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            {/* Diet Filter Header Bar */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 block mb-0.5">Step 1 • Station Junction</span>
-                <h3 className="text-base font-extrabold text-slate-800">Select Upcoming Station</h3>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                {[
-                  { code: 'NDLS', name: 'New Delhi' },
-                  { code: 'JP', name: 'Jaipur' },
-                  { code: 'MMCT', name: 'Mumbai Central' },
-                ].map((st) => (
-                  <button
-                    key={st.code}
-                    onClick={() => setSelectedStation(st.code)}
-                    className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 ${
-                      selectedStation === st.code
-                        ? 'bg-amber-600 text-white shadow-md shadow-amber-600/20 ring-2 ring-amber-600/20'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60'
-                    }`}
-                  >
-                    <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    <span>{st.name} ({st.code})</span>
-                  </button>
-                ))}
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 block mb-0.5">IRCTC Approved Menu</span>
+                <h3 className="text-base font-extrabold text-slate-800">Select Seat Delivery Meals</h3>
               </div>
             </div>
 

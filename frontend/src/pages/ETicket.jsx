@@ -334,23 +334,11 @@ const ETicket = () => {
                   <CheckCircle2 className="h-10 w-10 text-emerald-600 mx-auto" />
                   <h4 className="text-base font-black">Meal Order Confirmed!</h4>
                   <p className="text-xs font-semibold text-emerald-700">
-                    Your meal will be delivered directly to your seat by IRCTC e-Catering vendor at station stop {selectedStation}.
+                    Your meal will be delivered directly to your seat berth by IRCTC e-Catering vendors during your journey.
                   </p>
                 </div>
               ) : (
                 <>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Select Delivery Station Stop</label>
-                    <select
-                      value={selectedStation}
-                      onChange={(e) => setSelectedStation(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:outline-none"
-                    >
-                      <option value="BPL">Bhopal Junction (BPL) - ETA 21:15</option>
-                      <option value="AGC">Agra Cantt (AGC) - ETA 18:40</option>
-                      <option value="GWL">Gwalior Junction (GWL) - ETA 19:50</option>
-                    </select>
-                  </div>
 
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold uppercase text-slate-400">Select Meal Menu Item</label>
