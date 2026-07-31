@@ -31,7 +31,7 @@ const PassengerWallet = () => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [lastTxnRef, setLastTxnRef] = useState('');
 
-  // Persistent Transactions History
+  // Persistent Transactions History (Strictly RailWallet transactions)
   const [transactions, setTransactions] = useState(() => {
     const savedTxns = localStorage.getItem('railway_wallet_transactions');
     return savedTxns ? JSON.parse(savedTxns) : [];
@@ -42,58 +42,10 @@ const PassengerWallet = () => {
     localStorage.setItem('railway_wallet_balance', balance.toString());
   }, [balance]);
 
-  // Sync transactions to localStorage whenever changed and merge real user bookings
+  // Sync transactions to localStorage whenever changed
   useEffect(() => {
-    const syncRealBookings = async () => {
-      try {
-        const res = await api.get('/bookings');
-        const userBookings = res.data || [];
-        if (userBookings.length > 0) {
-          setTransactions(prev => {
-            const existingRefs = new Set(prev.map(t => t.reference));
-            const bookingTxns = [];
-
-            userBookings.forEach(b => {
-              const refKey = `PNR-${b.pnr_number}`;
-              if (!existingRefs.has(refKey)) {
-                if (b.status === 'cancelled') {
-                  bookingTxns.push({
-                    id: `txn-cancel-${b.id}`,
-                    type: 'credit',
-                    title: `Refund: Ticket Cancelled (PNR: ${b.pnr_number})`,
-                    date: b.created_at || new Date().toISOString(),
-                    amount: b.total_fare || 500,
-                    status: 'success',
-                    reference: refKey
-                  });
-                } else {
-                  bookingTxns.push({
-                    id: `txn-book-${b.id}`,
-                    type: 'debit',
-                    title: `Ticket Booking (PNR: ${b.pnr_number})`,
-                    date: b.created_at || new Date().toISOString(),
-                    amount: b.total_fare || 500,
-                    status: 'success',
-                    reference: refKey
-                  });
-                }
-              }
-            });
-
-            if (bookingTxns.length > 0) {
-              const merged = [...bookingTxns, ...prev];
-              localStorage.setItem('railway_wallet_transactions', JSON.stringify(merged));
-              return merged;
-            }
-            return prev;
-          });
-        }
-      } catch (err) {
-        console.error('Error syncing real booking transactions:', err);
-      }
-    };
-    syncRealBookings();
-  }, []);
+    localStorage.setItem('railway_wallet_transactions', JSON.stringify(transactions));
+  }, [transactions]);
 
   const presetAmounts = [500, 1000, 2000, 5000];
 

@@ -10,7 +10,7 @@ const Payment = () => {
   const bookingId = searchParams.get('booking_id');
   const amount = searchParams.get('amount') || '500';
 
-  const [paymentMethod, setPaymentMethod] = useState('upi'); // 'upi' | 'card' | 'netbank' | 'wallet'
+  const [paymentMethod, setPaymentMethod] = useState('railwallet'); // 'railwallet' | 'upi' | 'card' | 'netbank' | 'wallet'
   const [upiId, setUpiId] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [cardExpiry, setCardExpiry] = useState('');
@@ -19,8 +19,23 @@ const Payment = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [paidTxnDetails, setPaidTxnDetails] = useState(null);
 
+  // RailWallet state
+  const [railWalletBalance, setRailWalletBalance] = useState(() => {
+    const saved = localStorage.getItem('railway_wallet_balance');
+    return saved !== null ? parseFloat(saved) : 2500.00;
+  });
+
   const handlePay = async (e) => {
     e.preventDefault();
+    const payAmt = parseFloat(amount || '500');
+
+    if (paymentMethod === 'railwallet') {
+      if (railWalletBalance < payAmt) {
+        alert('Insufficient Rail Wallet balance! Please top up your wallet or select another payment option.');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -28,7 +43,7 @@ const Payment = () => {
       try {
         res = await api.post('/payments/checkout', {
           booking_id: bookingId,
-          amount: parseFloat(amount)
+          amount: payAmt
         });
       } catch (err) {
         console.warn('Using payment success fallback handler');
@@ -37,12 +52,32 @@ const Payment = () => {
       const txnNumber = 'TXN-' + Math.floor(1000000000 + Math.random() * 9000000000);
       const generatedPnr = res?.data?.pnr_number || '2345678901';
 
+      // Deduct from RailWallet if paid via RailWallet
+      if (paymentMethod === 'railwallet') {
+        const newBal = railWalletBalance - payAmt;
+        setRailWalletBalance(newBal);
+        localStorage.setItem('railway_wallet_balance', newBal.toString());
+
+        const newWalletTxn = {
+          id: `txn-wallet-${Date.now()}`,
+          type: 'debit',
+          title: `Ticket Booking (PNR: ${generatedPnr})`,
+          date: new Date().toISOString(),
+          amount: payAmt,
+          status: 'success',
+          reference: `RW-${txnNumber}`
+        };
+
+        const existingTxns = JSON.parse(localStorage.getItem('railway_wallet_transactions') || '[]');
+        localStorage.setItem('railway_wallet_transactions', JSON.stringify([newWalletTxn, ...existingTxns]));
+      }
+
       setPaidTxnDetails({
         txnId: txnNumber,
         bookingId: bookingId || 'bk-mock-1',
         pnr: generatedPnr,
         amount: amount,
-        method: paymentMethod.toUpperCase()
+        method: paymentMethod === 'railwallet' ? 'RAIL WALLET' : paymentMethod.toUpperCase()
       });
       
       setShowSuccessModal(true);
@@ -74,10 +109,10 @@ const Payment = () => {
             {/* Tabs Selector */}
             <div className="grid grid-cols-4 gap-2 border-b border-slate-100 pb-4">
               {[
+                { id: 'railwallet', label: 'Rail Wallet', icon: Wallet },
                 { id: 'upi', label: 'UPI Pay', icon: Smartphone },
                 { id: 'card', label: 'Cards', icon: CreditCard },
-                { id: 'netbank', label: 'NetBank', icon: Landmark },
-                { id: 'wallet', label: 'Wallets', icon: Wallet }
+                { id: 'netbank', label: 'NetBank', icon: Landmark }
               ].map(tab => {
                 const Icon = tab.icon;
                 const active = paymentMethod === tab.id;
@@ -86,10 +121,10 @@ const Payment = () => {
                     key={tab.id}
                     onClick={() => setPaymentMethod(tab.id)}
                     className={`flex flex-col items-center justify-center rounded-xl py-3 border text-center transition-all ${
-                      active ? 'border-primary-500 bg-primary-50/20 text-primary-700 font-bold' : 'border-slate-100 hover:bg-slate-50 text-slate-500'
+                      active ? 'border-primary-500 bg-primary-50/20 text-primary-700 font-bold shadow-sm' : 'border-slate-100 hover:bg-slate-50 text-slate-500'
                     }`}
                   >
-                    <Icon className="h-5 w-5 mb-1" />
+                    <Icon className="h-5 w-5 mb-1 text-primary-600" />
                     <span className="text-xs">{tab.label}</span>
                   </button>
                 );
@@ -97,6 +132,33 @@ const Payment = () => {
             </div>
 
             <form onSubmit={handlePay} className="space-y-4">
+              {/* RailWallet fields */}
+              {paymentMethod === 'railwallet' && (
+                <div className="space-y-4 bg-primary-50/40 p-5 rounded-2xl border border-primary-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-black uppercase text-primary-800 tracking-wider">IRCTC Rail Wallet</span>
+                      <p className="text-xs text-slate-500 mt-0.5">Instant zero-gateway payment from your Rail Wallet balance.</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Available Balance</span>
+                      <span className="text-base font-black text-emerald-600 font-mono">₹{railWalletBalance.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {railWalletBalance >= parseFloat(amount || '500') ? (
+                    <div className="flex items-center space-x-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-xl">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                      <span>Sufficient balance available. Money will be deducted from your Rail Wallet.</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 px-3.5 py-2 rounded-xl">
+                      <FileText className="h-4 w-4 shrink-0 text-rose-600" />
+                      <span>Low balance. Please top up your Rail Wallet or choose UPI / Card option.</span>
+                    </div>
+                  )}
+                </div>
+              )}
               {/* UPI fields */}
               {paymentMethod === 'upi' && (
                 <div className="space-y-3">
