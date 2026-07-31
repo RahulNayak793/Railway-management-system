@@ -11,9 +11,9 @@ const PassengerPayments = () => {
     try {
       const res = await api.get('/bookings');
       // Map real payment records from user bookings list
-      const paymentRecords = (res.data || []).map((b, idx) => {
+      const bookingRecords = (res.data || []).map((b, idx) => {
         const txnId = b.payment?.payment_gateway_id || `TXN-${b.id.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 10)}`;
-        const actualMethod = b.payment?.payment_method || b.payment_method || (b.payment?.id ? 'Online Payment' : 'Paid');
+        const actualMethod = b.payment?.payment_method || b.payment_method || 'Rail Wallet / Card';
         const trainName = b.train?.train_name ? `${b.train.train_name} (#${b.train.train_number || ''})` : 'Train Journey';
         
         return {
@@ -27,7 +27,25 @@ const PassengerPayments = () => {
           status: b.status === 'cancelled' ? 'Refunded' : 'Success'
         };
       });
-      setPayments(paymentRecords);
+
+      // Merge Rail Wallet transactions (top-ups and wallet payments) from localStorage
+      const savedWalletTxns = JSON.parse(localStorage.getItem('railway_wallet_transactions') || '[]');
+      const walletRecords = savedWalletTxns.map((w, idx) => ({
+        id: w.id || `wallet-pay-${idx}`,
+        txnId: w.reference || `RW-TXN-${idx + 100}`,
+        pnr: w.title?.includes('PNR:') ? w.title.split('PNR:')[1].replace(')', '').trim() : 'Rail Wallet TopUp',
+        trainName: w.title || 'Rail Wallet Credit',
+        amount: w.amount,
+        date: w.date ? new Date(w.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        method: 'IRCTC Rail Wallet',
+        status: w.status === 'success' ? 'Success' : 'Completed'
+      }));
+
+      // Combine and deduplicate
+      const allPayments = [...walletRecords, ...bookingRecords];
+      const uniqueTxns = Array.from(new Map(allPayments.map(item => [item.txnId, item])).values());
+      
+      setPayments(uniqueTxns);
     } catch (err) {
       console.error(err);
     } finally {
