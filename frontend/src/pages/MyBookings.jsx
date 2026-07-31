@@ -71,14 +71,13 @@ const MyBookings = () => {
 
       if (b.status === 'cancelled') return false;
 
-      // 2. Determine if journey is completed
+      // 2. Determine if journey is completed (if date is past today OR status is completed)
       let isCompleted = b.status === 'completed';
       if (!isCompleted && b.travel_date) {
         const travelDate = new Date(b.travel_date);
         if (!isNaN(travelDate.getTime())) {
           travelDate.setHours(0, 0, 0, 0);
-          // Only past dates without active confirmation belong to completed
-          if (travelDate < today && b.status !== 'confirmed' && b.status !== 'rac' && b.status !== 'waitlist') {
+          if (travelDate < today) {
             isCompleted = true;
           }
         }
@@ -230,11 +229,34 @@ const MyBookings = () => {
                   </div>
 
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Seat Allocation</span>
-                    <span className="font-mono font-black text-slate-900 text-sm mt-0.5 block">
-                      {alloc.coach_number ? `Coach ${alloc.coach_number}, Seat ${alloc.seat_number}` : 'Coach B1, Seat 24'}
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-700">₹{b.total_fare} (Paid)</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Fare Paid</span>
+                    <span className="font-mono font-black text-emerald-700 text-sm mt-0.5 block">₹{b.total_fare}</span>
+                    <span className="text-[10px] font-bold text-slate-400">{b.allocations?.length || 1} Passenger(s)</span>
+                  </div>
+                </div>
+
+                {/* Booked Passengers & Allocated Seats List */}
+                <div className="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-2.5">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                    Booked Passenger(s) & Seat Allocations
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                    {(b.allocations && b.allocations.length > 0 ? b.allocations : [
+                      { passenger_name: user?.full_name || 'Passenger', age: 30, gender: 'Male', coach_number: 'B1', seat_number: 24, berth_type: 'UB' }
+                    ]).map((p, idx) => (
+                      <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between text-xs">
+                        <div>
+                          <p className="font-extrabold text-slate-800">{p.passenger_name}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold">{p.age ? `${p.age} yrs` : ''} {p.gender ? `• ${p.gender}` : ''}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-mono font-black text-primary-700 bg-primary-50 px-2.5 py-1 rounded-lg border border-primary-100 text-xs block">
+                            {p.coach_number || 'B1'}-{p.seat_number || 24}
+                          </span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase font-mono mt-0.5 block">{p.berth_type || 'BERTH'}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
