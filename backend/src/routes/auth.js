@@ -9,7 +9,7 @@ const jwtSecret = process.env.JWT_SECRET || 'mock-jwt-secret-key-32-characters-l
 // Helper to generate a mock token
 const generateMockToken = (user) => {
   return jwt.sign(
-    { id: user.id, email: user.email },
+    { id: user.id, email: user.email, role: user.role, full_name: user.full_name },
     jwtSecret,
     { expiresIn: '24h' }
   );
@@ -175,11 +175,12 @@ router.get('/me', authenticateToken, async (req, res) => {
       profile = Array.from(mockDb.profiles.values()).find(p => p.email === req.user.email);
     }
     if (!profile) {
+      const defaultRole = req.user.role || (req.user.email?.includes('admin') ? 'admin' : req.user.email?.includes('staff') ? 'staff' : 'passenger');
       profile = {
         id: req.user.id,
-        email: req.user.email || 'staff@railway.com',
-        role: req.user.email?.includes('passenger') ? 'passenger' : req.user.email?.includes('admin') ? 'admin' : 'staff',
-        full_name: 'Railway System User',
+        email: req.user.email || 'user@railway.com',
+        role: defaultRole,
+        full_name: req.user.full_name || (defaultRole.charAt(0).toUpperCase() + defaultRole.slice(1) + ' User'),
         phone: '+91 9876543210',
         created_at: new Date().toISOString()
       };
