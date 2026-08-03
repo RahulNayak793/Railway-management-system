@@ -7,8 +7,13 @@ const getApiBaseUrl = () => {
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return 'http://localhost:5000/api';
   }
-  // Mobile device connected via local Wi-Fi IP or production domain
-  return `http://${hostname}:5000/api`;
+  // Local network testing on mobile via local IP (e.g. 192.168.x.x)
+  const isLocalIp = /^192\.168\.|^10\.|^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname);
+  if (isLocalIp) {
+    return `http://${hostname}:5000/api`;
+  }
+  // Production hosting (Vercel, Render, custom domains) - use relative path /api
+  return '/api';
 };
 
 const API_URL = getApiBaseUrl();

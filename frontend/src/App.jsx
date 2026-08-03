@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -7,47 +7,54 @@ import { ToastProvider } from './context/ToastContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ChatbotWidget from './components/ChatbotWidget';
-
-// Pages
-import Login from './pages/Login';
-import PassengerDashboard from './pages/PassengerDashboard';
-import SearchTrainResults from './pages/SearchTrainResults';
-import SeatSelection from './pages/SeatSelection';
-import Payment from './pages/Payment';
-import ETicket from './pages/ETicket';
-import MyBookings from './pages/MyBookings';
-import LiveTracking from './pages/LiveTracking';
-import SupportTickets from './pages/SupportTickets';
-import PassengerCancelTicket from './pages/PassengerCancelTicket';
-import PassengerPayments from './pages/PassengerPayments';
-import PassengerNotifications from './pages/PassengerNotifications';
-import PassengerPNRStatus from './pages/PassengerPNRStatus';
-import ProfileSettings from './pages/ProfileSettings';
-import PassengerWallet from './pages/PassengerWallet';
-import PassengerCatering from './pages/PassengerCatering';
 import EmergencySOSModal from './components/EmergencySOSModal';
 import { Radio, ShieldAlert } from 'lucide-react';
 
-import StaffDashboard from './pages/StaffDashboard';
-import StaffSchedules from './pages/StaffSchedules';
-import StaffInquiries from './pages/StaffInquiries';
-import StaffRefunds from './pages/StaffRefunds';
-import StaffBookings from './pages/StaffBookings';
-import StaffPassengers from './pages/StaffPassengers';
-import StaffTicketChecking from './pages/StaffTicketChecking';
-import StaffRACWaiting from './pages/StaffRACWaiting';
-import StaffReports from './pages/StaffReports';
-import StaffAnnouncements from './pages/StaffAnnouncements';
+// Lazy-loaded Pages for code-splitting
+const Login = lazy(() => import('./pages/Login'));
+const PassengerDashboard = lazy(() => import('./pages/PassengerDashboard'));
+const SearchTrainResults = lazy(() => import('./pages/SearchTrainResults'));
+const SeatSelection = lazy(() => import('./pages/SeatSelection'));
+const Payment = lazy(() => import('./pages/Payment'));
+const ETicket = lazy(() => import('./pages/ETicket'));
+const MyBookings = lazy(() => import('./pages/MyBookings'));
+const LiveTracking = lazy(() => import('./pages/LiveTracking'));
+const SupportTickets = lazy(() => import('./pages/SupportTickets'));
+const PassengerCancelTicket = lazy(() => import('./pages/PassengerCancelTicket'));
+const PassengerPayments = lazy(() => import('./pages/PassengerPayments'));
+const PassengerNotifications = lazy(() => import('./pages/PassengerNotifications'));
+const PassengerPNRStatus = lazy(() => import('./pages/PassengerPNRStatus'));
+const ProfileSettings = lazy(() => import('./pages/ProfileSettings'));
+const PassengerWallet = lazy(() => import('./pages/PassengerWallet'));
+const PassengerCatering = lazy(() => import('./pages/PassengerCatering'));
 
-import AdminDashboard from './pages/AdminDashboard';
-import AdminRoutes from './pages/AdminRoutes';
-import AdminSchedules from './pages/AdminSchedules';
-import AdminStations from './pages/AdminStations';
-import AdminClasses from './pages/AdminClasses';
-import AdminUsers from './pages/AdminUsers';
-import AdminStaff from './pages/AdminStaff';
-import AdminPayments from './pages/AdminPayments';
-import AdminPolicies from './pages/AdminPolicies';
+const StaffDashboard = lazy(() => import('./pages/StaffDashboard'));
+const StaffSchedules = lazy(() => import('./pages/StaffSchedules'));
+const StaffInquiries = lazy(() => import('./pages/StaffInquiries'));
+const StaffRefunds = lazy(() => import('./pages/StaffRefunds'));
+const StaffBookings = lazy(() => import('./pages/StaffBookings'));
+const StaffPassengers = lazy(() => import('./pages/StaffPassengers'));
+const StaffTicketChecking = lazy(() => import('./pages/StaffTicketChecking'));
+const StaffRACWaiting = lazy(() => import('./pages/StaffRACWaiting'));
+const StaffReports = lazy(() => import('./pages/StaffReports'));
+const StaffAnnouncements = lazy(() => import('./pages/StaffAnnouncements'));
+
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminRoutes = lazy(() => import('./pages/AdminRoutes'));
+const AdminSchedules = lazy(() => import('./pages/AdminSchedules'));
+const AdminStations = lazy(() => import('./pages/AdminStations'));
+const AdminClasses = lazy(() => import('./pages/AdminClasses'));
+const AdminUsers = lazy(() => import('./pages/AdminUsers'));
+const AdminStaff = lazy(() => import('./pages/AdminStaff'));
+const AdminPayments = lazy(() => import('./pages/AdminPayments'));
+const AdminPolicies = lazy(() => import('./pages/AdminPolicies'));
+
+// Loading Fallback Spinner
+const PageLoader = () => (
+  <div className="flex h-[60vh] items-center justify-center">
+    <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-600 border-r-transparent" />
+  </div>
+);
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -163,7 +170,8 @@ function App() {
       <ToastProvider>
         <Router>
           <div className="min-h-screen bg-slate-50">
-            <Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               {/* Login Page */}
               <Route path="/login" element={<Login />} />
 
@@ -506,8 +514,9 @@ function App() {
               <Route path="/" element={<RootRedirect />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </div>
-        </Router>
+          </Suspense>
+        </div>
+      </Router>
       </ToastProvider>
     </AuthProvider>
   );

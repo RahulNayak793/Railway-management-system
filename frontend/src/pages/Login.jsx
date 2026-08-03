@@ -213,31 +213,31 @@ const Login = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f4f7fa] font-sans antialiased overflow-x-hidden">
+    <div className="flex flex-col min-h-[100dvh] bg-[#f4f7fa] font-sans antialiased overflow-x-hidden">
       
       {/* 1. TOP RAILWAY ALERT MARQUEE STRIP */}
-      <div className="w-full bg-[#1e293b] text-yellow-400 py-2 border-b border-yellow-500/20 text-xs tracking-wide flex items-center shrink-0 select-none">
-        <div className="bg-red-600 text-white font-bold px-3 py-0.5 mx-3 rounded text-[10px] uppercase shrink-0 animate-pulse">
+      <div className="w-full bg-[#1e293b] text-yellow-400 py-1.5 px-2 border-b border-yellow-500/20 text-xs tracking-wide flex items-center shrink-0 select-none">
+        <div className="bg-red-600 text-white font-bold px-2 sm:px-3 py-0.5 mx-2 sm:mx-3 rounded text-[9px] sm:text-[10px] uppercase shrink-0 animate-pulse">
           Alert
         </div>
-        <marquee scrollamount="4" className="font-medium">
+        <marquee scrollamount="4" className="font-medium text-[11px] sm:text-xs">
           {t.tickerText}
         </marquee>
       </div>
 
       {/* 2. TOP NAV HEADER */}
-      <header className="w-full bg-white border-b border-slate-200/80 px-6 py-3 flex justify-between items-center shadow-sm z-20 shrink-0">
-        <div className="flex items-center space-x-2.5">
-          <Train className="h-6.5 w-6.5 text-blue-600" />
+      <header className="w-full bg-white border-b border-slate-200/80 px-3 sm:px-6 py-2.5 sm:py-3 flex justify-between items-center shadow-sm z-20 shrink-0">
+        <div className="flex items-center space-x-2 sm:space-x-2.5">
+          <Train className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 shrink-0" />
           <div>
-            <span className="font-extrabold text-slate-800 text-lg leading-none">Rail<span className="text-blue-600">Control</span></span>
+            <span className="font-extrabold text-slate-800 text-base sm:text-lg leading-none">Rail<span className="text-blue-600">Control</span></span>
             <span className="hidden sm:inline-block border-l border-slate-300 ml-3 pl-3 text-xs font-semibold text-slate-500">
               National Railway Portal
             </span>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Emergency helpline badge */}
           <div className="hidden md:flex items-center space-x-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
@@ -245,10 +245,10 @@ const Login = () => {
           </div>
 
           {/* Interactive Language Selector Toggle */}
-          <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+          <div className="flex bg-slate-100 p-0.5 sm:p-1 rounded-lg border border-slate-200">
             <button
               onClick={() => setLang('en')}
-              className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
+              className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-bold rounded-md transition-all ${
                 lang === 'en' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -256,7 +256,7 @@ const Login = () => {
             </button>
             <button
               onClick={() => setLang('hi')}
-              className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all ${
+              className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[11px] sm:text-xs font-bold rounded-md transition-all ${
                 lang === 'hi' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -353,28 +353,25 @@ const Login = () => {
         </div>
 
         {/* RIGHT SIDE MAIN CONTENT (Forms & Details) */}
-        <div className="flex-1 flex flex-col justify-between items-center py-10 px-4 sm:px-6 lg:px-8 overflow-y-auto">
+        <div className="flex-1 flex flex-col justify-center items-center py-4 sm:py-8 px-3 sm:px-6 lg:px-8 overflow-y-auto w-full min-h-0">
           
-          {/* Empty top spacing block to help push card to vertical center */}
-          <div className="hidden sm:block h-6" />
-
           {/* Auth Panel Card */}
-          <div className="w-full max-w-[480px] bg-white rounded-[32px] p-8 md:p-10 shadow-xl shadow-slate-200/50 border border-slate-100/80 my-auto">
+          <div className="w-full max-w-[440px] sm:max-w-[480px] bg-white rounded-2xl sm:rounded-[32px] p-5 sm:p-8 md:p-10 shadow-xl shadow-slate-200/50 border border-slate-100/80 my-2 sm:my-auto">
             
             {/* Header Area */}
-            <div className="text-center mb-8">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 mb-4 shadow-inner">
-                <Lock className="h-6 w-6" />
+            <div className="text-center mb-5 sm:mb-8">
+              <div className="mx-auto flex h-11 w-11 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 mb-3 sm:mb-4 shadow-inner">
+                <Lock className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               {showForgotPassword ? (
                 <>
-                  <h3 className="text-2xl font-bold text-slate-900">{t.resetPassword}</h3>
-                  <p className="text-sm text-slate-500 mt-1">{t.resetSub}</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900">{t.resetPassword}</h3>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">{t.resetSub}</p>
                 </>
               ) : (
                 <>
-                  <h3 className="text-2xl font-bold text-slate-900">{isSignUp ? t.welcomeAboard : t.welcome}</h3>
-                  <p className="text-sm text-slate-500 mt-1">
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900">{isSignUp ? t.welcomeAboard : t.welcome}</h3>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
                     {isSignUp ? t.welcomeAboardSub : t.welcomeSub}
                   </p>
                 </>
@@ -643,28 +640,28 @@ const Login = () => {
           </div>
 
           {/* Feature badges below Card */}
-          <div className="grid grid-cols-3 gap-4 max-w-[480px] w-full text-center mt-2 mb-8 bg-white/40 backdrop-blur-sm p-4 rounded-2xl border border-slate-100/50">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-[440px] sm:max-w-[480px] w-full text-center mt-3 mb-4 bg-white/60 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100/80">
             <div>
-              <ShieldCheck className="h-5 w-5 text-blue-600 mx-auto mb-1" />
-              <h4 className="text-xs font-bold text-slate-800">{t.secure}</h4>
-              <p className="text-[10px] text-slate-400 leading-tight">{t.secureSub}</p>
+              <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mx-auto mb-1" />
+              <h4 className="text-[11px] sm:text-xs font-bold text-slate-800">{t.secure}</h4>
+              <p className="hidden sm:block text-[10px] text-slate-400 leading-tight">{t.secureSub}</p>
             </div>
             <div>
-              <Zap className="h-5 w-5 text-blue-600 mx-auto mb-1" />
-              <h4 className="text-xs font-bold text-slate-800">{t.fastAccess}</h4>
-              <p className="text-[10px] text-slate-400 leading-tight">{t.fastAccessSub}</p>
+              <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mx-auto mb-1" />
+              <h4 className="text-[11px] sm:text-xs font-bold text-slate-800">{t.fastAccess}</h4>
+              <p className="hidden sm:block text-[10px] text-slate-400 leading-tight">{t.fastAccessSub}</p>
             </div>
             <div>
-              <Headphones className="h-5 w-5 text-blue-600 mx-auto mb-1" />
-              <h4 className="text-xs font-bold text-slate-800">{t.support}</h4>
-              <p className="text-[10px] text-slate-400 leading-tight">{t.supportSub}</p>
+              <Headphones className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mx-auto mb-1" />
+              <h4 className="text-[11px] sm:text-xs font-bold text-slate-800">{t.support}</h4>
+              <p className="hidden sm:block text-[10px] text-slate-400 leading-tight">{t.supportSub}</p>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="text-center text-[11px] text-slate-400 space-y-1.5">
+          <div className="text-center text-[10px] sm:text-[11px] text-slate-400 space-y-1">
             <p>© 2026 National Railway Authority of India. All rights reserved.</p>
-            <div className="flex justify-center space-x-3">
+            <div className="flex justify-center space-x-2 sm:space-x-3">
               <a href="#" className="hover:text-slate-600 hover:underline">Privacy Policy</a>
               <span>|</span>
               <a href="#" className="hover:text-slate-600 hover:underline">Terms of Service</a>
