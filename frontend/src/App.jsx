@@ -10,44 +10,63 @@ import ChatbotWidget from './components/ChatbotWidget';
 import EmergencySOSModal from './components/EmergencySOSModal';
 import { Radio, ShieldAlert } from 'lucide-react';
 
-// Lazy-loaded Pages for code-splitting
-const Login = lazy(() => import('./pages/Login'));
-const PassengerDashboard = lazy(() => import('./pages/PassengerDashboard'));
-const SearchTrainResults = lazy(() => import('./pages/SearchTrainResults'));
-const SeatSelection = lazy(() => import('./pages/SeatSelection'));
-const Payment = lazy(() => import('./pages/Payment'));
-const ETicket = lazy(() => import('./pages/ETicket'));
-const MyBookings = lazy(() => import('./pages/MyBookings'));
-const LiveTracking = lazy(() => import('./pages/LiveTracking'));
-const SupportTickets = lazy(() => import('./pages/SupportTickets'));
-const PassengerCancelTicket = lazy(() => import('./pages/PassengerCancelTicket'));
-const PassengerPayments = lazy(() => import('./pages/PassengerPayments'));
-const PassengerNotifications = lazy(() => import('./pages/PassengerNotifications'));
-const PassengerPNRStatus = lazy(() => import('./pages/PassengerPNRStatus'));
-const ProfileSettings = lazy(() => import('./pages/ProfileSettings'));
-const PassengerWallet = lazy(() => import('./pages/PassengerWallet'));
-const PassengerCatering = lazy(() => import('./pages/PassengerCatering'));
+// Retry helper for dynamic imports to prevent ChunkLoadError when Vercel deploys new builds
+const lazyWithRetry = (componentImport) =>
+  lazy(async () => {
+    const pageHasBeenRefreshed = JSON.parse(
+      window.sessionStorage.getItem('retry_chunk_refreshed') || 'false'
+    );
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem('retry_chunk_refreshed', 'false');
+      return component;
+    } catch (error) {
+      if (!pageHasBeenRefreshed) {
+        window.sessionStorage.setItem('retry_chunk_refreshed', 'true');
+        window.location.reload();
+      }
+      throw error;
+    }
+  });
 
-const StaffDashboard = lazy(() => import('./pages/StaffDashboard'));
-const StaffSchedules = lazy(() => import('./pages/StaffSchedules'));
-const StaffInquiries = lazy(() => import('./pages/StaffInquiries'));
-const StaffRefunds = lazy(() => import('./pages/StaffRefunds'));
-const StaffBookings = lazy(() => import('./pages/StaffBookings'));
-const StaffPassengers = lazy(() => import('./pages/StaffPassengers'));
-const StaffTicketChecking = lazy(() => import('./pages/StaffTicketChecking'));
-const StaffRACWaiting = lazy(() => import('./pages/StaffRACWaiting'));
-const StaffReports = lazy(() => import('./pages/StaffReports'));
-const StaffAnnouncements = lazy(() => import('./pages/StaffAnnouncements'));
+// Lazy-loaded Pages with automatic chunk retry
+const Login = lazyWithRetry(() => import('./pages/Login'));
+const PassengerDashboard = lazyWithRetry(() => import('./pages/PassengerDashboard'));
+const SearchTrainResults = lazyWithRetry(() => import('./pages/SearchTrainResults'));
+const SeatSelection = lazyWithRetry(() => import('./pages/SeatSelection'));
+const Payment = lazyWithRetry(() => import('./pages/Payment'));
+const ETicket = lazyWithRetry(() => import('./pages/ETicket'));
+const MyBookings = lazyWithRetry(() => import('./pages/MyBookings'));
+const LiveTracking = lazyWithRetry(() => import('./pages/LiveTracking'));
+const SupportTickets = lazyWithRetry(() => import('./pages/SupportTickets'));
+const PassengerCancelTicket = lazyWithRetry(() => import('./pages/PassengerCancelTicket'));
+const PassengerPayments = lazyWithRetry(() => import('./pages/PassengerPayments'));
+const PassengerNotifications = lazyWithRetry(() => import('./pages/PassengerNotifications'));
+const PassengerPNRStatus = lazyWithRetry(() => import('./pages/PassengerPNRStatus'));
+const ProfileSettings = lazyWithRetry(() => import('./pages/ProfileSettings'));
+const PassengerWallet = lazyWithRetry(() => import('./pages/PassengerWallet'));
+const PassengerCatering = lazyWithRetry(() => import('./pages/PassengerCatering'));
 
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
-const AdminRoutes = lazy(() => import('./pages/AdminRoutes'));
-const AdminSchedules = lazy(() => import('./pages/AdminSchedules'));
-const AdminStations = lazy(() => import('./pages/AdminStations'));
-const AdminClasses = lazy(() => import('./pages/AdminClasses'));
-const AdminUsers = lazy(() => import('./pages/AdminUsers'));
-const AdminStaff = lazy(() => import('./pages/AdminStaff'));
-const AdminPayments = lazy(() => import('./pages/AdminPayments'));
-const AdminPolicies = lazy(() => import('./pages/AdminPolicies'));
+const StaffDashboard = lazyWithRetry(() => import('./pages/StaffDashboard'));
+const StaffSchedules = lazyWithRetry(() => import('./pages/StaffSchedules'));
+const StaffInquiries = lazyWithRetry(() => import('./pages/StaffInquiries'));
+const StaffRefunds = lazyWithRetry(() => import('./pages/StaffRefunds'));
+const StaffBookings = lazyWithRetry(() => import('./pages/StaffBookings'));
+const StaffPassengers = lazyWithRetry(() => import('./pages/StaffPassengers'));
+const StaffTicketChecking = lazyWithRetry(() => import('./pages/StaffTicketChecking'));
+const StaffRACWaiting = lazyWithRetry(() => import('./pages/StaffRACWaiting'));
+const StaffReports = lazyWithRetry(() => import('./pages/StaffReports'));
+const StaffAnnouncements = lazyWithRetry(() => import('./pages/StaffAnnouncements'));
+
+const AdminDashboard = lazyWithRetry(() => import('./pages/AdminDashboard'));
+const AdminRoutes = lazyWithRetry(() => import('./pages/AdminRoutes'));
+const AdminSchedules = lazyWithRetry(() => import('./pages/AdminSchedules'));
+const AdminStations = lazyWithRetry(() => import('./pages/AdminStations'));
+const AdminClasses = lazyWithRetry(() => import('./pages/AdminClasses'));
+const AdminUsers = lazyWithRetry(() => import('./pages/AdminUsers'));
+const AdminStaff = lazyWithRetry(() => import('./pages/AdminStaff'));
+const AdminPayments = lazyWithRetry(() => import('./pages/AdminPayments'));
+const AdminPolicies = lazyWithRetry(() => import('./pages/AdminPolicies'));
 
 class ErrorBoundary extends React.Component {
   constructor(props) {

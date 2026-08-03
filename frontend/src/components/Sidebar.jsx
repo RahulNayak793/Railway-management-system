@@ -107,8 +107,8 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
   const handleLinkClick = () => { if (handleClose) handleClose(); };
 
   const getInitials = (name) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    if (!name || typeof name !== 'string') return 'U';
+    return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   const sidebarBg = isPassenger

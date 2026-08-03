@@ -242,14 +242,16 @@ const PassengerDashboard = () => {
     }
   };
 
-  const filteredSourceStations = stations.filter(s =>
-    s.station_name.toLowerCase().includes(source.toLowerCase()) ||
-    s.station_code.toLowerCase().includes(source.toLowerCase())
+  const filteredSourceStations = (stations || []).filter(s =>
+    s && typeof s.station_name === 'string' && typeof s.station_code === 'string' &&
+    (s.station_name.toLowerCase().includes((source || '').toLowerCase()) ||
+     s.station_code.toLowerCase().includes((source || '').toLowerCase()))
   );
 
-  const filteredDestStations = stations.filter(s =>
-    s.station_name.toLowerCase().includes(destination.toLowerCase()) ||
-    s.station_code.toLowerCase().includes(destination.toLowerCase())
+  const filteredDestStations = (stations || []).filter(s =>
+    s && typeof s.station_name === 'string' && typeof s.station_code === 'string' &&
+    (s.station_name.toLowerCase().includes((destination || '').toLowerCase()) ||
+     s.station_code.toLowerCase().includes((destination || '').toLowerCase()))
   );
 
   return (

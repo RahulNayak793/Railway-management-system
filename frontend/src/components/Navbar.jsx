@@ -27,8 +27,8 @@ const Navbar = ({ onToggleSidebar }) => {
   };
 
   const getInitials = (name) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    if (!name || typeof name !== 'string') return 'U';
+    return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   const getRoleColor = (role) => {
@@ -40,6 +40,7 @@ const Navbar = ({ onToggleSidebar }) => {
   const handleLogout = () => { logout(); navigate('/login'); };
 
   if (!user) return null;
+  const userRole = (user?.role || 'passenger').toLowerCase();
 
   return (
     <>
@@ -88,8 +89,8 @@ const Navbar = ({ onToggleSidebar }) => {
 
           <div
             onClick={() => {
-              if (user.role === 'passenger') navigate('/passenger');
-              else if (user.role === 'staff') navigate('/staff');
+              if (userRole === 'passenger') navigate('/passenger');
+              else if (userRole === 'staff') navigate('/staff');
               else navigate('/admin');
             }}
             className="flex cursor-pointer items-center gap-2.5 group"
@@ -114,7 +115,7 @@ const Navbar = ({ onToggleSidebar }) => {
         <div className="flex items-center gap-2 sm:gap-3">
 
           {/* Role badge */}
-          {user.role === 'admin' && (
+          {userRole === 'admin' && (
             <span
               className="hidden sm:flex items-center gap-1.5 rounded-full px-3 h-7 text-xs font-bold text-red-300"
               style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}
@@ -122,7 +123,7 @@ const Navbar = ({ onToggleSidebar }) => {
               <Shield className="h-3 w-3" /> Admin
             </span>
           )}
-          {user.role === 'staff' && (
+          {userRole === 'staff' && (
             <span
               className="hidden sm:flex items-center gap-1.5 rounded-full px-3 h-7 text-xs font-bold text-emerald-300"
               style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}
@@ -152,22 +153,22 @@ const Navbar = ({ onToggleSidebar }) => {
 
           {/* User Profile Card */}
           <div
-            onClick={() => navigate(`/${user.role}/profile`)}
+            onClick={() => navigate(`/${userRole}/profile`)}
             className="flex items-center gap-2.5 cursor-pointer rounded-xl px-2 py-1.5 transition-all duration-200 hover:bg-white/8"
             style={{ border: '1px solid rgba(255,255,255,0.08)' }}
             title="Profile Settings"
           >
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black text-white flex-shrink-0 bg-gradient-to-br ${getRoleColor(user.role)}`}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black text-white flex-shrink-0 bg-gradient-to-br ${getRoleColor(userRole)}`}
               style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
             >
-              {getInitials(user.full_name)}
+              {getInitials(user?.full_name)}
             </div>
             <div className="hidden sm:flex flex-col items-start leading-tight">
               <span className="text-xs font-black text-white">
-                {user.full_name ? user.full_name.split(' ')[0] : 'User'}
+                {user?.full_name && typeof user.full_name === 'string' ? user.full_name.split(' ')[0] : 'User'}
               </span>
-              <span className="text-[9.5px] text-slate-400 font-semibold capitalize">{user.role}</span>
+              <span className="text-[9.5px] text-slate-400 font-semibold capitalize">{userRole}</span>
             </div>
             <ChevronDown className="h-3 w-3 text-slate-500 hidden sm:block" />
           </div>
