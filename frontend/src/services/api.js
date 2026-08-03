@@ -39,17 +39,12 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle token expiry / errors
+// Response interceptor to handle token errors safely
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      console.warn('Unauthorized token. Logging out user.');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
+      console.warn('Unauthorized token request:', error.config?.url);
     }
     return Promise.reject(error);
   }

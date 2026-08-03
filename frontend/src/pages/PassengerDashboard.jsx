@@ -86,14 +86,14 @@ const PassengerDashboard = () => {
         const bookingsRes = await api.get('/bookings');
         const todayStr = new Date().toISOString().split('T')[0];
         
-        let bookingsData = bookingsRes.data || [];
+        let bookingsData = (bookingsRes.data && Array.isArray(bookingsRes.data)) ? bookingsRes.data : [];
         
         // Fallback to high-fidelity mock data if no bookings are found
         if (bookingsData.length === 0) {
           bookingsData = [
             {
               id: 'bk-mock-1',
-              passenger_id: user.id,
+              passenger_id: user?.id || 'usr-demo-1',
               train_id: 't1',
               booking_date: todayStr,
               travel_date: todayStr,
@@ -111,7 +111,7 @@ const PassengerDashboard = () => {
               allocations: [
                 {
                   seat_id: 't1-B2-23',
-                  passenger_name: user.full_name || 'Rahul Kumar',
+                  passenger_name: user?.full_name || 'Rahul Kumar',
                   passenger_age: 28,
                   passenger_gender: 'Male',
                   seat: { seat_number: 23, coach_number: 'B2', coach_class: '2A' }
@@ -120,7 +120,7 @@ const PassengerDashboard = () => {
             },
             {
               id: 'bk-mock-2',
-              passenger_id: user.id,
+              passenger_id: user?.id || 'usr-demo-1',
               train_id: 't2',
               booking_date: todayStr,
               travel_date: todayStr,
@@ -138,7 +138,7 @@ const PassengerDashboard = () => {
             },
             {
               id: 'bk-mock-3',
-              passenger_id: user.id,
+              passenger_id: user?.id || 'usr-demo-1',
               train_id: 't3',
               booking_date: todayStr,
               travel_date: todayStr,
@@ -159,15 +159,23 @@ const PassengerDashboard = () => {
 
         setBookings(bookingsData);
 
-        // Find the closest upcoming journey
-        const upcoming = bookingsData
-          .filter(b => b.status !== 'cancelled' && b.travel_date >= todayStr)
+        // Find the closest upcoming journey safely
+        const upcoming = (Array.isArray(bookingsData) ? bookingsData : [])
+          .filter(b => b && b.status !== 'cancelled' && b.travel_date >= todayStr)
           .sort((a, b) => new Date(a.travel_date) - new Date(b.travel_date))[0];
         setUpcomingJourney(upcoming);
 
-        if (user.role === 'passenger') {
-          const companionsRes = await api.get('/auth/saved-passengers');
-          setCompanions(companionsRes.data.slice(0, 4));
+        if (user?.role === 'passenger') {
+          try {
+            const companionsRes = await api.get('/auth/saved-passengers');
+            if (companionsRes.data && Array.isArray(companionsRes.data)) {
+              setCompanions(companionsRes.data.slice(0, 4));
+            } else {
+              setCompanions([]);
+            }
+          } catch (cErr) {
+            setCompanions([]);
+          }
         }
       } catch (err) {
         console.error('Error fetching dashboard info:', err);

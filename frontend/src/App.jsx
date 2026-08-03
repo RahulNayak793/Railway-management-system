@@ -49,6 +49,60 @@ const AdminStaff = lazy(() => import('./pages/AdminStaff'));
 const AdminPayments = lazy(() => import('./pages/AdminPayments'));
 const AdminPolicies = lazy(() => import('./pages/AdminPolicies'));
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+          <div className="max-w-md bg-white p-8 rounded-3xl shadow-xl border border-slate-100 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto text-xl font-bold">
+              ⚠️
+            </div>
+            <h2 className="text-xl font-bold text-slate-800">Session Interface Refreshed</h2>
+            <p className="text-xs text-slate-500">
+              Your session workspace encountered a minor rendering glitch. Click below to return to your dashboard or login page.
+            </p>
+            <div className="flex space-x-3 pt-2">
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false });
+                  window.location.href = '/login';
+                }}
+                className="w-1/2 rounded-xl border border-slate-200 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
+              >
+                Sign In Again
+              </button>
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false });
+                  window.location.reload();
+                }}
+                className="w-1/2 rounded-xl bg-blue-600 text-white py-3 text-xs font-bold hover:bg-blue-700 transition shadow-md shadow-blue-500/20"
+              >
+                Reload Workspace
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Loading Fallback Spinner
 const PageLoader = () => (
   <div className="flex h-[60vh] items-center justify-center">
@@ -166,7 +220,8 @@ const RootRedirect = () => {
 
 function App() {
   return (
-    <AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
       <ToastProvider>
         <Router>
           <div className="min-h-screen bg-slate-50">
@@ -516,9 +571,10 @@ function App() {
             </Routes>
           </Suspense>
         </div>
-      </Router>
-      </ToastProvider>
-    </AuthProvider>
+        </Router>
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

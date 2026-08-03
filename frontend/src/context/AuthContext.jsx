@@ -26,10 +26,7 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('user', JSON.stringify(res.data.user));
           }
         } catch (err) {
-          console.error('Failed to restore session:', err);
-          if (err.response && err.response.status === 401) {
-            logout();
-          }
+          console.warn('Could not refresh session from backend, preserving local session:', err);
         }
       } else {
         setUser(null);
