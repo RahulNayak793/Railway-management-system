@@ -56,7 +56,8 @@ export const AuthProvider = ({ children }) => {
       return loggedUser;
     } catch (err) {
       setLoading(false);
-      const errMsg = err.response?.data?.error || 'Login failed. Please check credentials.';
+      const rawError = err.response?.data?.error || err.response?.data?.message || err.message || 'Login failed. Please check credentials.';
+      const errMsg = typeof rawError === 'object' ? (rawError.message || rawError.error || JSON.stringify(rawError)) : String(rawError);
       setError(errMsg);
       throw new Error(errMsg);
     }

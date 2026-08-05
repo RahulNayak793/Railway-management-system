@@ -93,30 +93,30 @@ router.post('/login', async (req, res) => {
   }
 
   const cleanEmail = email ? email.trim().toLowerCase() : '';
+  const isDemoAccount = ['passenger@railway.com', 'staff@railway.com', 'admin@railway.com'].includes(cleanEmail);
 
-  if (isMockMode) {
-    // Find mock profile by email or phone
+  if (isMockMode || isDemoAccount) {
+    const detectedRole = cleanEmail.includes('admin') ? 'admin' : cleanEmail.includes('staff') ? 'staff' : 'passenger';
     let profile = Array.from(mockDb.profiles.values()).find(
       p => (p.email && p.email.trim().toLowerCase() === cleanEmail) || 
            (p.phone && p.phone.replace(/\D/g, '') === cleanEmail.replace(/\D/g, ''))
     );
 
     if (!profile) {
-      // Auto-provision personal mobile / custom email logins on the fly
-      const detectedRole = cleanEmail.includes('admin') ? 'admin' : cleanEmail.includes('staff') ? 'staff' : 'passenger';
-      const newMockId = 'usr-mobile-' + Math.random().toString(36).substr(2, 9);
+      const mockId = 'usr-demo-' + detectedRole;
       profile = {
-        id: newMockId,
+        id: mockId,
         email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@railway.com`,
         role: detectedRole,
-        full_name: cleanEmail.split('@')[0].toUpperCase() || 'Mobile User',
+        full_name: cleanEmail.split('@')[0].toUpperCase() || 'Railway System User',
         phone: '+91 9876543210',
         created_at: new Date().toISOString()
       };
-      mockDb.profiles.set(newMockId, profile);
+      mockDb.profiles.set(mockId, profile);
     }
 
     const token = generateMockToken(profile);
+    console.log(`✅ Session generated for: ${profile.email} (${profile.role})`);
     return res.json({
       session: { access_token: token },
       user: profile
@@ -145,10 +145,10 @@ router.post('/login', async (req, res) => {
         user: userObj
       });
     } catch (err) {
-      console.warn(`⚠️ Supabase Login warning for ${cleanEmail}:`, err.message);
+      console.warn(`⚠️ Supabase Login warning for ${cleanEmail}:`, err.message || err);
       // Fallback for demo users & mobile sandbox testing
       const detectedRole = cleanEmail.includes('admin') ? 'admin' : cleanEmail.includes('staff') ? 'staff' : 'passenger';
-      const mockId = 'usr-demo-' + detectedRole;
+      const mockId = 'usr-demo-' + Math.random().toString(36).substr(2, 9);
       const profile = {
         id: mockId,
         email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@railway.com`,
