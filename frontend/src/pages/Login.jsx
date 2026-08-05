@@ -130,10 +130,10 @@ const Login = () => {
   const [forgotSuccess, setForgotSuccess] = useState('');
 
   // Captcha States
-  const [captchaCode, setCaptchaCode] = useState(generateCaptcha());
+  const [captchaCode, setCaptchaCode] = useState(() => generateCaptcha());
   const [captchaInput, setCaptchaInput] = useState('');
 
-  const t = locales[lang];
+  const t = locales[lang] || locales.en;
 
   const refreshCaptcha = () => {
     setCaptchaCode(generateCaptcha());

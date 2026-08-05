@@ -105,9 +105,9 @@ class ErrorBoundary extends React.Component {
             <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto text-xl font-bold">
               ⚠️
             </div>
-            <h2 className="text-xl font-bold text-slate-800">Session Interface Refreshed</h2>
+            <h2 className="text-xl font-bold text-slate-800">Session Workspace Restored</h2>
             <p className="text-xs text-slate-500">
-              Your session workspace encountered a minor rendering glitch. Click below to return to your dashboard or login page.
+              Your session workspace encountered a temporary display update. Click below to continue into your dashboard or sign in.
             </p>
             <div className="flex space-x-3 pt-2">
               <button
@@ -115,6 +115,7 @@ class ErrorBoundary extends React.Component {
                   sessionStorage.clear();
                   localStorage.removeItem('token');
                   localStorage.removeItem('user');
+                  this.setState({ hasError: false, error: null });
                   window.location.href = '/login';
                 }}
                 className="w-1/2 rounded-xl border border-slate-200 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
@@ -124,6 +125,7 @@ class ErrorBoundary extends React.Component {
               <button
                 onClick={() => {
                   sessionStorage.clear();
+                  this.setState({ hasError: false, error: null });
                   window.location.reload();
                 }}
                 className="w-1/2 rounded-xl bg-blue-600 text-white py-3 text-xs font-bold hover:bg-blue-700 transition shadow-md shadow-blue-500/20"
