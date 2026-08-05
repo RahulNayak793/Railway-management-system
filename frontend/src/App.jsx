@@ -13,19 +13,18 @@ import { Radio, ShieldAlert } from 'lucide-react';
 // Retry helper for dynamic imports to prevent ChunkLoadError when Vercel deploys new builds
 const lazyWithRetry = (componentImport) =>
   lazy(async () => {
-    const pageHasBeenRefreshed = JSON.parse(
-      window.sessionStorage.getItem('retry_chunk_refreshed') || 'false'
-    );
     try {
-      const component = await componentImport();
-      window.sessionStorage.setItem('retry_chunk_refreshed', 'false');
-      return component;
+      return await componentImport();
     } catch (error) {
-      if (!pageHasBeenRefreshed) {
-        window.sessionStorage.setItem('retry_chunk_refreshed', 'true');
+      console.warn('Chunk load error encountered, auto-reloading page:', error);
+      const isRefreshed = sessionStorage.getItem('chunk_retry_active');
+      if (!isRefreshed) {
+        sessionStorage.setItem('chunk_retry_active', 'true');
         window.location.reload();
+        return new Promise(() => {});
       }
-      throw error;
+      sessionStorage.removeItem('chunk_retry_active');
+      return await componentImport();
     }
   });
 
@@ -80,6 +79,22 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught error:', error, errorInfo);
+    const isChunkError = error && (
+      error.name === 'ChunkLoadError' ||
+      (error.message && (
+        error.message.includes('Failed to fetch dynamically imported module') ||
+        error.message.includes('Importing a module script failed') ||
+        error.message.includes('Unexpected token')
+      ))
+    );
+
+    if (isChunkError) {
+      const ebRefreshed = sessionStorage.getItem('eb_chunk_refreshed');
+      if (!ebRefreshed) {
+        sessionStorage.setItem('eb_chunk_refreshed', 'true');
+        window.location.reload();
+      }
+    }
   }
 
   render() {
@@ -97,7 +112,9 @@ class ErrorBoundary extends React.Component {
             <div className="flex space-x-3 pt-2">
               <button
                 onClick={() => {
-                  this.setState({ hasError: false });
+                  sessionStorage.clear();
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
                   window.location.href = '/login';
                 }}
                 className="w-1/2 rounded-xl border border-slate-200 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
@@ -106,7 +123,7 @@ class ErrorBoundary extends React.Component {
               </button>
               <button
                 onClick={() => {
-                  this.setState({ hasError: false });
+                  sessionStorage.clear();
                   window.location.reload();
                 }}
                 className="w-1/2 rounded-xl bg-blue-600 text-white py-3 text-xs font-bold hover:bg-blue-700 transition shadow-md shadow-blue-500/20"
