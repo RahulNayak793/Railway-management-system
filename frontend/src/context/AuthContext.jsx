@@ -43,12 +43,15 @@ export const AuthProvider = ({ children }) => {
       const res = await api.post('/auth/login', { email, password });
       const { session, user: loggedUser } = res.data;
       
-      const jwtToken = session.access_token;
-      localStorage.setItem('token', jwtToken);
-      localStorage.setItem('user', JSON.stringify(loggedUser));
-      
-      setToken(jwtToken);
-      setUser(loggedUser);
+      const jwtToken = session?.access_token || res.data?.token || res.data?.access_token;
+      if (jwtToken) {
+        localStorage.setItem('token', jwtToken);
+        setToken(jwtToken);
+      }
+      if (loggedUser) {
+        localStorage.setItem('user', JSON.stringify(loggedUser));
+        setUser(loggedUser);
+      }
       setLoading(false);
       return loggedUser;
     } catch (err) {
@@ -66,11 +69,13 @@ export const AuthProvider = ({ children }) => {
       const res = await api.post('/auth/signup', { email, password, full_name, role, phone });
       const { session, user: newUser } = res.data;
       
-      if (session && session.access_token) {
-        const jwtToken = session.access_token;
+      const jwtToken = session?.access_token || res.data?.token || res.data?.access_token;
+      if (jwtToken) {
         localStorage.setItem('token', jwtToken);
-        localStorage.setItem('user', JSON.stringify(newUser));
         setToken(jwtToken);
+      }
+      if (newUser) {
+        localStorage.setItem('user', JSON.stringify(newUser));
         setUser(newUser);
       }
       
