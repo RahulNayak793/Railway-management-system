@@ -154,6 +154,7 @@ const Login = () => {
     }
 
     try {
+      console.log('🔑 Login request initiated for:', cleanEmail);
       if (isSignUp) {
         const user = await signup({
           email: cleanEmail,
@@ -162,13 +163,15 @@ const Login = () => {
           role,
           phone
         });
-        redirectUser(user.role);
+        console.log('✅ Signup successful. User received:', user);
+        redirectUser(user?.role || role);
       } else {
         const user = await login(cleanEmail, password);
-        redirectUser(user.role);
+        console.log('✅ Login successful. User received:', user);
+        redirectUser(user?.role || role);
       }
     } catch (err) {
-      console.error(err);
+      console.error('❌ Authentication error:', err);
       refreshCaptcha();
     } finally {
       setFormLoading(false);
@@ -176,9 +179,11 @@ const Login = () => {
   };
 
   const redirectUser = (userRole) => {
-    if (userRole === 'admin') {
+    const safeRole = (userRole || role || 'passenger').toLowerCase();
+    console.log(`🔀 Navigating user to target role dashboard: /${safeRole}`);
+    if (safeRole === 'admin') {
       navigate('/admin');
-    } else if (userRole === 'staff') {
+    } else if (safeRole === 'staff') {
       navigate('/staff');
     } else {
       navigate('/passenger');

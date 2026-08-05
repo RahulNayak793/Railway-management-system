@@ -7,14 +7,19 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Enable Middlewares
-app.use(cors());
+// Enable Middlewares with complete CORS support for Vercel host & mobile browsers
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Print requests to log
+// Print detailed requests to log for serverless debugging
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} Path: ${req.path} URL: ${req.url}`);
   next();
 });
 
@@ -31,18 +36,39 @@ const notificationsRoutes = require('./routes/notifications');
 const cateringRoutes = require('./routes/catering');
 const sosRoutes = require('./routes/sos');
 
-// Mount Routes
+// Mount Routes for both /api/* and /* Vercel serverless pathing
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
 app.use('/api/trains', trainRoutes);
+app.use('/trains', trainRoutes);
+
 app.use('/api/bookings', bookingRoutes);
+app.use('/bookings', bookingRoutes);
+
 app.use('/api/payments', paymentRoutes);
+app.use('/payments', paymentRoutes);
+
 app.use('/api/support', supportRoutes);
+app.use('/support', supportRoutes);
+
 app.use('/api/feedback', feedbackRoutes);
+app.use('/feedback', feedbackRoutes);
+
 app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes);
+
 app.use('/api/ai', aiRoutes);
+app.use('/ai', aiRoutes);
+
 app.use('/api/notifications', notificationsRoutes);
+app.use('/notifications', notificationsRoutes);
+
 app.use('/api/catering', cateringRoutes);
+app.use('/catering', cateringRoutes);
+
 app.use('/api/sos', sosRoutes);
+app.use('/sos', sosRoutes);
 
 const path = require('path');
 
