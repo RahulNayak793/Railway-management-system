@@ -99,16 +99,16 @@ class ErrorBoundary extends React.Component {
     const pathname = window.location.pathname;
     if (this.state.hasError && pathname !== '/login' && pathname !== '/') {
       return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
-          <div className="max-w-md bg-white p-8 rounded-3xl shadow-xl border border-slate-100 space-y-4">
-            <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto text-xl font-bold">
+        <div className="min-h-screen bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 text-center">
+          <div className="w-[92%] max-w-[420px] bg-white p-5 sm:p-8 rounded-3xl shadow-2xl border border-slate-100 space-y-4 mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto text-xl font-bold border border-blue-100 shadow-sm">
               🚆
             </div>
-            <h2 className="text-xl font-bold text-slate-800">RailControl System Access</h2>
-            <p className="text-xs text-slate-500">
-              Click below to return to the sign in page or refresh your session.
+            <h2 className="text-lg sm:text-xl font-black text-slate-800 tracking-tight">RailControl System Workspace</h2>
+            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+              Your session workspace encountered a minor display update. Click below to return to the sign in page.
             </p>
-            <div className="flex space-x-3 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
               <button
                 onClick={() => {
                   try {
@@ -118,7 +118,7 @@ class ErrorBoundary extends React.Component {
                   this.setState({ hasError: false, error: null });
                   window.location.href = '/login';
                 }}
-                className="w-full rounded-xl bg-blue-600 text-white py-3 text-xs font-bold hover:bg-blue-700 transition shadow-md shadow-blue-500/20"
+                className="w-full rounded-xl bg-blue-600 text-white min-h-[44px] py-3 text-xs font-black hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 active:scale-95"
               >
                 Return to Sign In Page
               </button>

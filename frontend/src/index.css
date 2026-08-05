@@ -9,6 +9,12 @@
     box-sizing: border-box;
   }
 
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+  }
+
   body {
     font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
     @apply antialiased;
@@ -18,6 +24,11 @@
     color: #e2e8f0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Touch target accessibility helper */
+  .touch-target {
+    min-height: 44px;
   }
 
   /* Light surface override for passenger-mode white panels */
