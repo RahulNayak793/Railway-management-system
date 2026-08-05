@@ -216,13 +216,13 @@ const Login = () => {
     <div className="flex flex-col min-h-[100dvh] bg-[#f4f7fa] font-sans antialiased overflow-x-hidden">
       
       {/* 1. TOP RAILWAY ALERT MARQUEE STRIP */}
-      <div className="w-full bg-[#1e293b] text-yellow-400 py-1.5 px-2 border-b border-yellow-500/20 text-xs tracking-wide flex items-center shrink-0 select-none">
+      <div className="w-full bg-[#1e293b] text-yellow-400 py-1.5 px-2 border-b border-yellow-500/20 text-xs tracking-wide flex items-center shrink-0 select-none overflow-hidden">
         <div className="bg-red-600 text-white font-bold px-2 sm:px-3 py-0.5 mx-2 sm:mx-3 rounded text-[9px] sm:text-[10px] uppercase shrink-0 animate-pulse">
           Alert
         </div>
-        <marquee scrollamount="4" className="font-medium text-[11px] sm:text-xs">
-          {t.tickerText}
-        </marquee>
+        <div className="animate-marquee whitespace-nowrap pl-4 select-none font-medium text-[11px] sm:text-xs text-yellow-300 font-semibold">
+          {t?.tickerText || '📢 LATEST UPDATE: Special summer trains running between New Delhi (NDLS) and Mumbai Central (MMCT).'}
+        </div>
       </div>
 
       {/* 2. TOP NAV HEADER */}

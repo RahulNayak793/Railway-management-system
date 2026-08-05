@@ -76,63 +76,51 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
+    const pathname = window.location.pathname;
+    if (pathname === '/login' || pathname === '/') {
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } catch (e) {}
+      return { hasError: false, error: null };
+    }
     return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught error:', error, errorInfo);
-    const isChunkError = error && (
-      error.name === 'ChunkLoadError' ||
-      (error.message && (
-        error.message.includes('Failed to fetch dynamically imported module') ||
-        error.message.includes('Importing a module script failed') ||
-        error.message.includes('Unexpected token')
-      ))
-    );
-
-    if (isChunkError) {
-      const ebRefreshed = sessionStorage.getItem('eb_chunk_refreshed');
-      if (!ebRefreshed) {
-        sessionStorage.setItem('eb_chunk_refreshed', 'true');
-        window.location.reload();
-      }
+    const pathname = window.location.pathname;
+    if (pathname === '/login' || pathname === '/') {
+      this.setState({ hasError: false, error: null });
     }
   }
 
   render() {
-    if (this.state.hasError) {
+    const pathname = window.location.pathname;
+    if (this.state.hasError && pathname !== '/login' && pathname !== '/') {
       return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
           <div className="max-w-md bg-white p-8 rounded-3xl shadow-xl border border-slate-100 space-y-4">
-            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto text-xl font-bold">
-              ⚠️
+            <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto text-xl font-bold">
+              🚆
             </div>
-            <h2 className="text-xl font-bold text-slate-800">Session Workspace Restored</h2>
+            <h2 className="text-xl font-bold text-slate-800">RailControl System Access</h2>
             <p className="text-xs text-slate-500">
-              Your session workspace encountered a temporary display update. Click below to continue into your dashboard or sign in.
+              Click below to return to the sign in page or refresh your session.
             </p>
             <div className="flex space-x-3 pt-2">
               <button
                 onClick={() => {
-                  sessionStorage.clear();
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('user');
+                  try {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                  } catch (e) {}
                   this.setState({ hasError: false, error: null });
                   window.location.href = '/login';
                 }}
-                className="w-1/2 rounded-xl border border-slate-200 py-3 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
+                className="w-full rounded-xl bg-blue-600 text-white py-3 text-xs font-bold hover:bg-blue-700 transition shadow-md shadow-blue-500/20"
               >
-                Sign In Again
-              </button>
-              <button
-                onClick={() => {
-                  sessionStorage.clear();
-                  this.setState({ hasError: false, error: null });
-                  window.location.reload();
-                }}
-                className="w-1/2 rounded-xl bg-blue-600 text-white py-3 text-xs font-bold hover:bg-blue-700 transition shadow-md shadow-blue-500/20"
-              >
-                Reload Workspace
+                Return to Sign In Page
               </button>
             </div>
           </div>
