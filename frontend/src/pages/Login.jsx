@@ -172,6 +172,7 @@ const Login = () => {
       }
     } catch (err) {
       console.error('❌ Authentication error:', err);
+      setError(err.message || (lang === 'hi' ? 'लॉगिन करने में विफल। कृपया अपने क्रेडेंशियल जांचें।' : 'Authentication failed. Please check your credentials or connection.'));
       refreshCaptcha();
     } finally {
       setFormLoading(false);
@@ -201,7 +202,7 @@ const Login = () => {
     }
   };
 
-  const loadDemoCredentials = () => {
+  const loadDemoCredentials = async () => {
     const demoEmail = role === 'admin' 
       ? 'admin@railway.com' 
       : role === 'staff' 
@@ -209,8 +210,21 @@ const Login = () => {
         : 'passenger@railway.com';
     setEmail(demoEmail);
     setPassword('password');
-    // Auto-fill Captcha for developer convenience
     setCaptchaInput(captchaCode);
+
+    setFormLoading(true);
+    setError(null);
+    try {
+      console.log(`🔑 Demo Auto-Login initiated for: ${demoEmail}`);
+      const user = await login(demoEmail, 'password');
+      console.log('✅ Demo Auto-Login successful:', user);
+      redirectUser(user?.role || role);
+    } catch (err) {
+      console.error('❌ Demo Auto-Login error:', err);
+      setError(err.message || 'Authentication failed.');
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   const handleOTPStub = () => {
