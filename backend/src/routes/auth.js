@@ -81,7 +81,12 @@ router.post('/signup', async (req, res) => {
 
 // Login Endpoint
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+  let body = req.body || {};
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) {}
+  }
+  const email = body.email;
+  const password = body.password;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });

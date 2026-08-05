@@ -17,6 +17,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Middleware to ensure req.body is parsed as object in Vercel Serverless environment
+app.use((req, res, next) => {
+  if (typeof req.body === 'string') {
+    try {
+      req.body = JSON.parse(req.body);
+    } catch (e) {
+      console.warn('Could not parse req.body as JSON string:', e.message);
+    }
+  }
+  next();
+});
+
 // Print detailed requests to log for serverless debugging
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} Path: ${req.path} URL: ${req.url}`);
