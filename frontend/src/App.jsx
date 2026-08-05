@@ -10,13 +10,19 @@ import ChatbotWidget from './components/ChatbotWidget';
 import EmergencySOSModal from './components/EmergencySOSModal';
 import { Radio, ShieldAlert } from 'lucide-react';
 
-// Retry helper for dynamic imports to prevent ChunkLoadError when Vercel deploys new builds
+// Core Pages - Imported statically to ensure instant load on Vercel host
+import Login from './pages/Login';
+import PassengerDashboard from './pages/PassengerDashboard';
+import StaffDashboard from './pages/StaffDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+
+// Retry helper for dynamic imports of subpages
 const lazyWithRetry = (componentImport) =>
   lazy(async () => {
     try {
       return await componentImport();
     } catch (error) {
-      console.warn('Chunk load error encountered, auto-reloading page:', error);
+      console.warn('Chunk load error encountered for subpage, reloading:', error);
       const isRefreshed = sessionStorage.getItem('chunk_retry_active');
       if (!isRefreshed) {
         sessionStorage.setItem('chunk_retry_active', 'true');
@@ -28,9 +34,7 @@ const lazyWithRetry = (componentImport) =>
     }
   });
 
-// Lazy-loaded Pages with automatic chunk retry
-const Login = lazyWithRetry(() => import('./pages/Login'));
-const PassengerDashboard = lazyWithRetry(() => import('./pages/PassengerDashboard'));
+// Secondary Subpages - Lazy loaded
 const SearchTrainResults = lazyWithRetry(() => import('./pages/SearchTrainResults'));
 const SeatSelection = lazyWithRetry(() => import('./pages/SeatSelection'));
 const Payment = lazyWithRetry(() => import('./pages/Payment'));
@@ -46,7 +50,6 @@ const ProfileSettings = lazyWithRetry(() => import('./pages/ProfileSettings'));
 const PassengerWallet = lazyWithRetry(() => import('./pages/PassengerWallet'));
 const PassengerCatering = lazyWithRetry(() => import('./pages/PassengerCatering'));
 
-const StaffDashboard = lazyWithRetry(() => import('./pages/StaffDashboard'));
 const StaffSchedules = lazyWithRetry(() => import('./pages/StaffSchedules'));
 const StaffInquiries = lazyWithRetry(() => import('./pages/StaffInquiries'));
 const StaffRefunds = lazyWithRetry(() => import('./pages/StaffRefunds'));
@@ -57,7 +60,6 @@ const StaffRACWaiting = lazyWithRetry(() => import('./pages/StaffRACWaiting'));
 const StaffReports = lazyWithRetry(() => import('./pages/StaffReports'));
 const StaffAnnouncements = lazyWithRetry(() => import('./pages/StaffAnnouncements'));
 
-const AdminDashboard = lazyWithRetry(() => import('./pages/AdminDashboard'));
 const AdminRoutes = lazyWithRetry(() => import('./pages/AdminRoutes'));
 const AdminSchedules = lazyWithRetry(() => import('./pages/AdminSchedules'));
 const AdminStations = lazyWithRetry(() => import('./pages/AdminStations'));
