@@ -168,8 +168,14 @@ const PassengerLayout = ({ children }) => {
     <div className="flex flex-col h-screen overflow-hidden bg-slate-50 relative">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <div className="flex flex-1 overflow-hidden relative">
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-30 transition-opacity"
+          />
+        )}
         <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+        <main className="flex-1 p-3 sm:p-5 md:p-6 overflow-y-auto w-full">
           <div className="max-w-7xl mx-auto space-y-6">
             {children}
           </div>
@@ -179,7 +185,7 @@ const PassengerLayout = ({ children }) => {
       {/* Floating Emergency SOS Button */}
       <button
         onClick={() => setSosOpen(true)}
-        className="fixed bottom-6 right-24 z-40 px-4 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-2xl shadow-rose-600/40 border border-rose-400/40 flex items-center space-x-2 transition active:scale-95 group animate-pulse"
+        className="fixed bottom-6 right-20 sm:right-24 z-40 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-[11px] sm:text-xs shadow-2xl shadow-rose-600/40 border border-rose-400/40 flex items-center space-x-2 transition active:scale-95 group animate-pulse"
       >
         <Radio className="h-4 w-4 text-white group-hover:rotate-12 transition" />
         <span>Emergency SOS</span>
@@ -197,8 +203,14 @@ const StaffLayout = ({ children }) => {
     <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <div className="flex flex-1 overflow-hidden relative">
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-30 transition-opacity"
+          />
+        )}
         <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+        <main className="flex-1 p-3 sm:p-5 md:p-6 overflow-y-auto w-full">
           <div className="max-w-7xl mx-auto space-y-6">
             {children}
           </div>
@@ -215,8 +227,14 @@ const AdminLayout = ({ children }) => {
     <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
       <div className="flex flex-1 overflow-hidden relative">
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-30 transition-opacity"
+          />
+        )}
         <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+        <main className="flex-1 p-3 sm:p-5 md:p-6 overflow-y-auto w-full">
           <div className="max-w-7xl mx-auto space-y-6">
             {children}
           </div>
