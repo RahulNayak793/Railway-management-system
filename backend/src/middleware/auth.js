@@ -26,7 +26,9 @@ const authenticateToken = async (req, res, next) => {
     req.user = decoded; // Contains id, email, and metadata
 
     // Verify user exists and fetch role details
-    if (isMockMode) {
+    const isMockUser = isMockMode || (decoded.id && String(decoded.id).startsWith('usr-'));
+
+    if (isMockUser) {
       let profile = mockDb.profiles.get(decoded.id);
       if (!profile && decoded.email) {
         profile = Array.from(mockDb.profiles.values()).find(p => p.email === decoded.email);
@@ -37,7 +39,7 @@ const authenticateToken = async (req, res, next) => {
           id: decoded.id || 'usr-demo-' + userRole,
           email: decoded.email || 'user@railway.com',
           role: userRole,
-          full_name: userRole.toUpperCase() + ' User',
+          full_name: decoded.full_name || (userRole.toUpperCase() + ' User'),
           phone: '+919999999999',
           created_at: new Date().toISOString()
         };
@@ -46,18 +48,23 @@ const authenticateToken = async (req, res, next) => {
       req.user.role = profile.role;
       req.user.full_name = profile.full_name;
     } else {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role, full_name')
-        .eq('id', decoded.id)
-        .single();
-      
-      if (error || !profile) {
-        req.user.role = decoded.role || (decoded.email?.includes('admin') ? 'admin' : decoded.email?.includes('staff') ? 'staff' : 'passenger');
-        req.user.full_name = decoded.full_name || 'Railway System User';
-      } else {
-        req.user.role = profile.role;
-        req.user.full_name = profile.full_name;
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role, full_name')
+          .eq('id', decoded.id)
+          .single();
+        
+        if (error || !profile) {
+          req.user.role = decoded.role || (decoded.email?.includes('admin') ? 'admin' : decoded.email?.includes('staff') ? 'staff' : 'passenger');
+          req.user.full_name = decoded.full_name || 'Railway System User';
+        } else {
+          req.user.role = profile.role;
+          req.user.full_name = profile.full_name;
+        }
+      } catch (sbErr) {
+        req.user.role = decoded.role || 'passenger';
+        req.user.full_name = decoded.full_name || 'Railway User';
       }
     }
 

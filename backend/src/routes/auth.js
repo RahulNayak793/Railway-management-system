@@ -185,7 +185,7 @@ router.post('/forgot-password', async (req, res) => {
 
 // Get User Profile
 router.get('/me', authenticateToken, async (req, res) => {
-  if (isMockMode) {
+  if (isMockMode || (req.user.id && String(req.user.id).startsWith('usr-'))) {
     let profile = mockDb.profiles.get(req.user.id);
     if (!profile) {
       profile = Array.from(mockDb.profiles.values()).find(p => p.email === req.user.email);

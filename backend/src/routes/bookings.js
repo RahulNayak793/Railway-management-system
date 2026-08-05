@@ -15,7 +15,7 @@ router.get('/', authenticateToken, async (req, res) => {
   const passengerId = req.user.id;
   const { role } = req.user;
 
-  if (isMockMode) {
+  if (isMockMode || (passengerId && String(passengerId).startsWith('usr-'))) {
     let bookingsList = Array.from(mockDb.bookings.values());
 
     // Filter bookings based on role
