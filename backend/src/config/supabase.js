@@ -4,9 +4,9 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
 
-const isMockMode = !supabaseUrl || supabaseUrl.includes('mockproject.supabase.co');
+const isMockMode = !supabaseUrl || !supabaseServiceKey || supabaseUrl.includes('mockproject.supabase.co');
 
 let supabase;
 
@@ -353,7 +353,11 @@ if (isMockMode) {
     });
   });
 } else {
-  supabase = createClient(supabaseUrl, supabaseServiceKey);
+  try {
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
+  } catch (err) {
+    console.error('Failed to initialize Supabase client:', err.message);
+  }
 }
 
 module.exports = {
