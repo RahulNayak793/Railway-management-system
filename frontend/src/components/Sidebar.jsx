@@ -99,7 +99,6 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
       { name: 'Rail Wallet', path: '/passenger/wallet', icon: Wallet },
       { name: 'Profile', path: '/passenger/profile', icon: User },
       { name: 'Notifications', path: '/passenger/notifications', icon: Bell },
-      { name: 'Feedback & Ratings', path: '/passenger/feedback', icon: MessageSquare },
       { name: 'Help & Support', path: '/passenger/support', icon: HelpCircle },
     );
   }
