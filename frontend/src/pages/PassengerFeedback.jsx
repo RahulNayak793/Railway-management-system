@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Star, MessageSquare, CheckCircle2, AlertCircle, Upload, 
   Sparkles, Train, Utensils, Shield, Clock, UserCheck, Smartphone, 
@@ -11,58 +12,79 @@ import api from '../services/api';
 const PassengerFeedback = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const [searchParams] = useSearchParams();
+
+  const urlPnr = searchParams.get('pnr') || '';
+  const urlCategory = searchParams.get('category') || 'cleanliness';
 
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState('cleanliness');
-  const [selectedPnr, setSelectedPnr] = useState('');
+
+  // Granular Sub-Aspect Ratings
+  const [cleanlinessRating, setCleanlinessRating] = useState(5);
+  const [foodRating, setFoodRating] = useState(5);
+  const [punctualityRating, setPunctualityRating] = useState(5);
+  const [staffRating, setStaffRating] = useState(5);
+
+  const [selectedCategory, setSelectedCategory] = useState(urlCategory);
+  const [selectedPnr, setSelectedPnr] = useState(urlPnr);
   const [comments, setComments] = useState('');
   const [attachedFileName, setAttachedFileName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const [recentBookings, setRecentBookings] = useState([]);
-  const [feedbackHistory, setFeedbackHistory] = useState([]);
+  const [feedbackHistory, setFeedbackHistory] = useState(() => {
+    const saved = localStorage.getItem('passenger_feedbacks');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [
+      {
+        id: 'FB-98412',
+        pnr_number: '2489104820',
+        category: 'Food & Pantry Service',
+        category_icon: Utensils,
+        rating: 5,
+        comments: 'The Hot Thali served at New Delhi Station was fresh, warm, and delivered right to my seat on time!',
+        status: 'Resolved & Addressed',
+        status_color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+        created_at: '08 Aug 2026'
+      },
+      {
+        id: 'FB-91204',
+        pnr_number: '9841205912',
+        category: 'Coach Cleanliness & Hygiene',
+        category_icon: Sparkles,
+        rating: 4,
+        comments: 'Cleanliness in 2A compartment was good, washrooms were disinfected regularly during trip.',
+        status: 'Under Review by IRCTC Quality Cell',
+        status_color: 'bg-amber-100 text-amber-800 border-amber-200',
+        created_at: '02 Aug 2026'
+      }
+    ];
+  });
 
-  // Fetch recent bookings and past feedbacks
+  // Sync feedback history to localStorage
+  useEffect(() => {
+    localStorage.setItem('passenger_feedbacks', JSON.stringify(feedbackHistory));
+  }, [feedbackHistory]);
+
+  // Fetch recent bookings and set default PNR
   useEffect(() => {
     const fetchData = async () => {
       try {
         const bookingsRes = await api.get('/bookings');
         if (bookingsRes.data && Array.isArray(bookingsRes.data)) {
           setRecentBookings(bookingsRes.data);
-          if (bookingsRes.data.length > 0 && bookingsRes.data[0].pnr_number) {
+          if (!selectedPnr && bookingsRes.data.length > 0 && bookingsRes.data[0].pnr_number) {
             setSelectedPnr(bookingsRes.data[0].pnr_number);
           }
         }
       } catch (err) {
         console.warn('Booking fetch fallback for feedback');
       }
-
-      // Initial sample feedback history
-      setFeedbackHistory([
-        {
-          id: 'FB-98412',
-          pnr_number: '2489104820',
-          category: 'Food & Pantry Service',
-          category_icon: Utensils,
-          rating: 5,
-          comments: 'The Hot Thali served at New Delhi Station was fresh, warm, and delivered right to my seat on time!',
-          status: 'Resolved & Addressed',
-          status_color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-          created_at: '08 Aug 2026'
-        },
-        {
-          id: 'FB-91204',
-          pnr_number: '9841205912',
-          category: 'Coach Cleanliness & Hygiene',
-          category_icon: Sparkles,
-          rating: 4,
-          comments: 'Cleanliness in 2A compartment was good, washrooms were disinfected regularly during trip.',
-          status: 'Under Review by IRCTC Quality Cell',
-          status_color: 'bg-amber-100 text-amber-800 border-amber-200',
-          created_at: '02 Aug 2026'
-        }
-      ]);
     };
 
     fetchData();
@@ -228,6 +250,38 @@ const PassengerFeedback = () => {
               <p className="text-xs font-extrabold text-amber-700 font-mono">
                 {ratingLabels[hoverRating || rating]}
               </p>
+
+              {/* Sub-Aspect Granular Ratings */}
+              <div className="pt-3 border-t border-slate-200/60 grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
+                {[
+                  { label: 'Cleanliness', value: cleanlinessRating, setter: setCleanlinessRating, icon: Sparkles },
+                  { label: 'Pantry Food', value: foodRating, setter: setFoodRating, icon: Utensils },
+                  { label: 'Punctuality', value: punctualityRating, setter: setPunctualityRating, icon: Clock },
+                  { label: 'Staff Courtesy', value: staffRating, setter: setStaffRating, icon: UserCheck },
+                ].map(sub => {
+                  const SubIcon = sub.icon;
+                  return (
+                    <div key={sub.label} className="bg-white p-2.5 rounded-xl border border-slate-200/80 space-y-1">
+                      <div className="flex items-center space-x-1 text-[10px] font-black text-slate-700">
+                        <SubIcon className="h-3 w-3 text-amber-600" />
+                        <span>{sub.label}</span>
+                      </div>
+                      <div className="flex space-x-0.5">
+                        {[1, 2, 3, 4, 5].map(st => (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() => sub.setter(st)}
+                            className="p-0.5 focus:outline-none"
+                          >
+                            <Star className={`h-3.5 w-3.5 ${st <= sub.value ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Category Selector Cards */}
