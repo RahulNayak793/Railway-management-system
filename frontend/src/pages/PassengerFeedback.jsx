@@ -250,38 +250,6 @@ const PassengerFeedback = () => {
               <p className="text-xs font-extrabold text-amber-700 font-mono">
                 {ratingLabels[hoverRating || rating]}
               </p>
-
-              {/* Sub-Aspect Granular Ratings */}
-              <div className="pt-3 border-t border-slate-200/60 grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
-                {[
-                  { label: 'Cleanliness', value: cleanlinessRating, setter: setCleanlinessRating, icon: Sparkles },
-                  { label: 'Pantry Food', value: foodRating, setter: setFoodRating, icon: Utensils },
-                  { label: 'Punctuality', value: punctualityRating, setter: setPunctualityRating, icon: Clock },
-                  { label: 'Staff Courtesy', value: staffRating, setter: setStaffRating, icon: UserCheck },
-                ].map(sub => {
-                  const SubIcon = sub.icon;
-                  return (
-                    <div key={sub.label} className="bg-white p-2.5 rounded-xl border border-slate-200/80 space-y-1">
-                      <div className="flex items-center space-x-1 text-[10px] font-black text-slate-700">
-                        <SubIcon className="h-3 w-3 text-amber-600" />
-                        <span>{sub.label}</span>
-                      </div>
-                      <div className="flex space-x-0.5">
-                        {[1, 2, 3, 4, 5].map(st => (
-                          <button
-                            key={st}
-                            type="button"
-                            onClick={() => sub.setter(st)}
-                            className="p-0.5 focus:outline-none"
-                          >
-                            <Star className={`h-3.5 w-3.5 ${st <= sub.value ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
 
             {/* Category Selector Cards */}
