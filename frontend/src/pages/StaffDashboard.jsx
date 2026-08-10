@@ -156,19 +156,40 @@ const StaffDashboard = () => {
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 font-sans space-y-6 animate-slide-up">
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-4 gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">Operations Dashboard</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Real-time station operations overview</p>
+      {/* Header & Duty Roster Card */}
+      <div className="rounded-3xl bg-slate-900 p-6 text-white shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-slate-800 relative overflow-hidden">
+        <div className="space-y-1 z-10">
+          <div className="flex items-center space-x-2">
+            <span className="px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              ● ON-DUTY TTE COMMAND
+            </span>
+            <span className="text-[10px] font-mono text-slate-400 font-bold">Duty Badge: #TTE-8921 &bull; Shift 06:00 - 14:00</span>
+          </div>
+          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">Railway Operations & TTE Command Portal</h1>
+          <p className="text-xs text-slate-400 font-medium">Station NDLS Central Control &bull; Verified Train Schedules, Ticket Inspections & RAC Promotion Suite.</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-sm px-5 py-2.5 font-bold flex items-center gap-2 transition"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add Train Schedule</span>
-        </button>
+
+        <div className="flex items-center space-x-3 shrink-0 z-10">
+          <button
+            onClick={() => {
+              if (window.confirm('⚠️ Send Emergency Security Alert to Railway Protection Force (RPF) Control Room?')) {
+                alert('🚨 EMERGENCY SOS DISPATCHED: RPF Control Room at NDLS platform master has been alerted!');
+              }
+            }}
+            className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-lg transition active:scale-95 flex items-center space-x-1.5"
+          >
+            <ShieldAlert className="h-4 w-4" />
+            <span>RPF Security SOS</span>
+          </button>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="bg-primary-600 hover:bg-primary-700 text-white rounded-2xl text-xs px-5 py-2.5 font-bold flex items-center gap-2 transition active:scale-95"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Train Schedule</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}

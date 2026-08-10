@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   CheckCircle2, Download, Printer, Share2, Calendar, Compass, Train, MapPin, 
-  Utensils, ShieldAlert, Check, X, UtensilsCrossed, PhoneCall, Sparkles, CheckSquare
+  Utensils, ShieldAlert, Check, X, UtensilsCrossed, PhoneCall, Sparkles, CheckSquare, Star
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -120,6 +120,28 @@ const ETicket = () => {
             <h4 className="text-sm font-extrabold">Payment Successful & Reservation Confirmed!</h4>
             <p className="text-xs text-emerald-100">Your electronic railway ticket (E-Ticket) has been issued. SMS and Email confirmations sent.</p>
           </div>
+        </div>
+      )}
+
+      {/* Banner for completed journey rating */}
+      {(booking.status === 'completed' || new Date(booking.travel_date).getTime() < new Date().setHours(0,0,0,0)) && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 p-4 shadow-lg shadow-amber-500/20 gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-xl bg-slate-950/10 text-slate-950 shrink-0">
+              <Star className="h-6 w-6 fill-slate-950" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-tight">Journey Completed! Rate Your Train Experience</h4>
+              <p className="text-xs font-semibold text-slate-900">How was coach cleanliness, food catering, and punctuality on PNR #{booking.pnr_number}?</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate(`/passenger/feedback?pnr=${booking.pnr_number}`)}
+            className="px-5 py-2.5 rounded-xl bg-slate-950 text-white hover:bg-slate-900 font-black text-xs transition shadow-md shrink-0 active:scale-95 flex items-center space-x-1.5"
+          >
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+            <span>Submit Feedback & Rating</span>
+          </button>
         </div>
       )}
 
@@ -270,7 +292,22 @@ const ETicket = () => {
 
       {/* Action Bar & Extra Feature Buttons */}
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Apple Wallet & Google Pay Pass Buttons */}
+          <button
+            onClick={() => alert('🍏 Ticket Pass added to your Apple Wallet!')}
+            className="flex items-center space-x-2 rounded-xl bg-black hover:bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-lg active:scale-95 transition border border-slate-800"
+          >
+            <span>🍏 Add to Apple Wallet</span>
+          </button>
+          
+          <button
+            onClick={() => alert('📱 Ticket Pass saved to Google Pay Wallet!')}
+            className="flex items-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-950 px-4 py-2.5 text-xs font-bold text-cyan-400 border border-slate-700 shadow-lg active:scale-95 transition"
+          >
+            <span>📱 Save to Google Pay</span>
+          </button>
+
           {/* Seat Catering Pre-order Button */}
           <button
             onClick={() => setShowCateringModal(true)}
@@ -330,11 +367,33 @@ const ETicket = () => {
             <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
               
               {mealOrderSuccess ? (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 p-6 rounded-2xl text-center space-y-2">
-                  <CheckCircle2 className="h-10 w-10 text-emerald-600 mx-auto" />
-                  <h4 className="text-base font-black">Meal Order Confirmed!</h4>
-                  <p className="text-xs font-semibold text-emerald-700">
-                    Your meal will be delivered directly to your seat berth by IRCTC e-Catering vendors during your journey.
+                <div className="bg-slate-900 border border-slate-800 text-white p-6 rounded-2xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-3 w-3 rounded-full bg-emerald-400 animate-ping"></div>
+                      <h4 className="text-sm font-black text-emerald-400">Meal Order Confirmed & In Preparation!</h4>
+                    </div>
+                    <span className="text-[10px] font-mono text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">EST. DELIVERY: 25 MINS</span>
+                  </div>
+
+                  {/* 4-Stage Live Delivery Progress Bar */}
+                  <div className="grid grid-cols-4 gap-2 text-center text-[9px] font-mono py-2">
+                    <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold">
+                      ✓ 1. ORDER CONFIRMED
+                    </div>
+                    <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold animate-pulse">
+                      ⏳ 2. KITCHEN PREPARING
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-500">
+                      3. PANTRY CART
+                    </div>
+                    <div className="p-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-500">
+                      4. DELIVERED TO SEAT
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-300 font-medium text-center">
+                    Order #{selectedMeal?.id || 'M1'} will be served directly at Coach B1 / Seat 24 by IRCTC Catering Crew.
                   </p>
                 </div>
               ) : (

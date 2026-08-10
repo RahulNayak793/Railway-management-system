@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Bell, Shield, Server, Train, Menu, ChevronDown, LogOut, Clock, Zap } from 'lucide-react';
+import { Bell, Shield, Server, Train, Menu, ChevronDown, LogOut, Clock, Zap, Eye, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useCurrency } from '../context/CurrencyContext';
+import CoachVRModal from './CoachVRModal';
 
 const Navbar = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
+  const { currency, setCurrency, rates } = useCurrency();
   const navigate = useNavigate();
   const [time, setTime] = useState(new Date());
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showVrModal, setShowVrModal] = useState(false);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(3);
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
@@ -138,52 +144,224 @@ const Navbar = ({ onToggleSidebar }) => {
             <span>{formatDateTime(time)}</span>
           </div>
 
-          {/* Notification Bell */}
+
+
+          {/* 3D Coach VR Tour Button */}
           <button
-            className="relative rounded-xl p-2 text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+            onClick={() => setShowVrModal(true)}
+            className="hidden lg:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold transition active:scale-95"
           >
-            <span
-              className="absolute right-1.5 top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-black text-white"
-              style={{ background: '#ef4444', boxShadow: '0 0 8px rgba(239,68,68,0.6)' }}
-            >
-              3
-            </span>
-            <Bell className="h-5 w-5" />
+            <Eye className="h-3.5 w-3.5 text-purple-400" />
+            <span>3D VR Tour</span>
           </button>
 
-          {/* User Profile Card */}
-          <div
-            onClick={() => navigate(`/${userRole}/profile`)}
-            className="flex items-center gap-2.5 cursor-pointer rounded-xl px-2 py-1.5 transition-all duration-200 hover:bg-white/8"
-            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
-            title="Profile Settings"
-          >
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black text-white flex-shrink-0 bg-gradient-to-br ${getRoleColor(userRole)}`}
-              style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+          {/* Notification Bell */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowNotifMenu(!showNotifMenu)}
+              className="relative rounded-xl p-2 text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-200 focus:outline-none"
+              title="Notifications"
             >
-              {getInitials(user?.full_name)}
-            </div>
-            <div className="hidden sm:flex flex-col items-start leading-tight">
-              <span className="text-xs font-black text-white">
-                {user?.full_name && typeof user.full_name === 'string' ? user.full_name.split(' ')[0] : 'User'}
-              </span>
-              <span className="text-[9.5px] text-slate-400 font-semibold capitalize">{userRole}</span>
-            </div>
-            <ChevronDown className="h-3 w-3 text-slate-500 hidden sm:block" />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute right-1.5 top-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-black text-white animate-pulse"
+                  style={{ background: '#ef4444', boxShadow: '0 0 8px rgba(239,68,68,0.6)' }}
+                >
+                  {unreadCount}
+                </span>
+              )}
+              <Bell className="h-5 w-5 text-slate-200 hover:text-white transition" />
+            </button>
+
+            {/* Notification Dropdown Center */}
+            {showNotifMenu && (
+              <div 
+                className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900 border border-slate-700 text-white shadow-2xl z-50 overflow-hidden animate-scale-in"
+                style={{ backdropFilter: 'blur(16px)' }}
+              >
+                <div className="p-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Bell className="h-4 w-4 text-amber-400" />
+                    <span className="text-xs font-black uppercase tracking-wider text-white">System Notifications</span>
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setUnreadCount(0)}
+                      className="text-[10px] font-bold text-amber-400 hover:text-amber-300 transition underline"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+
+                <div className="divide-y divide-slate-800/80 max-h-80 overflow-y-auto">
+                  <div 
+                    onClick={() => { setShowNotifMenu(false); navigate('/passenger/history'); }}
+                    className="p-3 hover:bg-slate-800/60 cursor-pointer transition flex items-start space-x-3"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-white block">🎫 Ticket Booking Confirmed</span>
+                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                        Booking #BK-94812 confirmed for Mumbai Rajdhani (12952) Coach B1, Seat 24.
+                      </p>
+                      <span className="text-[9px] font-mono text-slate-500 block mt-1">10 mins ago</span>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => { setShowNotifMenu(false); navigate('/passenger/catering'); }}
+                    className="p-3 hover:bg-slate-800/60 cursor-pointer transition flex items-start space-x-3"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-white block">🍱 E-Catering Order Dispatch</span>
+                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                        Food Order #ORD-89421 is Out for Seat Delivery at NDLS Station!
+                      </p>
+                      <span className="text-[9px] font-mono text-slate-500 block mt-1">25 mins ago</span>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => { setShowNotifMenu(false); navigate('/passenger/track'); }}
+                    className="p-3 hover:bg-slate-800/60 cursor-pointer transition flex items-start space-x-3"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-cyan-500 mt-1.5 shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-white block">📢 Platform Departure Update</span>
+                      <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                        Train 22436 Vande Bharat Express arriving on Platform 1 on schedule.
+                      </p>
+                      <span className="text-[9px] font-mono text-slate-500 block mt-1">1 hour ago</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-slate-950 border-t border-slate-800 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNotifMenu(false);
+                      navigate(`/${userRole}/notifications`);
+                    }}
+                    className="text-xs font-bold text-cyan-400 hover:text-cyan-300 transition"
+                  >
+                    View All Notifications Page &rarr;
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Mobile Logout */}
+          {/* User Profile Card Dropdown Container */}
+          <div className="relative">
+            <div
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2.5 cursor-pointer rounded-xl px-2.5 py-1.5 transition-all duration-200 hover:bg-white/10 active:scale-95"
+              style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+              title="Account Menu"
+            >
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black text-white flex-shrink-0 bg-gradient-to-br ${getRoleColor(userRole)}`}
+                style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+              >
+                {getInitials(user?.full_name)}
+              </div>
+              <div className="hidden sm:flex flex-col items-start leading-tight">
+                <span className="text-xs font-black text-white">
+                  {user?.full_name && typeof user.full_name === 'string' ? user.full_name.split(' ')[0] : 'User'}
+                </span>
+                <span className="text-[9.5px] text-slate-400 font-semibold capitalize">{userRole}</span>
+              </div>
+              <ChevronDown className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${showUserMenu ? 'rotate-180 text-white' : ''}`} />
+            </div>
+
+            {/* Profile & Account Dropdown Menu */}
+            {showUserMenu && (
+              <div 
+                className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900 border border-slate-700 text-white shadow-2xl z-50 overflow-hidden animate-scale-in"
+                style={{ backdropFilter: 'blur(16px)' }}
+              >
+                {/* User Header Info */}
+                <div className="p-4 bg-slate-950 border-b border-slate-800 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-white truncate max-w-[140px]">
+                      {user?.full_name || 'Rahul Patakar'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white bg-gradient-to-r ${getRoleColor(userRole)}`}>
+                      {userRole}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-mono truncate">{user?.email || 'passenger@railway.gov.in'}</p>
+                </div>
+
+                {/* Dropdown Links */}
+                <div className="p-1.5 space-y-0.5 text-xs font-bold text-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => { setShowUserMenu(false); navigate(`/${userRole}/profile`); }}
+                    className="w-full px-3 py-2.5 rounded-xl hover:bg-slate-800 flex items-center space-x-2.5 transition text-left"
+                  >
+                    <User className="h-4 w-4 text-primary-400" />
+                    <span>Profile & Account Settings</span>
+                  </button>
+
+                  {userRole === 'passenger' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { setShowUserMenu(false); navigate('/passenger/history'); }}
+                        className="w-full px-3 py-2.5 rounded-xl hover:bg-slate-800 flex items-center space-x-2.5 transition text-left"
+                      >
+                        <Train className="h-4 w-4 text-emerald-400" />
+                        <span>My Bookings & Tickets</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => { setShowUserMenu(false); navigate('/passenger/feedback'); }}
+                        className="w-full px-3 py-2.5 rounded-xl hover:bg-slate-800 flex items-center space-x-2.5 transition text-left"
+                      >
+                        <Bell className="h-4 w-4 text-amber-400" />
+                        <span>Feedback & Reviews</span>
+                      </button>
+                    </>
+                  )}
+
+                  <div className="my-1 border-t border-slate-800" />
+
+                  {/* LOGOUT BUTTON INSIDE DROPDOWN */}
+                  <button
+                    type="button"
+                    onClick={() => { setShowUserMenu(false); handleLogout(); }}
+                    className="w-full px-3 py-2.5 rounded-xl hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 flex items-center space-x-2.5 transition text-left"
+                  >
+                    <LogOut className="h-4 w-4 text-rose-400" />
+                    <span className="font-black">Sign Out / Logout</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop & Mobile Direct Logout Button */}
           <button
             onClick={handleLogout}
-            className="sm:hidden flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold transition active:scale-95 shrink-0"
             title="Log Out"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4 text-rose-400" />
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </div>
     </header>
+
+    {/* 3D Coach VR Modal */}
+    <CoachVRModal isOpen={showVrModal} onClose={() => setShowVrModal(false)} />
   </>
   );
 };

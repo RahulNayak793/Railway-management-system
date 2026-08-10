@@ -8,6 +8,15 @@ const authenticateToken = async (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
+    if (isMockMode) {
+      req.user = {
+        id: 'usr-demo-passenger',
+        email: 'passenger@railway.com',
+        role: 'passenger',
+        full_name: 'DEMO PASSENGER'
+      };
+      return next();
+    }
     return res.status(401).json({ error: 'Access token required' });
   }
 

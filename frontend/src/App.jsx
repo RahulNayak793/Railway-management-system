@@ -2,6 +2,7 @@ import React, { useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 
 // Components & Layouts
 import Navbar from './components/Navbar';
@@ -12,6 +13,7 @@ import { Radio, ShieldAlert } from 'lucide-react';
 
 // Core Pages - Imported statically to ensure instant load on Vercel host
 import Login from './pages/Login';
+import Register from './pages/Register';
 import PassengerDashboard from './pages/PassengerDashboard';
 import StaffDashboard from './pages/StaffDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -27,7 +29,7 @@ const lazyWithRetry = (componentImport) =>
       if (!isRefreshed) {
         sessionStorage.setItem('chunk_retry_active', 'true');
         window.location.reload();
-        return new Promise(() => {});
+        return new Promise(() => { });
       }
       sessionStorage.removeItem('chunk_retry_active');
       return await componentImport();
@@ -49,6 +51,7 @@ const PassengerPNRStatus = lazyWithRetry(() => import('./pages/PassengerPNRStatu
 const ProfileSettings = lazyWithRetry(() => import('./pages/ProfileSettings'));
 const PassengerWallet = lazyWithRetry(() => import('./pages/PassengerWallet'));
 const PassengerCatering = lazyWithRetry(() => import('./pages/PassengerCatering'));
+const PassengerFeedback = lazyWithRetry(() => import('./pages/PassengerFeedback'));
 
 const StaffSchedules = lazyWithRetry(() => import('./pages/StaffSchedules'));
 const StaffInquiries = lazyWithRetry(() => import('./pages/StaffInquiries'));
@@ -81,7 +84,7 @@ class ErrorBoundary extends React.Component {
       try {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-      } catch (e) {}
+      } catch (e) { }
       return { hasError: false, error: null };
     }
     return { hasError: true, error };
@@ -114,7 +117,7 @@ class ErrorBoundary extends React.Component {
                   try {
                     localStorage.clear();
                     sessionStorage.clear();
-                  } catch (e) {}
+                  } catch (e) { }
                   this.setState({ hasError: false, error: null });
                   window.location.href = '/login';
                 }}
@@ -268,357 +271,367 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-      <ToastProvider>
-        <Router>
-          <div className="min-h-screen bg-slate-50">
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-              {/* Login Page */}
-              <Route path="/login" element={<Login />} />
+        <CurrencyProvider>
+          <ToastProvider>
+            <Router>
+              <div className="min-h-screen bg-slate-50">
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    {/* Login & Register Pages */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
 
-              {/* Passenger Dashboard Flow */}
-              <Route path="/passenger" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <PassengerDashboard />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/search" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <SearchTrainResults />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/seats" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <SeatSelection />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/booking" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <SeatSelection />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/payment" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <Payment />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/checkout" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <Payment />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/ticket/:pnr" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <ETicket />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/history" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <MyBookings />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/cancellations" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <PassengerCancelTicket />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/payments" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <PassengerPayments />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/pnr" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <PassengerPNRStatus />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/track" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <LiveTracking />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/catering" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <PassengerCatering />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/support" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <SupportTickets />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/notifications" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <PassengerNotifications />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/profile" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <ProfileSettings />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/passenger/wallet" element={
-                <ProtectedRoute allowedRoles={['passenger']}>
-                  <PassengerLayout>
-                    <PassengerWallet />
-                  </PassengerLayout>
-                </ProtectedRoute>
-              } />
+                    {/* Passenger Dashboard Flow */}
+                    <Route path="/passenger" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <PassengerDashboard />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/search" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <SearchTrainResults />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/seats" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <SeatSelection />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/booking" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <SeatSelection />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/payment" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <Payment />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/checkout" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <Payment />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/ticket/:pnr" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <ETicket />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/history" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <MyBookings />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/cancellations" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <PassengerCancelTicket />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/payments" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <PassengerPayments />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/pnr" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <PassengerPNRStatus />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/track" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <LiveTracking />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/catering" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <PassengerCatering />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/support" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <SupportTickets />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/notifications" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <PassengerNotifications />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/profile" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <ProfileSettings />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/wallet" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <PassengerWallet />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/feedback" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <PassengerFeedback />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
 
-              {/* Staff Dashboard Flow */}
-              <Route path="/staff" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffDashboard />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/schedules" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffSchedules />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/inquiries" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffInquiries />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/refunds" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffRefunds />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/bookings" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffBookings />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/passengers" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffPassengers />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/checking" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffTicketChecking />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/ticket-checking" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffTicketChecking />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/rac" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffRACWaiting />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/rac-waiting" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffRACWaiting />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/reports" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffReports />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/announcements" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <StaffAnnouncements />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/staff/profile" element={
-                <ProtectedRoute allowedRoles={['staff']}>
-                  <StaffLayout>
-                    <ProfileSettings />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
+                    {/* Staff Dashboard Flow */}
+                    <Route path="/staff" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffDashboard />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/schedules" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffSchedules />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/inquiries" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffInquiries />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/refunds" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffRefunds />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/bookings" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffBookings />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/passengers" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffPassengers />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/checking" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffTicketChecking />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/ticket-checking" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffTicketChecking />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/rac" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffRACWaiting />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/rac-waiting" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffRACWaiting />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/reports" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffReports />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/announcements" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffAnnouncements />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/profile" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <ProfileSettings />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
 
-              {/* Admin Dashboard Flow */}
-              <Route path="/admin" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <AdminDashboard />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/trains" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <StaffSchedules />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/routes" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <AdminRoutes />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/schedules" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <AdminSchedules />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/stations" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <AdminStations />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/classes" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <AdminClasses />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/users" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <AdminUsers />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/staff" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <AdminStaff />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/bookings" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <StaffBookings />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/payments" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <AdminPayments />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/cancellations" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <StaffRefunds />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/cancellation" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <StaffRefunds />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/inquiries" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <StaffInquiries />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/reports" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <StaffReports />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/analytics" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <StaffReports />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/policies" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <AdminPolicies />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/settings" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminLayout>
-                    <AdminPolicies />
-                  </AdminLayout>
-                </ProtectedRoute>
-              } />
+                    {/* Admin Dashboard Flow */}
+                    <Route path="/admin" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminDashboard />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/trains" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <StaffSchedules />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/routes" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminRoutes />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/schedules" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminSchedules />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/stations" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminStations />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/classes" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminClasses />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/users" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminUsers />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/staff" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminStaff />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/bookings" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <StaffBookings />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/payments" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminPayments />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/cancellations" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <StaffRefunds />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/cancellation" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <StaffRefunds />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/inquiries" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <StaffInquiries />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/reports" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <StaffReports />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/analytics" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <StaffReports />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/policies" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminPolicies />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/settings" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminPolicies />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
 
-              {/* Default Route redirect */}
-              <Route path="/" element={<RootRedirect />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </div>
-        </Router>
-        </ToastProvider>
+                    {/* Default Route redirect */}
+                    <Route path="/" element={<RootRedirect />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
+              </div>
+            </Router>
+          </ToastProvider>
+        </CurrencyProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

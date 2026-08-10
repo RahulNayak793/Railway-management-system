@@ -8,10 +8,12 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import TrainSearchForm from '../components/TrainSearchForm';
+import { useCurrency } from '../context/CurrencyContext';
 
 const SearchTrainResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { formatPrice } = useCurrency();
 
   const source = searchParams.get('source') || '';
   const destination = searchParams.get('destination') || '';
@@ -596,7 +598,7 @@ const SearchTrainResults = () => {
                           <div className="space-y-1.5 mb-3">
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">{cName === 'SL' ? 'Sleeper' : `${cName} Class`}</span>
-                              <span className="text-xs font-extrabold text-slate-800 font-mono">₹{fare}</span>
+                              <span className="text-xs font-extrabold text-[#003366] font-mono">{formatPrice(fare)}</span>
                             </div>
                             
                             <div className="text-[9px] text-slate-400 font-semibold leading-normal">

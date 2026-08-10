@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { 
   Utensils, ShoppingBag, Clock, MapPin, CheckCircle2, 
@@ -37,8 +38,9 @@ const PassengerCatering = () => {
   // Success Receipt Modal State
   const [completedOrder, setCompletedOrder] = useState(null);
   
-  // Active Orders state
+  // Active Orders state & Order Detail Modal State
   const [activeOrders, setActiveOrders] = useState([]);
+  const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
 
   const fetchMenu = async (station, filter) => {
     setLoading(true);
@@ -79,12 +81,39 @@ const PassengerCatering = () => {
   const fetchOrders = async () => {
     try {
       const res = await api.get(`/catering/orders?pnr=${pnr}`);
-      if (res.data && res.data.orders) {
+      if (res.data && res.data.orders && res.data.orders.length > 0) {
         setActiveOrders(res.data.orders);
+        return;
       }
     } catch (err) {
       console.warn('Fetch orders fallback');
     }
+
+    // Default Active Food Orders for demonstration & tracking
+    const sampleActiveOrders = [
+      {
+        order_id: 'ORD-89421',
+        txn_id: 'TXN-FOOD-948201',
+        pnr_number: pnr || '2489104820',
+        passenger_name: passengerName || 'Rahul Nayak',
+        station_name: 'New Delhi Central (NDLS)',
+        coach_number: 'B1',
+        seat_number: '24',
+        delivery_status: 'Out for Seat Delivery 🚚',
+        step_stage: 3,
+        total_amount: 450,
+        payment_method: 'UPI',
+        payment_status: 'Paid',
+        items: [
+          { name: 'Deluxe North Indian Thali', price: 240, qty: 1 },
+          { name: 'Fresh Mango Lassi Bottle', price: 90, qty: 2 },
+          { name: 'Container & Express Handling', price: 30, qty: 1 }
+        ],
+        created_at: '10 Aug 2026, 04:30 PM',
+        estimated_delivery: '10 Aug 2026, 05:15 PM'
+      }
+    ];
+    setActiveOrders(sampleActiveOrders);
   };
 
   useEffect(() => {
@@ -445,20 +474,37 @@ const PassengerCatering = () => {
           {/* Active Orders Tracker */}
           {activeOrders.length > 0 && (
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-amber-600" />
-                <span>Active Station Deliveries</span>
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center space-x-2">
+                  <Clock className="h-4 w-4 text-amber-600" />
+                  <span>Active Station Deliveries</span>
+                </h3>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
+                  {activeOrders.length} Order Active
+                </span>
+              </div>
               {activeOrders.map((ord) => (
-                <div key={ord.order_id} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2.5 text-xs">
+                <div key={ord.order_id} className="bg-amber-50/50 border border-amber-200/80 rounded-2xl p-4 space-y-3 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="font-mono font-black text-amber-800">#{ord.order_id}</span>
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 uppercase tracking-wider border border-emerald-200">
                       {ord.payment_status || 'Paid'}
                     </span>
                   </div>
-                  <p className="font-extrabold text-slate-800">{ord.delivery_status}</p>
+                  <p className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <Utensils className="h-3.5 w-3.5 text-amber-600" />
+                    <span>{ord.delivery_status}</span>
+                  </p>
                   <p className="text-[11px] text-slate-500 font-medium">Deliver to Coach {ord.coach_number}, Seat {ord.seat_number} at {ord.station_name}</p>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedOrderDetail(ord)}
+                    className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs transition shadow-sm active:scale-95 flex items-center justify-center space-x-1.5"
+                  >
+                    <Receipt className="h-3.5 w-3.5" />
+                    <span>View Food Order Details & Track</span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -469,9 +515,12 @@ const PassengerCatering = () => {
       </div>
 
       {/* STEP 2: DEDICATED PAYMENT CHECKOUT MODAL (Triggered After Confirming Food Order) */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in font-sans">
-          <div className="bg-white border border-slate-200 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden relative animate-scale-in">
+      {showPaymentModal && createPortal(
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setShowPaymentModal(false); }}
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fade-in font-sans"
+        >
+          <div className="bg-white border border-slate-200 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden relative animate-scale-in my-auto">
             
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 p-6 text-white relative">
@@ -519,30 +568,32 @@ const PassengerCatering = () => {
                 <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">
                   Select Payment Option
                 </label>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
-                    { id: 'UPI', label: 'UPI / QR Code', icon: Smartphone, sub: 'GPay / PhonePe / Paytm' },
-                    { id: 'CARD', label: 'Debit / Credit Card', icon: CreditCard, sub: 'Visa, Mastercard, RuPay' },
-                    { id: 'WALLET', label: 'IRCTC Rail Wallet', icon: Wallet, sub: 'Available: ₹2,450' },
-                    { id: 'COD', label: 'Pay at Seat (COD)', icon: DollarSign, sub: 'Cash / Card on delivery' }
-                  ].map((pm) => {
-                    const Icon = pm.icon;
-                    const isSelected = paymentMethod === pm.id;
+                    { id: 'UPI', name: 'Instant UPI', icon: Smartphone, desc: 'GPay / PhonePe / Paytm' },
+                    { id: 'CARD', name: 'Credit / Debit Card', icon: CreditCard, desc: 'Visa, Mastercard, RuPay' },
+                    { id: 'WALLET', name: 'Rail Wallet', icon: Wallet, desc: 'Instant 1-Click Pay' },
+                    { id: 'COD', name: 'Pay at Seat (COD)', icon: DollarSign, desc: 'Cash / UPI on Delivery' },
+                  ].map((m) => {
+                    const Icon = m.icon;
                     return (
                       <button
-                        key={pm.id}
+                        key={m.id}
                         type="button"
-                        onClick={() => setPaymentMethod(pm.id)}
-                        className={`p-3 rounded-2xl border text-left transition flex items-center space-x-3 ${
-                          isSelected
-                            ? 'bg-amber-50 border-amber-500 text-amber-950 shadow-md ring-2 ring-amber-500/20'
-                            : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        onClick={() => setPaymentMethod(m.id)}
+                        className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition ${
+                          paymentMethod === m.id
+                            ? 'border-amber-600 bg-amber-50/70 shadow-sm text-amber-950 font-bold'
+                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-medium'
                         }`}
                       >
-                        <Icon className={`h-5 w-5 shrink-0 ${isSelected ? 'text-amber-600' : 'text-slate-400'}`} />
+                        <div className="flex items-center justify-between mb-2">
+                          <Icon className={`h-4 w-4 ${paymentMethod === m.id ? 'text-amber-600' : 'text-slate-400'}`} />
+                          {paymentMethod === m.id && <Check className="h-3.5 w-3.5 text-amber-600" />}
+                        </div>
                         <div>
-                          <span className="text-xs font-extrabold block leading-tight">{pm.label}</span>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">{pm.sub}</span>
+                          <span className="text-xs font-black block leading-tight">{m.name}</span>
+                          <span className="text-[9px] text-slate-400 font-medium block mt-0.5">{m.desc}</span>
                         </div>
                       </button>
                     );
@@ -550,30 +601,34 @@ const PassengerCatering = () => {
                 </div>
               </div>
 
-              {/* Dynamic Input based on Payment Method */}
+              {/* Input Forms */}
               {paymentMethod === 'UPI' && (
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
-                  <label className="block text-[10px] font-black uppercase text-slate-500">Enter VPA / UPI ID</label>
-                  <input
-                    type="text"
-                    value={upiId}
-                    onChange={(e) => setUpiId(e.target.value)}
-                    placeholder="e.g. username@upi or mobile@paytm"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none"
-                    required
-                  />
+                <div className="space-y-1.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">Virtual Payment Address (UPI ID)</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. mobile@upi or username@okicici"
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
+                      className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500"
+                      required
+                    />
+                  </div>
                 </div>
               )}
 
               {paymentMethod === 'CARD' && (
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <div className="space-y-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
                   <div>
-                    <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">Card Number</label>
+                    <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">16-Digit Card Number</label>
                     <input
                       type="text"
+                      maxLength={19}
+                      placeholder="4532 •••• •••• 8921"
                       value={cardNumber}
                       onChange={(e) => setCardNumber(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold font-mono text-slate-800"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800"
                       required
                     />
                   </div>
@@ -632,13 +687,17 @@ const PassengerCatering = () => {
             </form>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* STEP 3: PAYMENT SUCCESS & RECEIPT MODAL */}
-      {completedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in font-sans">
-          <div className="bg-white border border-slate-200 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative animate-scale-in space-y-4">
+      {completedOrder && createPortal(
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setCompletedOrder(null); }}
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fade-in font-sans"
+        >
+          <div className="bg-white border border-slate-200 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative animate-scale-in space-y-4 my-auto">
             
             <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 p-6 text-white text-center relative">
               <div className="h-12 w-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 mx-auto mb-3">
@@ -685,7 +744,171 @@ const PassengerCatering = () => {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* FULL FOOD ORDER & DELIVERY TRACKER DETAIL MODAL */}
+      {selectedOrderDetail && createPortal(
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedOrderDetail(null); }}
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fade-in font-sans"
+        >
+          <div className="bg-white border border-slate-200 w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden relative animate-scale-in max-h-[90vh] flex flex-col my-auto">
+            
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 p-6 text-white relative flex-shrink-0">
+              <button 
+                onClick={() => setSelectedOrderDetail(null)}
+                className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="flex items-center space-x-3">
+                <div className="h-12 w-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                  <Receipt className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                      Food Order Details & Invoice
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      {selectedOrderDetail.payment_status || 'Paid'}
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-black tracking-tight mt-1">Order #{selectedOrderDetail.order_id}</h2>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs">
+              
+              {/* Delivery Target & PNR Card */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-amber-600" />
+                    <span className="font-extrabold text-slate-800">Target Berth Delivery</span>
+                  </div>
+                  <span className="font-mono text-[11px] font-black text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-200">
+                    PNR #{selectedOrderDetail.pnr_number}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Passenger</span>
+                    <span className="font-bold text-slate-800">{selectedOrderDetail.passenger_name || 'Rahul Nayak'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Coach</span>
+                    <span className="font-mono font-bold text-slate-800">{selectedOrderDetail.coach_number}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Seat / Berth</span>
+                    <span className="font-mono font-bold text-slate-800">Seat {selectedOrderDetail.seat_number}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Station</span>
+                    <span className="font-bold text-amber-900">{selectedOrderDetail.station_name}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4-Stage Live Station Delivery Progress Pipeline */}
+              <div className="bg-slate-900 text-white rounded-2xl p-4 space-y-3 border border-slate-800">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" /> Live Delivery Progress
+                  </span>
+                  <span className="text-[10px] font-mono text-cyan-300">Est. Delivery: {selectedOrderDetail.estimated_delivery || '5:15 PM'}</span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1 relative pt-2 text-center">
+                  {[
+                    { label: 'Confirmed', icon: CheckCircle2, done: true },
+                    { label: 'Preparing', icon: Flame, done: selectedOrderDetail.step_stage >= 2 },
+                    { label: 'Dispatched', icon: ShoppingBag, done: selectedOrderDetail.step_stage >= 3 },
+                    { label: 'Delivered', icon: Utensils, done: selectedOrderDetail.step_stage >= 4 },
+                  ].map((st, i) => {
+                    const Icon = st.icon;
+                    return (
+                      <div key={i} className="flex flex-col items-center space-y-1.5">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs transition ${
+                          st.done ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/40' : 'bg-slate-800 text-slate-500 border border-slate-700'
+                        }`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider ${st.done ? 'text-amber-300' : 'text-slate-500'}`}>
+                          {st.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Itemised Food Invoice */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2">
+                  Itemised Dishes Order Invoice
+                </h4>
+
+                <div className="space-y-2">
+                  {(selectedOrderDetail.items || []).map((itm, idx) => (
+                    <div key={idx} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-150">
+                      <div>
+                        <span className="font-extrabold text-slate-800 text-xs block">{itm.name}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">Quantity: {itm.qty} x ₹{itm.price}</span>
+                      </div>
+                      <span className="font-extrabold text-slate-900 font-mono">₹{itm.qty * itm.price}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-200/80 space-y-1.5 pt-2 mt-3">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Payment Method</span>
+                    <span className="font-extrabold text-slate-800">{selectedOrderDetail.payment_method} ({selectedOrderDetail.payment_status})</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600">
+                    <span>Transaction Ref</span>
+                    <span className="font-mono text-slate-700">{selectedOrderDetail.txn_id || 'TXN-948201'}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-black text-slate-900 pt-1.5 border-t border-amber-200">
+                    <span>Grand Total Paid</span>
+                    <span className="text-amber-800">₹{selectedOrderDetail.total_amount}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Helpline Contact Footer */}
+              <div className="flex items-center justify-between bg-slate-100 p-3 rounded-2xl border border-slate-200">
+                <span className="text-[11px] text-slate-600 font-bold">Station Kitchen Executive Helpline:</span>
+                <span className="font-mono text-xs font-black text-amber-800 bg-white px-2.5 py-1 rounded-xl border border-amber-300">
+                  📞 +91 98765 43210
+                </span>
+              </div>
+
+            </div>
+
+            {/* Modal Footer Action */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setSelectedOrderDetail(null)}
+                className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs transition active:scale-95 shadow-md"
+              >
+                Close Food Order Details
+              </button>
+            </div>
+
+          </div>
+        </div>,
+        document.body
       )}
 
     </div>

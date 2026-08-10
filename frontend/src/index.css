@@ -309,3 +309,138 @@
 .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
 .animate-scale-in { animation: scaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
+
+/* ================================================
+   TOP-TIER WORLD CLASS RAILWAY MANAGEMENT EXTENSIONS
+=============================================== */
+
+/* Hero Mesh Gradient Canvas */
+.hero-mesh-bg {
+  background: 
+    radial-gradient(circle at 15% 20%, rgba(0, 242, 254, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(79, 172, 254, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 50% 30%, rgba(13, 20, 48, 0.85) 0%, transparent 100%),
+    linear-gradient(135deg, #070B19 0%, #0F172A 40%, #1E293B 100%);
+}
+
+.glow-cyan {
+  text-shadow: 0 0 16px rgba(0, 242, 254, 0.6);
+}
+
+.text-gradient-cyan {
+  background: linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #FFE000 0%, #799F0C 100%);
+  background: linear-gradient(135deg, #F6D365 0%, #FDA085 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-metallic-gold {
+  background: linear-gradient(135deg, #D4AF37 0%, #AA771C 100%);
+  box-shadow: 0 4px 18px rgba(212, 175, 55, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  color: #070B19;
+  font-weight: 800;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-metallic-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(212, 175, 55, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Split-Flap Station Board Display */
+.split-flap-board {
+  background: #090E1A;
+  border: 2px solid #1E293B;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 12px 40px rgba(0,0,0,0.5);
+  font-family: 'Inter', monospace;
+}
+
+.split-flap-header {
+  background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+  border-bottom: 2px solid #334155;
+  color: #F8FAFC;
+  letter-spacing: 0.15em;
+  font-weight: 900;
+}
+
+.split-flap-row {
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.2s ease;
+}
+.split-flap-row:hover {
+  background: rgba(0, 242, 254, 0.04);
+}
+
+.split-flap-text {
+  color: #F59E0B;
+  font-family: monospace;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+}
+
+.split-flap-green {
+  color: #10B981;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.split-flap-red {
+  color: #EF4444;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+/* Coach 3D Schematic & Seat Layout */
+.coach-container {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  position: relative;
+}
+
+.coach-window {
+  width: 14px;
+  height: 24px;
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.4) 0%, rgba(79, 172, 254, 0.1) 100%);
+  border: 1px solid rgba(0, 242, 254, 0.4);
+  border-radius: 6px;
+  box-shadow: 0 0 8px rgba(0, 242, 254, 0.2);
+}
+
+.seat-3d {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 10px;
+}
+.seat-3d:hover {
+  transform: translateY(-4px) scale(1.05);
+  z-index: 10;
+}
+
+.berth-tag-lb { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); }
+.berth-tag-mb { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+.berth-tag-ub { background: rgba(236, 72, 153, 0.2); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.4); }
+.berth-tag-sl { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+
+/* Live Telemetry Speedometer */
+.gauge-circle {
+  border-radius: 50%;
+  background: conic-gradient(from 180deg at 50% 50%, #00F2FE 0%, #3B82F6 50%, rgba(255,255,255,0.05) 50.1%);
+}
+
+@keyframes trackPulse {
+  0% { stroke-dashoffset: 1000; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.animate-track {
+  stroke-dasharray: 10, 10;
+  animation: trackPulse 20s linear infinite;
+}
+

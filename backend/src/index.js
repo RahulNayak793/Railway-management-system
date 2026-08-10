@@ -93,8 +93,79 @@ app.get('/api', (req, res) => {
   res.json({
     message: 'Welcome to the Railway Management System API',
     status: 'healthy',
-    mode: (process.env.SUPABASE_URL && process.env.SUPABASE_URL.includes('mockproject.supabase.co')) || !process.env.SUPABASE_URL ? 'MOCK_DATABASE' : 'LIVE_DATABASE'
+    mode: (process.env.SUPABASE_URL && process.env.SUPABASE_URL.includes('mockproject.supabase.co')) || !process.env.SUPABASE_URL ? 'MOCK_DATABASE' : 'LIVE_DATABASE',
+    docs: 'http://localhost:5000/api/docs'
   });
+});
+
+// Interactive API Documentation Route
+app.get('/api/docs', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>Railway Management System - API Documentation</title>
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+      <style>
+        body { font-family: 'Outfit', 'Inter', sans-serif; background: #070B19; color: #E2E8F0; margin: 0; padding: 2rem; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { color: #00F2FE; font-size: 2rem; margin-bottom: 0.5rem; }
+        .badge { background: rgba(0, 242, 254, 0.15); color: #00F2FE; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; border: 1px solid rgba(0, 242, 254, 0.3); font-weight: bold; }
+        .endpoint-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; padding: 1.25rem; margin-bottom: 1rem; backdrop-filter: blur(10px); }
+        .method { font-family: monospace; font-weight: bold; padding: 0.2rem 0.5rem; border-radius: 0.4rem; font-size: 0.8rem; margin-right: 0.5rem; }
+        .get { background: rgba(16, 185, 129, 0.2); color: #34D399; }
+        .post { background: rgba(59, 130, 246, 0.2); color: #60A5FA; }
+        .path { font-family: monospace; font-size: 0.95rem; font-weight: bold; color: #F8FAFC; }
+        .desc { font-size: 0.85rem; color: #94A3B8; margin-top: 0.5rem; }
+        a { color: #00F2FE; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>🚆 Railway Management System API Docs</h1>
+        <p><span class="badge">HEALTHY</span> <span class="badge">V1.0</span> <span class="badge">MOCK & LIVE DB SUPPORTED</span></p>
+        <p className="desc">Explore interactive endpoints below. Access live JSON status at <a href="/api">/api</a>.</p>
+
+        <div class="endpoint-card">
+          <span class="method get">GET</span><span class="path">/api/trains</span>
+          <p class="desc">Search active trains by source, destination, date, and coach class quotas. Query params: <code>source</code>, <code>destination</code>.</p>
+        </div>
+
+        <div class="endpoint-card">
+          <span class="method get">GET</span><span class="path">/api/trains/stations</span>
+          <p class="desc">Get full master database of 160+ railway stations across India with station codes and state classifications.</p>
+        </div>
+
+        <div class="endpoint-card">
+          <span class="method post">POST</span><span class="path">/api/bookings/book</span>
+          <p class="desc">Process new ticket reservation, allocate coach/seat berths, and return generated PNR code.</p>
+        </div>
+
+        <div class="endpoint-card">
+          <span class="method get">GET</span><span class="path">/api/bookings/pnr/:pnr</span>
+          <p class="desc">Retrieve complete PNR status, passenger allocations, travel date, and e-ticket manifest.</p>
+        </div>
+
+        <div class="endpoint-card">
+          <span class="method post">POST</span><span class="path">/api/sos/alert</span>
+          <p class="desc">Trigger emergency SOS medical/security alert to Railway Protection Force (RPF) and Station Master.</p>
+        </div>
+
+        <div class="endpoint-card">
+          <span class="method post">POST</span><span class="path">/api/ai/predict-delay</span>
+          <p class="desc">Compute AI predictive delay risk and route weather telemetry based on historical corridor performance.</p>
+        </div>
+
+        <div class="endpoint-card">
+          <span class="method post">POST</span><span class="path">/api/catering/order</span>
+          <p class="desc">Place in-train pantry meal orders delivered directly to coach berth number.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
 });
 
 // Single-page application fallback for production deployment

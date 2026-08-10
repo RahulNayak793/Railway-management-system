@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -23,11 +24,18 @@ import {
   Percent,
   Star,
   FileText,
-  Compass
+  Compass,
+  ShieldCheck,
+  Tag,
+  X,
+  CheckCircle2,
+  Copy
 } from 'lucide-react';
 import api from '../services/api';
 import { indianStations } from '../utils/stationsData';
 import TrainSearchForm from '../components/TrainSearchForm';
+import StationMapModal from '../components/StationMapModal';
+import EcoImpactWidget from '../components/EcoImpactWidget';
 
 const PassengerDashboard = () => {
   const { user } = useAuth();
@@ -49,11 +57,14 @@ const PassengerDashboard = () => {
   const [showSourceList, setShowSourceList] = useState(false);
   const [showDestList, setShowDestList] = useState(false);
 
-  // Dashboard bookings state
+  // Dashboard bookings & modal state
   const [bookings, setBookings] = useState([]);
   const [upcomingJourney, setUpcomingJourney] = useState(null);
   const [companions, setCompanions] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [showStationMap, setShowStationMap] = useState(false);
+  const [showGuidelinesModal, setShowGuidelinesModal] = useState(false);
+  const [showOffersModal, setShowOffersModal] = useState(false);
 
   useEffect(() => {
     const fetchDashboardInfo = async () => {
@@ -404,11 +415,49 @@ const PassengerDashboard = () => {
           </button>
         </div>
 
-        {/* Form elements */}
-        <div className="bg-white/50 backdrop-blur-md rounded-b-3xl">
+        {/* Form elements & 7-Day Low Fare Slider */}
+        <div className="bg-white/50 backdrop-blur-md rounded-b-3xl p-4 space-y-4">
           <TrainSearchForm />
+
+          {/* 7-Day Low Fare Slider */}
+          <div className="pt-2 border-t border-slate-200/60">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <Sparkles className="h-3 w-3 text-amber-500" /> 7-Day Fare Preview Slider
+              </span>
+              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Lowest Fare Guarantee</span>
+            </div>
+            <div className="grid grid-cols-7 gap-1.5 overflow-x-auto pb-1">
+              {[
+                { day: 'TODAY', date: '06 AUG', fare: '₹1,550', low: false },
+                { day: 'FRI', date: '07 AUG', fare: '₹1,280', low: true },
+                { day: 'SAT', date: '08 AUG', fare: '₹1,450', low: false },
+                { day: 'SUN', date: '09 AUG', fare: '₹1,620', low: false },
+                { day: 'MON', date: '10 AUG', fare: '₹1,210', low: true },
+                { day: 'TUE', date: '11 AUG', fare: '₹1,350', low: false },
+                { day: 'WED', date: '12 AUG', fare: '₹1,400', low: false },
+              ].map((item, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + idx);
+                    setTravelDate(d.toISOString().split('T')[0]);
+                  }}
+                  className={`flex flex-col items-center p-2 rounded-2xl border text-center transition-all ${item.low ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950' : 'bg-white/80 border-slate-200 text-slate-700'} hover:scale-105 hover:shadow-md active:scale-95`}
+                >
+                  <span className="text-[9px] font-black tracking-wider uppercase text-slate-400">{item.day}</span>
+                  <span className="text-xs font-black my-0.5 text-slate-800">{item.date}</span>
+                  <span className={`text-[10px] font-extrabold ${item.low ? 'text-emerald-600' : 'text-primary-600'}`}>{item.fare}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
+
+
 
       {/* Grid of 6 Shortcuts cards */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
@@ -436,6 +485,34 @@ const PassengerDashboard = () => {
           );
         })}
       </div>
+
+      {/* Railway Miles Loyalty Program & VIP Lounge Pass Card */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-amber-500/30 rounded-3xl p-6 text-white shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="space-y-2 z-10">
+          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-wider">
+            <Sparkles className="h-3 w-3" />
+            <span>Frequent Traveler Tier &bull; Platinum Executive VIP</span>
+          </div>
+          <h3 className="text-xl font-black text-white tracking-tight">Railway Miles Loyalty Balance</h3>
+          <p className="text-xs text-slate-300 font-medium">
+            You have <strong className="text-amber-400 font-mono text-sm">12,450 Miles</strong> available. Complimentary Executive Lounge access active at NDLS & MMCT.
+          </p>
+          <div className="w-full bg-slate-800 rounded-full h-2 mt-2 max-w-md overflow-hidden border border-slate-700">
+            <div className="bg-gradient-to-r from-amber-400 to-amber-600 h-2 rounded-full w-4/5 shadow-md shadow-amber-500/50"></div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => alert('🎫 Digital Executive Lounge Pass QR code generated for NDLS Central Lounge!')}
+          className="btn-metallic-gold px-6 py-3 rounded-2xl text-xs flex items-center space-x-2 shadow-xl shrink-0 z-10"
+        >
+          <span>Digital VIP Lounge Pass</span>
+        </button>
+      </div>
+
+      {/* Carbon Footprint & Eco-Travel Calculator Widget */}
+      <EcoImpactWidget distanceKm={1384} />
 
       {/* Split section: Upcoming Journey & Recent Bookings */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-12" onClick={() => { setShowSourceList(false); setShowDestList(false); }}>
@@ -642,24 +719,44 @@ const PassengerDashboard = () => {
       {/* Bottom 4 action banners */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
         {[
-          { name: 'Need Help?', desc: 'Contact our support team anytime', icon: HelpCircle, path: '/passenger/support' },
-          { name: 'Travel Guidelines', desc: 'Check COVID-19 and travel guidelines', icon: Info, path: '/passenger' },
-          { name: 'Offers & Deals', desc: 'Explore latest offers and discounts', icon: Percent, path: '/passenger' },
-          { name: 'Feedback', desc: 'Share your feedback with us', icon: Star, path: '/passenger' }
+          { 
+            name: 'Need Help?', 
+            desc: 'Contact our support team anytime', 
+            icon: HelpCircle, 
+            action: () => navigate('/passenger/support') 
+          },
+          { 
+            name: 'Travel Guidelines', 
+            desc: 'Check COVID-19 and travel guidelines', 
+            icon: Info, 
+            action: () => setShowGuidelinesModal(true) 
+          },
+          { 
+            name: 'Offers & Deals', 
+            desc: 'Explore latest offers and discounts', 
+            icon: Percent, 
+            action: () => setShowOffersModal(true) 
+          },
+          { 
+            name: 'Feedback', 
+            desc: 'Share your feedback with us', 
+            icon: Star, 
+            action: () => navigate('/passenger/feedback') 
+          }
         ].map((banner, idx) => {
           const Icon = banner.icon;
           return (
             <div 
               key={idx}
-              onClick={() => navigate(banner.path)}
-              className="bg-white rounded-2xl border border-slate-200 p-4.5 flex items-center justify-between hover:border-primary-400/40 hover:shadow-sm cursor-pointer hover:-translate-y-0.5 transition duration-200 group"
+              onClick={banner.action}
+              className="bg-white rounded-2xl border border-slate-200 p-4.5 flex items-center justify-between hover:border-primary-500/50 hover:shadow-md cursor-pointer hover:-translate-y-0.5 transition duration-200 group active:scale-95"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 rounded-xl bg-primary-50 text-primary-600 group-hover:bg-primary-100/50 transition">
+                <div className="p-2.5 rounded-xl bg-primary-50 text-primary-600 group-hover:bg-primary-600 group-hover:text-white transition duration-200">
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-slate-850 group-hover:text-primary-800 transition-colors">{banner.name}</h4>
+                  <h4 className="text-xs font-black text-slate-850 group-hover:text-primary-700 transition-colors">{banner.name}</h4>
                   <p className="text-[10px] text-slate-400 font-bold mt-0.5">{banner.desc}</p>
                 </div>
               </div>
@@ -679,9 +776,181 @@ const PassengerDashboard = () => {
           <span>|</span>
           <a href="#" className="hover:underline">Terms & Conditions</a>
           <span>|</span>
-          <a href="#" className="hover:underline">Contact Us</a>
+          <button onClick={() => navigate('/passenger/support')} className="hover:underline">Contact Support</button>
         </div>
       </footer>
+
+      {/* Indoor Station Map Modal */}
+      <StationMapModal isOpen={showStationMap} onClose={() => setShowStationMap(false)} />
+
+      {/* TRAVEL GUIDELINES MODAL */}
+      {showGuidelinesModal && createPortal(
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setShowGuidelinesModal(false); }}
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fade-in font-sans"
+        >
+          <div className="bg-white border border-slate-200 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative animate-scale-in my-auto">
+            
+            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 text-white relative">
+              <button 
+                onClick={() => setShowGuidelinesModal(false)}
+                className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="flex items-center space-x-3">
+                <div className="h-10 w-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                    Official Railway Advisory
+                  </span>
+                  <h2 className="text-lg font-black tracking-tight mt-0.5">Passenger Travel Guidelines</h2>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs font-medium text-slate-700 max-h-[70vh] overflow-y-auto">
+              
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5 text-primary-700">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> 1. Valid ID Proof Requirement
+                </h4>
+                <p className="text-slate-600 leading-relaxed">
+                  Passengers must carry original government-issued photo ID (Aadhaar Card, Passport, PAN Card, Driving License, or Voter ID) during the journey for check by the TTE.
+                </p>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5 text-primary-700">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> 2. Free Luggage Allowance Rules
+                </h4>
+                <p className="text-slate-600 leading-relaxed">
+                  1A: 70kg • 2A: 50kg • 3A/CC: 40kg • SL: 35kg. Excess baggage beyond free allowance must be booked at the station parcel office prior to boarding.
+                </p>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5 text-primary-700">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> 3. Senior Citizen & Divyangjan Quota
+                </h4>
+                <p className="text-slate-600 leading-relaxed">
+                  Lower berth priority is auto-allocated to male passengers aged 60+ and female passengers aged 45+ traveling alone or in pairs.
+                </p>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5 text-primary-700">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" /> 4. Health & Hygiene Safety
+                </h4>
+                <p className="text-slate-600 leading-relaxed">
+                  Hand sanitizers are installed at all station entry gates and AC coach vestibules. E-Catering meals are prepared in FSSAI-certified kitchens.
+                </p>
+              </div>
+
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowGuidelinesModal(false)}
+                className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs transition active:scale-95 shadow-md"
+              >
+                Understood & Close
+              </button>
+            </div>
+
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* OFFERS & PROMO DEALS MODAL */}
+      {showOffersModal && createPortal(
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setShowOffersModal(false); }}
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fade-in font-sans"
+        >
+          <div className="bg-white border border-slate-200 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden relative animate-scale-in my-auto">
+            
+            <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 p-6 text-white relative">
+              <button 
+                onClick={() => setShowOffersModal(false)}
+                className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="flex items-center space-x-3">
+                <div className="h-10 w-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                  <Tag className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    IRCTC Festive Discounts
+                  </span>
+                  <h2 className="text-lg font-black tracking-tight mt-0.5">Exclusive Offers & Coupons</h2>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs font-medium text-slate-700 max-h-[70vh] overflow-y-auto">
+              
+              {[
+                {
+                  code: 'RAIL100',
+                  title: 'Flat ₹100 Off on Vande Bharat & Rajdhani',
+                  desc: 'Get instant ₹100 discount on 2A and 1A bookings across all routes.',
+                  bg: 'bg-amber-50 border-amber-200 text-amber-950'
+                },
+                {
+                  code: 'UPIFOOD15',
+                  title: '15% Cashback on E-Catering Meals',
+                  desc: 'Use UPI payment at checkout on E-Catering food orders above ₹250.',
+                  bg: 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                },
+                {
+                  code: 'IRCTCSBI',
+                  title: '10% Instant Discount via SBI RuPay Card',
+                  desc: 'Save up to ₹300 per ticket transaction when paying with SBI Railway Card.',
+                  bg: 'bg-blue-50 border-blue-200 text-blue-950'
+                }
+              ].map((promo, idx) => (
+                <div key={idx} className={`p-4 rounded-2xl border ${promo.bg} space-y-2 relative`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-black uppercase px-2.5 py-1 rounded-xl bg-white border border-slate-200 shadow-xs text-slate-900 tracking-wider">
+                      {promo.code}
+                    </span>
+                    <button
+                      onClick={() => alert(`Promo code ${promo.code} copied to clipboard!`)}
+                      className="text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200 transition flex items-center gap-1"
+                    >
+                      <Copy className="h-3 w-3" /> Copy Code
+                    </button>
+                  </div>
+                  <h4 className="font-extrabold text-slate-900 text-xs">{promo.title}</h4>
+                  <p className="text-[11px] text-slate-600 font-medium">{promo.desc}</p>
+                </div>
+              ))}
+
+            </div>
+
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowOffersModal(false)}
+                className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs transition active:scale-95 shadow-md"
+              >
+                Close Promo Offers
+              </button>
+            </div>
+
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );

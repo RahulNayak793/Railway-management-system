@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Calendar, Train, MapPin, Ticket, ShieldAlert, CheckCircle2, 
-  Clock, XCircle, Utensils, Download, ArrowRight, ShieldCheck, RefreshCw, FileText
+  Clock, XCircle, Utensils, Download, ArrowRight, ShieldCheck, RefreshCw, FileText, Star
 } from 'lucide-react';
 import api from '../services/api';
 import { indianStations } from '../utils/stationsData';
@@ -60,30 +60,29 @@ const MyBookings = () => {
   };
 
   const getFilteredBookings = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
+    const todayMs = new Date().setHours(0, 0, 0, 0);
 
     return bookings.filter(b => {
-      // 1. Cancelled Tickets Tab
+      // 1. All Bookings Tab
+      if (activeTab === 'all') return true;
+
+      // 2. Cancelled Tickets Tab
       if (activeTab === 'cancelled') {
         return b.status === 'cancelled';
       }
 
       if (b.status === 'cancelled') return false;
 
-      // 2. Determine if journey is completed (if date is past today OR status is completed)
+      // 3. Determine if journey is completed
       let isCompleted = b.status === 'completed';
       if (!isCompleted && b.travel_date) {
-        const travelDate = new Date(b.travel_date);
-        if (!isNaN(travelDate.getTime())) {
-          travelDate.setHours(0, 0, 0, 0);
-          if (travelDate < today) {
-            isCompleted = true;
-          }
+        const travelMs = new Date(b.travel_date).getTime();
+        if (!isNaN(travelMs) && travelMs < todayMs) {
+          isCompleted = true;
         }
       }
 
-      // 3. Filter by Active Tab
+      // 4. Filter by Active Tab
       if (activeTab === 'completed') {
         return isCompleted;
       } else {
@@ -94,6 +93,11 @@ const MyBookings = () => {
   };
 
   const filtered = getFilteredBookings();
+
+  const todayMs = new Date().setHours(0, 0, 0, 0);
+  const upcomingCount = bookings.filter(b => b.status !== 'cancelled' && b.status !== 'completed' && new Date(b.travel_date).getTime() >= todayMs).length;
+  const completedCount = bookings.filter(b => b.status === 'completed' || (b.status !== 'cancelled' && new Date(b.travel_date).getTime() < todayMs)).length;
+  const cancelledCount = bookings.filter(b => b.status === 'cancelled').length;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 font-sans space-y-6 animate-slide-in">
@@ -120,16 +124,17 @@ const MyBookings = () => {
       </div>
 
       {/* Filter Tabs Bar */}
-      <div className="flex border-b border-slate-200 gap-6">
+      <div className="flex border-b border-slate-200 gap-4 sm:gap-6 overflow-x-auto">
         {[
-          { id: 'upcoming', label: 'Upcoming Journeys', count: bookings.filter(b => b.status !== 'cancelled' && (new Date(b.travel_date) >= new Date().setHours(0,0,0,0) && b.status !== 'completed')).length },
-          { id: 'completed', label: 'Completed Journeys', count: bookings.filter(b => b.status !== 'cancelled' && (new Date(b.travel_date) < new Date().setHours(0,0,0,0) || b.status === 'completed')).length },
-          { id: 'cancelled', label: 'Cancelled Tickets', count: bookings.filter(b => b.status === 'cancelled').length }
+          { id: 'upcoming', label: 'Upcoming Journeys', count: upcomingCount },
+          { id: 'completed', label: 'Completed Journeys', count: completedCount },
+          { id: 'cancelled', label: 'Cancelled Tickets', count: cancelledCount },
+          { id: 'all', label: 'All Bookings', count: bookings.length }
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`pb-3 text-xs sm:text-sm font-black border-b-2 transition flex items-center space-x-2 ${
+            className={`pb-3 text-xs sm:text-sm font-black border-b-2 transition flex items-center space-x-2 shrink-0 ${
               activeTab === tab.id 
                 ? 'border-primary-600 text-primary-600' 
                 : 'border-transparent text-slate-400 hover:text-slate-600'
@@ -144,6 +149,21 @@ const MyBookings = () => {
           </button>
         ))}
       </div>
+
+      {/* Helpful banner if upcoming is 0 but completed or all has tickets */}
+      {activeTab === 'upcoming' && upcomingCount === 0 && (completedCount > 0 || bookings.length > 0) && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 rounded-2xl p-4 flex items-center justify-between gap-4 text-xs font-semibold">
+          <span>
+            💡 <strong>Note:</strong> Your booked ticket date has reached or passed today's date, so it is listed in the <strong>Completed Journeys</strong> or <strong>All Bookings</strong> tab.
+          </span>
+          <button
+            onClick={() => setActiveTab('all')}
+            className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shrink-0 shadow-sm transition"
+          >
+            View All Bookings
+          </button>
+        </div>
+      )}
 
       {/* Bookings List Output */}
       {loading ? (
@@ -262,16 +282,36 @@ const MyBookings = () => {
 
                 {/* Completed Details Highlights Banner */}
                 {isCompleted && (
-                  <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-2xl p-3.5 text-xs flex items-center justify-between text-emerald-950 font-medium">
+                  <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-2xl p-4 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between text-emerald-950 gap-3">
                     <div className="flex items-center space-x-2">
                       <ShieldCheck className="h-4 w-4 text-emerald-700 shrink-0" />
-                      <span>This journey has been successfully completed. Full e-ticket and invoice details are archived.</span>
+                      <span>This journey has been successfully completed. How was your experience?</span>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/passenger/feedback?pnr=${b.pnr_number}`)}
+                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition shadow-md flex items-center space-x-1.5 active:scale-95 shrink-0"
+                    >
+                      <Star className="h-3.5 w-3.5 fill-slate-950 text-slate-950" />
+                      <span>Rate & Review Journey</span>
+                    </button>
                   </div>
                 )}
 
                 {/* Actions Footer Bar */}
                 <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                  {isCompleted && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/passenger/feedback?pnr=${b.pnr_number}`)}
+                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition flex items-center space-x-1.5 shadow-sm active:scale-95"
+                    >
+                      <Star className="h-3.5 w-3.5 fill-slate-950 text-slate-950" />
+                      <span>Rate & Review Journey</span>
+                    </button>
+                  )}
+
                   {b.status !== 'cancelled' && !isCompleted && (
                     <button
                       onClick={() => handleCancel(b.id)}

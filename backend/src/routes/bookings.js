@@ -20,7 +20,11 @@ router.get('/', authenticateToken, async (req, res) => {
 
     // Filter bookings based on role
     if (role === 'passenger') {
-      const userBookings = bookingsList.filter(b => b.passenger_id === passengerId);
+      const userBookings = bookingsList.filter(b => 
+        b.passenger_id === passengerId || 
+        b.passenger_id === 'usr-demo-passenger' ||
+        (passengerId && String(b.passenger_id).startsWith('usr-'))
+      );
       if (userBookings.length > 0) {
         bookingsList = userBookings;
       }

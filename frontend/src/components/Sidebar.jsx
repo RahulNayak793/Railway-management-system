@@ -99,6 +99,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
       { name: 'Rail Wallet', path: '/passenger/wallet', icon: Wallet },
       { name: 'Profile', path: '/passenger/profile', icon: User },
       { name: 'Notifications', path: '/passenger/notifications', icon: Bell },
+      { name: 'Feedback & Ratings', path: '/passenger/feedback', icon: MessageSquare },
       { name: 'Help & Support', path: '/passenger/support', icon: HelpCircle },
     );
   }
@@ -278,17 +279,6 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
               );
             })}
 
-            <button
-              onClick={() => { handleLinkClick(); handleLogout(); }}
-              className={`w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold mt-2 transition-all duration-200 text-left ${
-                isPassenger
-                  ? 'text-slate-500 hover:bg-red-50 hover:text-red-600'
-                  : 'text-slate-400 hover:bg-red-500/10 hover:text-red-400'
-              }`}
-            >
-              <LogOut className="h-4 w-4 flex-shrink-0 text-slate-400" />
-              <span>Logout</span>
-            </button>
           </nav>
         )}
       </div>
