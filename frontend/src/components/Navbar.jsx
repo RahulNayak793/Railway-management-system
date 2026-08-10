@@ -15,9 +15,37 @@ const Navbar = ({ onToggleSidebar }) => {
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [unreadCount, setUnreadCount] = useState(3);
 
+  const [topAnnouncement, setTopAnnouncement] = useState(() => {
+    const saved = localStorage.getItem('railway_announcements');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const activeItem = parsed.find(a => a.active !== false);
+        if (activeItem) return activeItem.text;
+      } catch (e) {}
+    }
+    return 'Travel insurance up to ₹10 Lakhs available for ₹0.45/passenger • Railway Helpline: 139 • AC Tatkal: 10:00 AM | Non-AC Tatkal: 11:00 AM';
+  });
+
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const syncNavbarAnnouncement = () => {
+      const saved = localStorage.getItem('railway_announcements');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          const activeItem = parsed.find(a => a.active !== false);
+          if (activeItem) setTopAnnouncement(activeItem.text);
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener('announcement_updated', syncNavbarAnnouncement);
+    return () => window.removeEventListener('announcement_updated', syncNavbarAnnouncement);
   }, []);
 
   const formatDateTime = (date) => {
@@ -61,7 +89,7 @@ const Navbar = ({ onToggleSidebar }) => {
 
         <div className="flex-1 overflow-hidden mx-4 text-center">
           <p className="truncate text-slate-300 font-medium animate-pulse">
-            📢 <strong className="text-white">IRCTC Bulletin:</strong> Travel insurance up to ₹10 Lakhs available for ₹0.45/passenger • Railway Helpline: <strong className="text-amber-300">139</strong> • AC Tatkal: 10:00 AM | Non-AC Tatkal: 11:00 AM
+            📢 <strong className="text-white">Live Staff Bulletin:</strong> {topAnnouncement}
           </p>
         </div>
 

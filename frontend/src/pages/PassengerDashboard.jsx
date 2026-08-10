@@ -66,6 +66,36 @@ const PassengerDashboard = () => {
   const [showGuidelinesModal, setShowGuidelinesModal] = useState(false);
   const [showOffersModal, setShowOffersModal] = useState(false);
 
+  const [liveAnnouncements, setLiveAnnouncements] = useState(() => {
+    const saved = localStorage.getItem('railway_announcements');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const activeTexts = parsed.filter(a => a.active !== false).map(a => a.text);
+        if (activeTexts.length > 0) return activeTexts.join(' • ');
+      } catch (e) {}
+    }
+    return 'IRCTC Advisory: TATKAL reservation counters open daily at 10:00 AM • Platform Change: Train 12952 Mumbai Rajdhani Express will arrive on Platform 1 • Travel insurance up to ₹10 Lakhs available';
+  });
+
+  useEffect(() => {
+    const syncAnnouncements = () => {
+      const saved = localStorage.getItem('railway_announcements');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          const activeTexts = parsed.filter(a => a.active !== false).map(a => a.text);
+          if (activeTexts.length > 0) {
+            setLiveAnnouncements(activeTexts.join(' • '));
+          }
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener('announcement_updated', syncAnnouncements);
+    return () => window.removeEventListener('announcement_updated', syncAnnouncements);
+  }, []);
+
   useEffect(() => {
     const fetchDashboardInfo = async () => {
       if (!user) return;
@@ -275,7 +305,7 @@ const PassengerDashboard = () => {
           <span>Announcements</span>
         </div>
         <div className="animate-marquee whitespace-nowrap pl-4 select-none font-semibold text-slate-300">
-          📢 National Railway Inquiry: TATKAL reservation counters open daily at 10:00 AM | Secure identity cards upload verified | Standard cancellation rules apply.
+          📢 {liveAnnouncements}
         </div>
       </div>
 

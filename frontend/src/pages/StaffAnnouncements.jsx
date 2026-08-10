@@ -2,16 +2,30 @@ import React, { useState } from 'react';
 import { Megaphone, Plus, Bell, Volume2, Calendar, Trash2, Radio, Play, StopCircle } from 'lucide-react';
 
 const StaffAnnouncements = () => {
-  const [announcements, setAnnouncements] = useState([
-    { id: 1, text: 'IRCTC Advisory: TATKAL reservation counters open daily at 10:00 AM for AC classes.', date: 'Today', author: 'Station Admin', active: true, lang: 'en' },
-    { id: 2, text: 'Platform Change: Train 12952 Mumbai Rajdhani Express will arrive on Platform 1.', date: 'Today', author: 'Station Dispatch', active: true, lang: 'en' },
-    { id: 3, text: 'यात्री ध्यान दें: गाड़ी संख्या 12952 मुम्बई राजधानी एक्सप्रेस प्लेटफार्म नंबर 1 पर आ रही है।', date: 'Today', author: 'Hindi Broadcaster', active: true, lang: 'hi' },
-    { id: 4, text: 'Safety Warning: Passengers are requested to stay clear of yellow platform edge markings.', date: 'Yesterday', author: 'Security Command', active: false, lang: 'en' }
-  ]);
+  const [announcements, setAnnouncements] = useState(() => {
+    const saved = localStorage.getItem('railway_announcements');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [
+      { id: 1, text: 'IRCTC Advisory: TATKAL reservation counters open daily at 10:00 AM for AC classes.', date: 'Today', author: 'Station Admin', active: true, lang: 'en' },
+      { id: 2, text: 'Platform Change: Train 12952 Mumbai Rajdhani Express will arrive on Platform 1.', date: 'Today', author: 'Station Dispatch', active: true, lang: 'en' },
+      { id: 3, text: 'यात्री ध्यान दें: गाड़ी संख्या 12952 मुम्बई राजधानी एक्सप्रेस प्लेटफार्म नंबर 1 पर आ रही है।', date: 'Today', author: 'Hindi Broadcaster', active: true, lang: 'hi' },
+      { id: 4, text: 'Safety Warning: Passengers are requested to stay clear of yellow platform edge markings.', date: 'Yesterday', author: 'Security Command', active: false, lang: 'en' }
+    ];
+  });
 
   const [newAnnouncement, setNewAnnouncement] = useState('');
   const [announcementCategory, setAnnouncementCategory] = useState('Platform Change');
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+
+  // Sync with localStorage & dispatch custom window event for instant passenger update
+  useEffect(() => {
+    localStorage.setItem('railway_announcements', JSON.stringify(announcements));
+    window.dispatchEvent(new Event('announcement_updated'));
+  }, [announcements]);
 
   const speakText = (text) => {
     if (!('speechSynthesis' in window)) {
@@ -54,7 +68,7 @@ const StaffAnnouncements = () => {
     setAnnouncements(prev => [item, ...prev]);
     setNewAnnouncement('');
     speakText(fullText);
-    alert('📢 Announcement published to station ticker and audio PA speakers!');
+    alert('📢 Announcement published live to Passenger Dashboard & Station Speakers!');
   };
 
   const removeAnnouncement = (id) => {
