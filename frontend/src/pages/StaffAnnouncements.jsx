@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Megaphone, Plus, Bell, Volume2, Calendar, Trash2, Radio, Play, StopCircle } from 'lucide-react';
 
 const StaffAnnouncements = () => {
