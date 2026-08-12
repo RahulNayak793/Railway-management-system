@@ -14,7 +14,25 @@ const PassengerNotifications = () => {
     try {
       setLoading(true);
       const res = await api.get('/notifications');
-      setNotifications(res.data || []);
+      let apiNotifs = res.data || [];
+
+      const savedAnnouncements = localStorage.getItem('railway_announcements');
+      if (savedAnnouncements) {
+        try {
+          const parsed = JSON.parse(savedAnnouncements);
+          const staffNotifs = parsed.map(a => ({
+            id: `staff-anc-${a.id}`,
+            title: `📢 ${a.author || 'Station Command'} Announcement`,
+            message: a.text,
+            type: 'announcement',
+            is_read: false,
+            created_at: new Date().toISOString()
+          }));
+          apiNotifs = [...staffNotifs, ...apiNotifs];
+        } catch (e) {}
+      }
+
+      setNotifications(apiNotifs);
     } catch (err) {
       console.error('Error fetching notifications:', err);
     } finally {

@@ -66,17 +66,45 @@ const PassengerDashboard = () => {
   const [showGuidelinesModal, setShowGuidelinesModal] = useState(false);
   const [showOffersModal, setShowOffersModal] = useState(false);
 
-  const [liveAnnouncements, setLiveAnnouncements] = useState(() => {
+  const [announcementsList, setAnnouncementsList] = useState(() => {
     const saved = localStorage.getItem('railway_announcements');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const activeTexts = parsed.filter(a => a.active !== false).map(a => a.text);
-        if (activeTexts.length > 0) return activeTexts.join(' • ');
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed.filter(a => a.active !== false);
       } catch (e) {}
     }
-    return 'IRCTC Advisory: TATKAL reservation counters open daily at 10:00 AM • Platform Change: Train 12952 Mumbai Rajdhani Express will arrive on Platform 1 • Travel insurance up to ₹10 Lakhs available';
+    return [
+      { id: 1, text: 'Platform Change: Train 12952 Mumbai Rajdhani Express will arrive on Platform 1.', date: 'Just now', author: 'Station Dispatch', active: true },
+      { id: 2, text: 'IRCTC Advisory: TATKAL reservation counters open daily at 10:00 AM for AC classes.', date: 'Today', author: 'Station Admin', active: true },
+      { id: 3, text: 'यात्री ध्यान दें: गाड़ी संख्या 12952 मुम्बई राजधानी एक्सप्रेस प्लेटफार्म नंबर 1 पर आ रही है।', date: 'Today', author: 'Hindi Broadcaster', active: true }
+    ];
   });
+
+  const [liveAnnouncements, setLiveAnnouncements] = useState(() => {
+    return announcementsList.map(a => a.text).join(' • ');
+  });
+
+  const [playingAudioId, setPlayingAudioId] = useState(null);
+
+  const speakAnnouncement = (item) => {
+    if (!('speechSynthesis' in window)) {
+      alert('Audio PA Broadcaster is not supported on this browser.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    if (playingAudioId === item.id) {
+      setPlayingAudioId(null);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(item.text);
+    utterance.rate = 0.9;
+    utterance.pitch = 1.0;
+    utterance.onstart = () => setPlayingAudioId(item.id);
+    utterance.onend = () => setPlayingAudioId(null);
+    utterance.onerror = () => setPlayingAudioId(null);
+    window.speechSynthesis.speak(utterance);
+  };
 
   useEffect(() => {
     const syncAnnouncements = () => {
@@ -84,9 +112,10 @@ const PassengerDashboard = () => {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          const activeTexts = parsed.filter(a => a.active !== false).map(a => a.text);
-          if (activeTexts.length > 0) {
-            setLiveAnnouncements(activeTexts.join(' • '));
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const activeList = parsed.filter(a => a.active !== false);
+            setAnnouncementsList(activeList);
+            setLiveAnnouncements(activeList.map(a => a.text).join(' • '));
           }
         } catch (e) {}
       }
@@ -744,6 +773,61 @@ const PassengerDashboard = () => {
             Verify PNR
           </button>
         </form>
+      </div>
+
+      {/* OFFICIAL STAFF ANNOUNCEMENTS BOARD */}
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600">
+              <Volume2 className="h-5 w-5 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-slate-800">Official Railway & Staff Announcements</h3>
+              <p className="text-[11px] text-slate-400 font-medium">Live broadcasts, platform changes, and travel advisories issued by station command.</p>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">
+            ● Live Station Feed
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {announcementsList.slice(0, 4).map((item) => (
+            <div 
+              key={item.id}
+              className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 space-y-2 hover:border-primary-300 transition duration-200 relative group"
+            >
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
+                  📢 Staff Announcement
+                </span>
+                <span className="text-[10px] font-mono font-bold text-slate-400">{item.date || 'Today'}</span>
+              </div>
+
+              <p className="text-xs font-semibold text-slate-800 leading-relaxed">
+                {item.text}
+              </p>
+
+              <div className="flex items-center justify-between pt-1 border-t border-slate-200/40 text-[10px] text-slate-500">
+                <span className="font-mono font-bold text-slate-400">By: {item.author || 'TTE Command'}</span>
+
+                <button
+                  type="button"
+                  onClick={() => speakAnnouncement(item)}
+                  className={`px-3 py-1 rounded-xl font-black transition flex items-center space-x-1 ${
+                    playingAudioId === item.id 
+                      ? 'bg-rose-600 text-white shadow-sm animate-pulse' 
+                      : 'bg-primary-50 hover:bg-primary-100 text-primary-700'
+                  }`}
+                >
+                  <Volume2 className="h-3 w-3" />
+                  <span>{playingAudioId === item.id ? 'Playing Audio...' : 'Listen Audio'}</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Bottom 4 action banners */}
