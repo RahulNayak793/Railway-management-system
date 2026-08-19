@@ -245,7 +245,7 @@ const Navbar = ({ onToggleSidebar }) => {
                   >
                     <div className="h-2 w-2 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                     <div>
-                      <span className="text-xs font-bold text-white block">🍱 E-Catering Order Dispatch</span>
+                      <span className="text-xs font-bold text-white block">🍱 RailControl Meals Dispatch</span>
                       <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
                         Food Order #ORD-89421 is Out for Seat Delivery at NDLS Station!
                       </p>

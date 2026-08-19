@@ -72,6 +72,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
       { name: 'Inquiry Center', path: '/admin/inquiries', icon: MessageSquare },
       { name: 'Refund Disputes', path: '/admin/refunds', icon: Receipt },
       { name: 'Fare & Policy', path: '/admin/policies', icon: Settings },
+      { name: 'Food & Catering', path: '/admin/catering', icon: Utensils },
     );
   } else if (isStaff) {
     menuItems.push(
@@ -83,6 +84,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
       { name: 'RAC / Waiting', path: '/staff/rac-waiting', icon: Clock },
       { name: 'Reports', path: '/staff/reports', icon: FileText },
       { name: 'Announcements', path: '/staff/announcements', icon: Megaphone },
+      { name: 'Pantry & Meals', path: '/staff/catering', icon: Utensils },
       { name: 'Help & Support', path: '/staff/inquiries', icon: HelpCircle },
       { name: 'Settings', path: '/staff/profile', icon: Settings },
     );
@@ -93,7 +95,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
       { name: 'My Bookings', path: '/passenger/history', icon: BookOpen },
       { name: 'PNR Status', path: '/passenger/pnr', icon: FileText },
       { name: 'Live Tracking', path: '/passenger/track', icon: Compass },
-      { name: 'E-Catering Meals', path: '/passenger/catering', icon: Utensils },
+      { name: 'RailControl Meals', path: '/passenger/catering', icon: Utensils },
       { name: 'Cancel Ticket', path: '/passenger/cancellations', icon: XCircle },
       { name: 'Payment History', path: '/passenger/payments', icon: CreditCard },
       { name: 'Rail Wallet', path: '/passenger/wallet', icon: Wallet },

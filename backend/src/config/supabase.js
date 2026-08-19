@@ -1,5 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const dotenv = require('dotenv');
+const fs = require('fs');
+const path = require('path');
 
 dotenv.config();
 
@@ -9,6 +11,8 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.
 const isMockMode = !supabaseUrl || !supabaseServiceKey || supabaseUrl.includes('mockproject.supabase.co');
 
 let supabase;
+
+const DB_FILE_PATH = path.join(__dirname, '../../data/db.json');
 
 // Set up mock DB collections if in Mock Mode
 const mockDb = {
@@ -27,11 +31,55 @@ const mockDb = {
   notifications: new Map()
 };
 
-// Seed mockDb with initial data matching supabase/seed.sql
-if (isMockMode) {
-  console.log('⚠️ Running in Mock Database Mode. Database changes will persist in-memory.');
-  
-  // Seed stations
+function saveMockDbToFile() {
+  try {
+    const dataToSave = {};
+    for (const [key, val] of Object.entries(mockDb)) {
+      if (val instanceof Map) {
+        dataToSave[key] = Array.from(val.entries());
+      } else {
+        dataToSave[key] = val;
+      }
+    }
+    const dir = path.dirname(DB_FILE_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(dataToSave, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error saving database to file:', err.message);
+  }
+}
+
+function enableAutoSave(db) {
+  for (const [key, val] of Object.entries(db)) {
+    if (val instanceof Map) {
+      const origSet = val.set.bind(val);
+      const origDelete = val.delete.bind(val);
+      const origClear = val.clear.bind(val);
+
+      val.set = function(...args) {
+        const res = origSet(...args);
+        saveMockDbToFile();
+        return res;
+      };
+      val.delete = function(...args) {
+        const res = origDelete(...args);
+        saveMockDbToFile();
+        return res;
+      };
+      val.clear = function(...args) {
+        const res = origClear(...args);
+        saveMockDbToFile();
+        return res;
+      };
+    }
+  }
+}
+
+// Function to seed initial default mock data
+function seedInitialMockData() {
+
   const stationsData = [
     { id: 's1', station_code: 'NDLS', station_name: 'New Delhi', state: 'Delhi' },
     { id: 's2', station_code: 'MMCT', station_name: 'Mumbai Central', state: 'Maharashtra' },
@@ -352,6 +400,35 @@ if (isMockMode) {
       status: b.status === 'cancelled' ? 'REFUNDED' : 'SUCCESS'
     });
   });
+}
+
+if (isMockMode) {
+  let fileLoaded = false;
+  if (fs.existsSync(DB_FILE_PATH)) {
+    try {
+      const rawData = fs.readFileSync(DB_FILE_PATH, 'utf-8');
+      const parsed = JSON.parse(rawData);
+      for (const [key, val] of Object.entries(parsed)) {
+        if (Array.isArray(val)) {
+          mockDb[key] = new Map(val);
+        } else {
+          mockDb[key] = val;
+        }
+      }
+      console.log('✅ Loaded persistent local database from backend/data/db.json');
+      fileLoaded = true;
+    } catch (err) {
+      console.error('Failed to load db.json, re-seeding default database:', err.message);
+    }
+  }
+
+  if (!fileLoaded) {
+    console.log('⚡ Initializing and seeding local persistent database...');
+    seedInitialMockData();
+    saveMockDbToFile();
+  }
+
+  enableAutoSave(mockDb);
 } else {
   try {
     supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -363,5 +440,7 @@ if (isMockMode) {
 module.exports = {
   supabase,
   isMockMode,
-  mockDb
+  mockDb,
+  saveMockDbToFile
 };
+

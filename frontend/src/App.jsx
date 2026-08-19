@@ -62,6 +62,7 @@ const StaffTicketChecking = lazyWithRetry(() => import('./pages/StaffTicketCheck
 const StaffRACWaiting = lazyWithRetry(() => import('./pages/StaffRACWaiting'));
 const StaffReports = lazyWithRetry(() => import('./pages/StaffReports'));
 const StaffAnnouncements = lazyWithRetry(() => import('./pages/StaffAnnouncements'));
+const StaffCatering = lazyWithRetry(() => import('./pages/StaffCatering'));
 
 const AdminRoutes = lazyWithRetry(() => import('./pages/AdminRoutes'));
 const AdminSchedules = lazyWithRetry(() => import('./pages/AdminSchedules'));
@@ -71,6 +72,7 @@ const AdminUsers = lazyWithRetry(() => import('./pages/AdminUsers'));
 const AdminStaff = lazyWithRetry(() => import('./pages/AdminStaff'));
 const AdminPayments = lazyWithRetry(() => import('./pages/AdminPayments'));
 const AdminPolicies = lazyWithRetry(() => import('./pages/AdminPolicies'));
+const AdminCatering = lazyWithRetry(() => import('./pages/AdminCatering'));
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -501,6 +503,13 @@ function App() {
                         </StaffLayout>
                       </ProtectedRoute>
                     } />
+                    <Route path="/staff/catering" element={
+                      <ProtectedRoute allowedRoles={['staff']}>
+                        <StaffLayout>
+                          <StaffCatering />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
 
                     {/* Admin Dashboard Flow */}
                     <Route path="/admin" element={
@@ -612,6 +621,13 @@ function App() {
                       <ProtectedRoute allowedRoles={['admin']}>
                         <AdminLayout>
                           <AdminPolicies />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/catering" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminCatering />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
