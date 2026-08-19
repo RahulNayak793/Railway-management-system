@@ -960,7 +960,7 @@ const PassengerDashboard = () => {
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" /> 4. Health & Hygiene Safety
                 </h4>
                 <p className="text-slate-600 leading-relaxed">
-                  Hand sanitizers are installed at all station entry gates and AC coach vestibules. E-Catering meals are prepared in FSSAI-certified kitchens.
+                  Hand sanitizers are installed at all station entry gates and AC coach vestibules. RailControl Meals are prepared in FSSAI-certified kitchens.
                 </p>
               </div>
 
@@ -1021,8 +1021,8 @@ const PassengerDashboard = () => {
                 },
                 {
                   code: 'UPIFOOD15',
-                  title: '15% Cashback on E-Catering Meals',
-                  desc: 'Use UPI payment at checkout on E-Catering food orders above ₹250.',
+                  title: '15% Cashback on RailControl Meals',
+                  desc: 'Use UPI payment at checkout on RailControl food orders above ₹250.',
                   bg: 'bg-emerald-50 border-emerald-200 text-emerald-950'
                 },
                 {

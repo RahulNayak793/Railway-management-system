@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
@@ -432,6 +432,7 @@ if (isMockMode) {
 } else {
   try {
     supabase = createClient(supabaseUrl, supabaseServiceKey);
+    console.log('⚡ Connected to LIVE Supabase at', supabaseUrl);
   } catch (err) {
     console.error('Failed to initialize Supabase client:', err.message);
   }
