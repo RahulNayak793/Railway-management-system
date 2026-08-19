@@ -116,7 +116,8 @@ const StaffDashboard = () => {
         id: `dep-custom-${Date.now()}`,
         trainNo: trainNumber,
         trainName: trainName,
-        to: destination || 'MMCT',
+        source: (source || 'NDLS').toUpperCase(),
+        to: (destination || 'MMCT').toUpperCase(),
         depTime: depTime,
         platform: 'PF ' + (Math.floor(Math.random() * 4) + 1),
         status: 'On Time'

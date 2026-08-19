@@ -13,25 +13,33 @@ router.get('/recommendations', async (req, res) => {
     });
   }
 
-  // Let's analyze query parameters and return a smart recommended itinerary list
-  const recommendations = [
-    {
-      train_number: '12952',
-      train_name: 'Rajdhani Express',
-      reason: 'Fastest transit time (15h 45m) and highest comfort class availability.',
-      matchScore: 95
-    },
-    {
-      train_number: '12002',
-      train_name: 'Shatabdi Express',
-      reason: 'Most cost-effective day journey option with complimentary catering.',
-      matchScore: 88
-    }
-  ];
+  const srcCode = source ? (source.match(/\(([^)]+)\)/)?.[1] || source.trim().toUpperCase()) : '';
+  const destCode = destination ? (destination.match(/\(([^)]+)\)/)?.[1] || destination.trim().toUpperCase()) : '';
+
+  const staticSeedNumbers = new Set(['12952', '12002', '22436', '12301', '12050', '22671', '12627', '12953', '12262', '12216', '20701', '12650', '12841', '12859', '12615', '12001', '12295', '12649', '12951', '12622', '12009', '16316']);
+
+  const activeStaffTrains = Array.from(mockDb.trains.values()).filter(t => {
+    if (t.id && String(t.id).match(/^t\d+$/)) return false;
+    if (t.train_number && staticSeedNumbers.has(String(t.train_number))) return false;
+    const tSrc = (t.source || '').toUpperCase();
+    const tDest = (t.destination || '').toUpperCase();
+    const matchesSrc = !srcCode || tSrc.includes(srcCode);
+    const matchesDest = !destCode || tDest.includes(destCode);
+    return matchesSrc && matchesDest;
+  });
+
+  const recommendations = activeStaffTrains.map((t, idx) => ({
+    train_number: t.train_number,
+    train_name: t.train_name,
+    reason: idx === 0 ? 'Fastest transit time and highest comfort class availability.' : 'Most cost-effective journey option with verified pantry service.',
+    matchScore: Math.max(75, 95 - idx * 7)
+  }));
 
   return res.json({
     recommendedTrains: recommendations,
-    insights: 'Based on passenger search trends, morning slot booking has a 12% higher chance of berth upgrade promotion.'
+    insights: recommendations.length > 0
+      ? 'Based on passenger search trends, morning slot booking has a higher chance of berth upgrade promotion.'
+      : ''
   });
 });
 

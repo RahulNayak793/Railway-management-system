@@ -259,81 +259,7 @@ function seedInitialMockData() {
   ];
   stationsData.forEach(s => mockDb.stations.set(s.id, s));
 
-  // Seed trains
-  const trainsData = [
-    { id: 't1', train_number: '12952', train_name: 'Rajdhani Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't2', train_number: '12002', train_name: 'Shatabdi Express', status: 'delayed', delay_minutes: 15 },
-    { id: 't3', train_number: '22436', train_name: 'Vande Bharat Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't4', train_number: '12301', train_name: 'Kolkata Rajdhani', status: 'cancelled', delay_minutes: 0 },
-    { id: 't5', train_number: '12050', train_name: 'Gatimaan Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't6', train_number: '22671', train_name: 'Tejas Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't7', train_number: '12627', train_name: 'Karnataka Express', status: 'on_time', delay_minutes: 5 },
-    { id: 't8', train_number: '12953', train_name: 'August Kranti Rajdhani', status: 'on_time', delay_minutes: 0 },
-    { id: 't9', train_number: '12262', train_name: 'Howrah Duronto Express', status: 'delayed', delay_minutes: 10 },
-    { id: 't10', train_number: '12216', train_name: 'Garib Rath Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't11', train_number: '20701', train_name: 'Secunderabad Vande Bharat', status: 'on_time', delay_minutes: 0 },
-    { id: 't12', train_number: '12650', train_name: 'Karnataka Sampark Kranti', status: 'on_time', delay_minutes: 0 },
-    { id: 't13', train_number: '12841', train_name: 'Coromandel Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't14', train_number: '12859', train_name: 'Geetanjali Express', status: 'delayed', delay_minutes: 20 },
-    { id: 't15', train_number: '12615', train_name: 'Grand Trunk Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't16', train_number: '12001', train_name: 'Shatabdi Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't17', train_number: '12295', train_name: 'Sanghamitra Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't18', train_number: '12649', train_name: 'Sampark Kranti Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't19', train_number: '12951', train_name: 'Mumbai Rajdhani Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't20', train_number: '12622', train_name: 'Tamil Nadu Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't21', train_number: '12009', train_name: 'Shatabdi Express', status: 'on_time', delay_minutes: 0 },
-    { id: 't22', train_number: '16316', train_name: 'Kochuveli Express', status: 'on_time', delay_minutes: 0 }
-  ];
-  trainsData.forEach(t => mockDb.trains.set(t.id, t));
-
-  // Seed routes
-  const routesData = [
-    { id: 'r1', train_id: 't1', source_station_code: 'NDLS', destination_station_code: 'MMCT', departure_time: '16:30', arrival_time: '08:15', distance_km: 1384, fare_multiplier: 1.5, stop_sequence: 1 },
-    { id: 'r2', train_id: 't2', source_station_code: 'NDLS', destination_station_code: 'BPL', departure_time: '06:00', arrival_time: '14:25', distance_km: 707, fare_multiplier: 1.2, stop_sequence: 1 },
-    { id: 'r3', train_id: 't3', source_station_code: 'NDLS', destination_station_code: 'BSB', departure_time: '06:00', arrival_time: '14:00', distance_km: 759, fare_multiplier: 1.3, stop_sequence: 1 },
-    { id: 'r4', train_id: 't4', source_station_code: 'HWH', destination_station_code: 'NDLS', departure_time: '16:55', arrival_time: '10:00', distance_km: 1450, fare_multiplier: 1.5, stop_sequence: 1 },
-    { id: 'r5', train_id: 't5', source_station_code: 'NZM', destination_station_code: 'AGC', departure_time: '08:10', arrival_time: '09:50', distance_km: 188, fare_multiplier: 1.1, stop_sequence: 1 },
-    { id: 'r6', train_id: 't6', source_station_code: 'MAS', destination_station_code: 'MDU', departure_time: '06:00', arrival_time: '12:15', distance_km: 497, fare_multiplier: 1.4, stop_sequence: 1 },
-    { id: 'r7', train_id: 't7', source_station_code: 'SBC', destination_station_code: 'NDLS', departure_time: '19:20', arrival_time: '09:00', distance_km: 2400, fare_multiplier: 1.3, stop_sequence: 1 },
-    { id: 'r8', train_id: 't8', source_station_code: 'MMCT', destination_station_code: 'NDLS', departure_time: '17:10', arrival_time: '09:43', distance_km: 1377, fare_multiplier: 1.5, stop_sequence: 1 },
-    { id: 'r9', train_id: 't9', source_station_code: 'HWH', destination_station_code: 'CSMT', departure_time: '05:45', arrival_time: '08:15', distance_km: 1968, fare_multiplier: 1.4, stop_sequence: 1 },
-    { id: 'r10', train_id: 't10', source_station_code: 'DEE', destination_station_code: 'BDTS', departure_time: '11:00', arrival_time: '07:15', distance_km: 1431, fare_multiplier: 1.0, stop_sequence: 1 },
-    { id: 'r11', train_id: 't11', source_station_code: 'SC', destination_station_code: 'TPTY', departure_time: '06:00', arrival_time: '14:30', distance_km: 661, fare_multiplier: 1.4, stop_sequence: 1 },
-    { id: 'r12', train_id: 't12', source_station_code: 'SBC', destination_station_code: 'NZM', departure_time: '13:50', arrival_time: '08:20', distance_km: 2378, fare_multiplier: 1.2, stop_sequence: 1 },
-    { id: 'r13', train_id: 't13', source_station_code: 'HWH', destination_station_code: 'MAS', departure_time: '15:20', arrival_time: '16:50', distance_km: 1659, fare_multiplier: 1.2, stop_sequence: 1 },
-    { id: 'r14', train_id: 't14', source_station_code: 'CSMT', destination_station_code: 'HWH', departure_time: '06:00', arrival_time: '12:30', distance_km: 1968, fare_multiplier: 1.2, stop_sequence: 1 },
-    { id: 'r15', train_id: 't15', source_station_code: 'MAS', destination_station_code: 'NDLS', departure_time: '18:50', arrival_time: '06:30', distance_km: 2182, fare_multiplier: 1.3, stop_sequence: 1 },
-    { id: 'r16', train_id: 't16', source_station_code: 'NDLS', destination_station_code: 'RKMP', departure_time: '06:00', arrival_time: '14:25', distance_km: 707, fare_multiplier: 1.2, stop_sequence: 1 },
-    { id: 'r17', train_id: 't17', source_station_code: 'SBC', destination_station_code: 'DNR', departure_time: '09:00', arrival_time: '09:00', distance_km: 2600, fare_multiplier: 1.2, stop_sequence: 1 },
-    { id: 'r18', train_id: 't18', source_station_code: 'YPR', destination_station_code: 'NZM', departure_time: '13:50', arrival_time: '08:20', distance_km: 2378, fare_multiplier: 1.2, stop_sequence: 1 },
-    { id: 'r19', train_id: 't19', source_station_code: 'MMCT', destination_station_code: 'NDLS', departure_time: '17:00', arrival_time: '08:32', distance_km: 1384, fare_multiplier: 1.5, stop_sequence: 1 },
-    { id: 'r20', train_id: 't20', source_station_code: 'NDLS', destination_station_code: 'MAS', departure_time: '21:05', arrival_time: '06:15', distance_km: 2182, fare_multiplier: 1.3, stop_sequence: 1 },
-    { id: 'r21', train_id: 't21', source_station_code: 'MMCT', destination_station_code: 'ADI', departure_time: '06:20', arrival_time: '12:45', distance_km: 493, fare_multiplier: 1.3, stop_sequence: 1 },
-    { id: 'r22', train_id: 't22', source_station_code: 'KCVL', destination_station_code: 'MYS', departure_time: '16:45', arrival_time: '11:15', distance_km: 825, fare_multiplier: 1.0, stop_sequence: 1 }
-  ];
-  routesData.forEach(r => mockDb.routes.set(r.id, r));
-
-  // Seed seats for all trains
-  trainsData.forEach(t => {
-    const classes = ['SL', '3A', '2A', '1A'];
-    classes.forEach(cls => {
-      const coachNum = cls === 'SL' ? 'S1' : cls === '3A' ? 'B1' : cls === '2A' ? 'A1' : 'H1';
-      for (let i = 1; i <= 24; i++) {
-        const berthType = i % 6 === 1 || i % 6 === 2 ? 'LB' : i % 6 === 3 || i % 6 === 4 ? 'MB' : 'UB';
-        const id = `${t.id}-${coachNum}-${i}`;
-        mockDb.seats.set(id, {
-          id,
-          train_id: t.id,
-          coach_class: cls,
-          coach_number: coachNum,
-          seat_number: i,
-          berth_type: berthType
-        });
-      }
-    });
-  });
-
-  // Seed registered passenger profiles
+  // Seed default registered passenger profiles
   const seededPassengers = [
     { id: 'usr-1', full_name: 'Ramesh Kumar', email: 'ramesh.kumar@gmail.com', phone: '+91 9876543210', role: 'passenger', age: 42, gender: 'Male', document_type: 'Aadhaar Card', document_number: '4829-1092-4921', document_url: 'aadhaar_ramesh.pdf', verified: true, created_at: '2023-01-12T10:00:00Z' },
     { id: 'usr-2', full_name: 'Suresh Patel', email: 'suresh.patel@yahoo.com', phone: '+91 8765432109', role: 'passenger', age: 48, gender: 'Male', document_type: 'Passport', document_number: 'Z8901234', document_url: 'passport_suresh.pdf', verified: false, created_at: '2023-08-20T14:30:00Z' },
@@ -417,6 +343,25 @@ if (isMockMode) {
       }
       console.log('✅ Loaded persistent local database from backend/data/db.json');
       fileLoaded = true;
+
+      // Purge static seed dummy trains so ONLY staff-added trains remain
+      const staticSeedNumbers = new Set(['12952', '12002', '22436', '12301', '12050', '22671', '12627', '12953', '12262', '12216', '20701', '12650', '12841', '12859', '12615', '12001', '12295', '12649', '12951', '12622', '12009', '16316', '998877']);
+      if (mockDb.trains) {
+        for (const [key, t] of Array.from(mockDb.trains.entries())) {
+          const isTestName = t && t.train_name && t.train_name.toLowerCase().includes('passenger visible express');
+          if (key.match(/^t\d+$/) || isTestName || (t && staticSeedNumbers.has(String(t.train_number)))) {
+            mockDb.trains.delete(key);
+          }
+        }
+      }
+      if (mockDb.routes) {
+        for (const [key, r] of Array.from(mockDb.routes.entries())) {
+          if (key.match(/^r\d+$/) || (r && r.train_id && r.train_id.match(/^t\d+$/))) {
+            mockDb.routes.delete(key);
+          }
+        }
+      }
+      saveMockDbToFile();
     } catch (err) {
       console.error('Failed to load db.json, re-seeding default database:', err.message);
     }

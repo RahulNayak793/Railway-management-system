@@ -2,14 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Users, Search, UserMinus, ShieldAlert, CheckCircle, XCircle } from 'lucide-react';
 import api from '../services/api';
 
+const DUMMY_EMAILS = new Set(['m.thompson@transit.com', 'v.malhotra@rail.net', 's.patel@railmail.com', 'alex.rivers@railmail.com', 's.jenkins@globemail.org']);
+
 const AdminUsers = () => {
-  const [users, setUsers] = useState([
-    { id: 'usr-1', email: 'alex.rivers@railmail.com', role: 'passenger', full_name: 'Alex Rivers', phone: '+919876543210', status: 'Active' },
-    { id: 'usr-2', email: 's.jenkins@globemail.org', role: 'passenger', full_name: 'Sarah Jenkins', phone: '+919999988888', status: 'Blocked' },
-    { id: 'usr-3', email: 'm.thompson@transit.com', role: 'staff', full_name: 'Mark Thompson', phone: '+919123456789', status: 'Active' },
-    { id: 'usr-4', email: 'lzhang@rail.net', role: 'admin', full_name: 'Lina Zhang', phone: '+919223344556', status: 'Active' }
-  ]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await api.get('/admin/users');
+        if (Array.isArray(res.data)) {
+          const filtered = res.data.filter(u => !DUMMY_EMAILS.has(u.email));
+          setUsers(filtered);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch users:', err);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const handleRoleChange = async (userId, currentRole) => {
     const nextRole = currentRole === 'passenger' ? 'staff' : currentRole === 'staff' ? 'admin' : 'passenger';

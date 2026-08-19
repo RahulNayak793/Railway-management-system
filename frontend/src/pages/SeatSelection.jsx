@@ -4,6 +4,7 @@ import { Train, User, Plus, Trash2, ArrowRight, UserPlus, Users, Eye, Sparkles }
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import CoachVRModal from '../components/CoachVRModal';
+import CreateIrctcModal from '../components/CreateIrctcModal';
 import api from '../services/api';
 
 const SeatSelection = () => {
@@ -24,6 +25,7 @@ const SeatSelection = () => {
   const [activeCoachClass, setActiveCoachClass] = useState(initialClass);
   const [selectedCoachCode, setSelectedCoachCode] = useState(initialCoachCode);
   const [showVrModal, setShowVrModal] = useState(false);
+  const [showCreateIrctcModal, setShowCreateIrctcModal] = useState(false);
 
   const [train, setTrain] = useState(null);
   const [seats, setSeats] = useState([]);
@@ -34,6 +36,12 @@ const SeatSelection = () => {
   const [savedCompanions, setSavedCompanions] = useState([]);
   const [autoAllocate, setAutoAllocate] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // IRCTC Account Verification States
+  const [irctcUsername, setIrctcUsername] = useState(() => localStorage.getItem('saved_irctc_id') || '');
+  const [isIrctcVerified, setIsIrctcVerified] = useState(() => !!localStorage.getItem('saved_irctc_id'));
+  const [irctcLoading, setIrctcLoading] = useState(false);
+  const [irctcError, setIrctcError] = useState('');
 
   // Fetch saved companions on load
   useEffect(() => {
@@ -142,8 +150,28 @@ const SeatSelection = () => {
     setSelectedSeats([]);
   };
 
+  const handleVerifyIrctc = (e) => {
+    e.preventDefault();
+    if (!irctcUsername.trim()) {
+      setIrctcError('IRCTC User ID cannot be empty.');
+      return;
+    }
+    setIrctcLoading(true);
+    setIrctcError('');
+    // Simulate FSSAI/IRCTC central authorization registry check
+    setTimeout(() => {
+      setIrctcLoading(false);
+      setIsIrctcVerified(true);
+    }, 1200);
+  };
+
   const handleProceed = async (e) => {
     e.preventDefault();
+
+    if (!isIrctcVerified) {
+      alert('Verification required: Please enter and verify your IRCTC User ID before booking.');
+      return;
+    }
 
     // Validations
     const invalidPassenger = passengers.some(p => !p.name || !p.age);
@@ -511,6 +539,77 @@ const SeatSelection = () => {
 
         {/* Right Side: Fare Invoice Summary */}
         <div className="space-y-4">
+          {/* IRCTC User ID Check Card */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+            <div className="flex items-center space-x-2 text-primary-900 font-extrabold text-sm border-b border-slate-100 pb-2">
+              <Users className="h-4 w-4" />
+              <span>IRCTC CENTRAL VERIFICATION</span>
+            </div>
+            
+            {!isIrctcVerified ? (
+              <div className="space-y-3">
+                <p className="text-[11px] text-slate-500 font-medium leading-normal">
+                  All train bookings must be routed through an active IRCTC Account. Enter your IRCTC User ID below to authorize or create a new account.
+                </p>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Enter IRCTC User ID (e.g. shiva_irctc)"
+                    value={irctcUsername}
+                    onChange={(e) => {
+                      setIrctcUsername(e.target.value);
+                      setIrctcError('');
+                    }}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 focus:border-primary-500 focus:outline-none"
+                  />
+                  {irctcError && <p className="text-[10px] text-red-500 font-bold mt-1">{irctcError}</p>}
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={handleVerifyIrctc}
+                    disabled={irctcLoading}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-950 text-white font-black text-xs transition active:scale-95 disabled:opacity-50"
+                  >
+                    {irctcLoading ? 'Authorizing...' : 'Verify IRCTC ID'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateIrctcModal(true)}
+                    className="py-2.5 px-3 rounded-xl bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 font-black text-xs transition active:scale-95 flex items-center justify-center space-x-1"
+                  >
+                    <span>+ Create New IRCTC ID</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-emerald-800 font-black uppercase tracking-wider block">IRCTC AUTHORIZED</span>
+                  <span className="text-xs font-extrabold text-slate-800 font-mono">ID: {irctcUsername}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsIrctcVerified(false)}
+                  className="text-[10px] text-slate-400 hover:text-slate-600 underline font-semibold ml-2"
+                >
+                  Change
+                </button>
+              </div>
+            )}
+          </div>
+
+          <CreateIrctcModal
+            isOpen={showCreateIrctcModal}
+            onClose={() => setShowCreateIrctcModal(false)}
+            onSuccess={(newId) => {
+              setIrctcUsername(newId);
+              setIsIrctcVerified(true);
+              setIrctcError('');
+              localStorage.setItem('saved_irctc_id', newId);
+            }}
+          />
+
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="bg-slate-900 px-6 py-4 text-white">
               <h3 className="font-extrabold text-sm tracking-wide">FARE SUMMARY</h3>
@@ -534,7 +633,8 @@ const SeatSelection = () => {
 
               <button
                 onClick={handleProceed}
-                className="w-full flex items-center justify-center space-x-2 rounded-xl bg-primary-900 hover:bg-primary-950 py-3.5 font-bold text-white shadow-lg shadow-primary-900/10 transition active:scale-95"
+                disabled={!isIrctcVerified}
+                className="w-full flex items-center justify-center space-x-2 rounded-xl bg-primary-900 hover:bg-primary-950 py-3.5 font-bold text-white shadow-lg shadow-primary-900/10 transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>Continue to Payment</span>
                 <ArrowRight className="h-4 w-4" />

@@ -57,19 +57,47 @@ const SearchTrainResults = () => {
       }
       setLoading(true);
       try {
-        const queryStr = source && destination ? `?source=${source}&destination=${destination}` : '';
+        const extractCode = (str) => {
+          if (!str) return '';
+          const match = String(str).match(/\(([^)]+)\)/);
+          if (match) return match[1].trim().toUpperCase();
+          return String(str).trim().toUpperCase();
+        };
+
+        const srcCode = extractCode(source);
+        const destCode = extractCode(destination);
+
+        const queryStr = srcCode && destCode ? `?source=${srcCode}&destination=${destCode}` : '';
         const res = await api.get(`/trains${queryStr}`);
-        let fetched = res.data || [];
+        let fetched = Array.isArray(res.data) ? res.data : [];
+
+        // Exclude static dummy seed trains and test script trains
+        const staticSeedNumbers = new Set(['12952', '12002', '22436', '12301', '12050', '22671', '12627', '12953', '12262', '12216', '20701', '12650', '12841', '12859', '12615', '12001', '12295', '12649', '12951', '12622', '12009', '16316', '998877']);
+        fetched = fetched.filter(t => {
+          if (!t) return false;
+          if (t.id && String(t.id).match(/^t\d+$/)) return false;
+          if (t.train_number && staticSeedNumbers.has(String(t.train_number))) return false;
+          if (t.train_name && t.train_name.toLowerCase().includes('passenger visible express')) return false;
+          return true;
+        });
 
         // Merge persistent staff trains from localStorage
-        const storedStaffTrains = JSON.parse(localStorage.getItem('added_staff_trains') || '[]');
+        const rawStored = JSON.parse(localStorage.getItem('added_staff_trains') || '[]');
+        const storedStaffTrains = rawStored.filter(st => {
+          if (!st) return false;
+          if (st.trainNo === '998877' || (st.trainName && st.trainName.toLowerCase().includes('passenger visible express'))) return false;
+          return true;
+        });
+
         const existingTrainNumbers = new Set(fetched.map(f => f.train_number));
 
         storedStaffTrains.forEach(st => {
           if (!existingTrainNumbers.has(st.trainNo)) {
-            const matchesRoute = !source || !destination || 
-              (st.source || 'NDLS').toUpperCase() === source.toUpperCase() ||
-              (st.to || 'MMCT').toUpperCase() === destination.toUpperCase();
+            const stSrc = extractCode(st.source || 'NDLS');
+            const stDest = extractCode(st.to || 'MMCT');
+            const matchesRoute = !srcCode || !destCode || 
+              (stSrc === srcCode && stDest === destCode) ||
+              (stSrc === srcCode || stDest === destCode);
 
             if (matchesRoute) {
               fetched.unshift({
@@ -78,11 +106,11 @@ const SearchTrainResults = () => {
                 train_name: st.trainName,
                 status: st.status === 'On Time' ? 'on_time' : 'delayed',
                 delay_minutes: 0,
-                source: st.source || source || 'NDLS',
-                destination: st.to || destination || 'MMCT',
+                source: stSrc || srcCode || 'NDLS',
+                destination: stDest || destCode || 'MMCT',
                 route: {
-                  source_station_code: st.source || source || 'NDLS',
-                  destination_station_code: st.to || destination || 'MMCT',
+                  source_station_code: stSrc || srcCode || 'NDLS',
+                  destination_station_code: stDest || destCode || 'MMCT',
                   departure_time: st.depTime || '10:00:00',
                   arrival_time: '18:00:00',
                   distance_km: 500,
@@ -110,16 +138,25 @@ const SearchTrainResults = () => {
       setLoadingAi(true);
       try {
         const res = await api.get(`/ai/recommendations?source=${source}&destination=${destination}`);
-        setAiRecommendations(res.data.recommendedTrains);
-        setAiInsights(res.data.insights);
+        const recs = res.data.recommendedTrains || [];
+        const activeTrainNumbers = new Set(trains.map(t => String(t.train_number)));
+        const filteredRecs = recs.filter(r => activeTrainNumbers.has(String(r.train_number)));
+
+        setAiRecommendations(filteredRecs.length > 0 ? filteredRecs : null);
+        setAiInsights(filteredRecs.length > 0 ? res.data.insights : '');
       } catch (err) {
         console.error('Error fetching recommendations:', err);
       } finally {
         setLoadingAi(false);
       }
     };
-    fetchRecommendations();
-  }, [source, destination]);
+    if (trains.length > 0) {
+      fetchRecommendations();
+    } else {
+      setAiRecommendations(null);
+      setAiInsights('');
+    }
+  }, [source, destination, trains]);
 
   // Apply filters and sorting
   useEffect(() => {

@@ -25,18 +25,12 @@ CREATE POLICY "Users can update their own profile" ON public.profiles
 
 CREATE POLICY "Staff and Admin can view all profiles" ON public.profiles
     FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND role IN ('staff', 'admin')
-        )
+        (auth.jwt() ->> 'user_metadata')::jsonb ->> 'role' IN ('staff', 'admin')
     );
 
 CREATE POLICY "Admin can update all profiles" ON public.profiles
     FOR UPDATE USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND role = 'admin'
-        )
+        (auth.jwt() ->> 'user_metadata')::jsonb ->> 'role' = 'admin'
     );
 
 -- Trigger to sync auth.users to public.profiles on sign up
@@ -77,10 +71,7 @@ CREATE POLICY "Anyone can view trains" ON public.trains
 
 CREATE POLICY "Staff and Admin can modify trains" ON public.trains
     FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND role IN ('staff', 'admin')
-        )
+        (auth.jwt() ->> 'user_metadata')::jsonb ->> 'role' IN ('staff', 'admin')
     );
 
 

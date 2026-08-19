@@ -14,7 +14,9 @@ router.get('/users', authenticateToken, requireRoles(['admin', 'staff']), async 
       if (error) throw error;
       return res.json(data);
     } catch (err) {
-      return res.status(400).json({ error: err.message });
+      console.warn('⚠️ Supabase profiles query failed, returning local profiles fallback:', err.message);
+      const users = Array.from(mockDb.profiles.values());
+      return res.json(users);
     }
   }
 });
