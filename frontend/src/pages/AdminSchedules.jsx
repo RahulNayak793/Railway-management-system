@@ -71,32 +71,64 @@ const defaultSchedules = [
   }
 ];
 
-const convertTo12Hour = (time24) => {
-  if (!time24) return '';
-  if (time24.includes('AM') || time24.includes('PM')) return time24;
-  const parts = time24.split(':');
-  if (parts.length < 2) return time24;
-  let hours = parseInt(parts[0], 10);
-  const minutes = parts[1];
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  const hoursFormatted = hours < 10 ? `0${hours}` : hours;
-  return `${hoursFormatted}:${minutes} ${ampm}`;
-};
+// Helper to render Hour, Minute, and AM/PM selects for the main form
+const TimePicker = ({ label, value, onChange }) => {
+  let initialHour = '12';
+  let initialMinute = '00';
+  let initialAmpm = 'AM';
+  
+  if (value && value.includes(' ')) {
+    const [timePart, ampmPart] = value.split(' ');
+    if (timePart.includes(':')) {
+      const [h, m] = timePart.split(':');
+      initialHour = h;
+      initialMinute = m;
+    }
+    initialAmpm = ampmPart;
+  }
+  
+  const handlePartChange = (part, val) => {
+    let h = initialHour;
+    let m = initialMinute;
+    let a = initialAmpm;
+    if (part === 'hour') h = val;
+    if (part === 'minute') m = val;
+    if (part === 'ampm') a = val;
+    onChange(`${h}:${m} ${a}`);
+  };
 
-const convertTo24Hour = (time12) => {
-  if (!time12) return '';
-  if (!time12.includes('AM') && !time12.includes('PM')) return time12;
-  const match = time12.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
-  if (!match) return time12;
-  let hours = parseInt(match[1], 10);
-  const minutes = match[2];
-  const ampm = match[3].toUpperCase();
-  if (ampm === 'PM' && hours < 12) hours += 12;
-  if (ampm === 'AM' && hours === 12) hours = 0;
-  const hoursFormatted = hours < 10 ? `0${hours}` : hours;
-  return `${hoursFormatted}:${minutes}`;
+  const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
+  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
+  return (
+    <div className="space-y-1.5 w-full">
+      <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
+      <div className="flex gap-1.5">
+        <select
+          value={initialHour}
+          onChange={(e) => handlePartChange('hour', e.target.value)}
+          className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-primary-500 w-1/3 text-center cursor-pointer"
+        >
+          {hours.map(h => <option key={h} value={h}>{h}</option>)}
+        </select>
+        <select
+          value={initialMinute}
+          onChange={(e) => handlePartChange('minute', e.target.value)}
+          className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-primary-500 w-1/3 text-center cursor-pointer"
+        >
+          {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        <select
+          value={initialAmpm}
+          onChange={(e) => handlePartChange('ampm', e.target.value)}
+          className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-primary-500 w-1/3 text-center cursor-pointer"
+        >
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
+    </div>
+  );
 };
 
 const AdminSchedules = () => {
@@ -150,9 +182,9 @@ const AdminSchedules = () => {
   const [source, setSource] = useState('');
   const [dest, setDest] = useState('');
   const [depDate, setDepDate] = useState('');
-  const [depTime, setDepTime] = useState('');
+  const [depTime, setDepTime] = useState('12:00 PM');
   const [arrDate, setArrDate] = useState('');
-  const [arrTime, setArrTime] = useState('');
+  const [arrTime, setArrTime] = useState('12:00 PM');
   const [frequency, setFrequency] = useState('Daily');
   const [stopsInput, setStopsInput] = useState([]);
 
@@ -188,9 +220,9 @@ const AdminSchedules = () => {
     setSource('');
     setDest('');
     setDepDate('');
-    setDepTime('');
+    setDepTime('12:00 PM');
     setArrDate('');
-    setArrTime('');
+    setArrTime('12:00 PM');
     setFrequency('Daily');
     setStopsInput([]);
     setShowAddModal(true);
@@ -203,9 +235,9 @@ const AdminSchedules = () => {
     setSource(sch.source);
     setDest(sch.dest);
     setDepDate(sch.depDate || '');
-    setDepTime(sch.depTime || '');
+    setDepTime(sch.depTime || '12:00 PM');
     setArrDate(sch.arrDate || '');
-    setArrTime(sch.arrTime || '');
+    setArrTime(sch.arrTime || '12:00 PM');
     setFrequency(sch.frequency);
     setStopsInput(sch.stops ? [...sch.stops] : []);
     setShowEditModal(true);
@@ -217,7 +249,7 @@ const AdminSchedules = () => {
   };
 
   const handleAddStopInput = () => {
-    setStopsInput([...stopsInput, { stationCode: '', arrTime: '', depTime: '', haltMinutes: '2' }]);
+    setStopsInput([...stopsInput, { stationCode: '', arrTime: '12:00 PM', depTime: '12:00 PM', haltMinutes: '2' }]);
   };
 
   const handleRemoveStopInput = (index) => {
@@ -232,7 +264,7 @@ const AdminSchedules = () => {
 
   const handleCreateSchedule = (e) => {
     e.preventDefault();
-    if (!trainNo || !trainName || !source || !dest || !depTime || !arrTime) return;
+    if (!trainNo || !trainName || !source || !dest) return;
     
     const newSch = {
       id: `sch-${Date.now()}`,
@@ -241,9 +273,9 @@ const AdminSchedules = () => {
       source: source.toUpperCase().trim(),
       dest: dest.toUpperCase().trim(),
       depDate: isDateRequired ? depDate : '',
-      depTime,
+      depTime: depTime || '12:00 PM',
       arrDate: isDateRequired ? arrDate : '',
-      arrTime,
+      arrTime: arrTime || '12:00 PM',
       frequency,
       status: 'Active',
       stops: stopsInput.filter(s => s.stationCode)
@@ -258,7 +290,7 @@ const AdminSchedules = () => {
 
   const handleUpdateSchedule = (e) => {
     e.preventDefault();
-    if (!trainNo || !trainName || !source || !dest || !depTime || !arrTime) return;
+    if (!trainNo || !trainName || !source || !dest) return;
 
     const updated = schedules.map(s => {
       if (s.id === selectedSch.id) {
@@ -269,9 +301,9 @@ const AdminSchedules = () => {
           source: source.toUpperCase().trim(),
           dest: dest.toUpperCase().trim(),
           depDate: isDateRequired ? depDate : '',
-          depTime,
+          depTime: depTime || '12:00 PM',
           arrDate: isDateRequired ? arrDate : '',
-          arrTime,
+          arrTime: arrTime || '12:00 PM',
           frequency,
           stops: stopsInput.filter(st => st.stationCode)
         };
@@ -298,6 +330,59 @@ const AdminSchedules = () => {
     s.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.dest.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const renderStopGridTimePicker = (idx, field, value) => {
+    let h = '12';
+    let m = '00';
+    let a = 'AM';
+    if (value && value.includes(' ')) {
+      const [t, ampm] = value.split(' ');
+      if (t.includes(':')) {
+        [h, m] = t.split(':');
+      }
+      a = ampm;
+    }
+    
+    const handleStopPartChange = (part, val) => {
+      let newH = h;
+      let newM = m;
+      let newA = a;
+      if (part === 'hour') newH = val;
+      if (part === 'minute') newM = val;
+      if (part === 'ampm') newA = val;
+      handleStopChange(idx, field, `${newH}:${newM} ${newA}`);
+    };
+
+    const hoursList = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
+    const minutesList = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
+    return (
+      <div className="flex gap-0.5 w-full">
+        <select
+          value={h}
+          onChange={(e) => handleStopPartChange('hour', e.target.value)}
+          className="bg-slate-50 border border-slate-200 rounded-lg px-1 py-1 text-[10px] font-semibold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
+        >
+          {hoursList.map(item => <option key={item} value={item}>{item}</option>)}
+        </select>
+        <select
+          value={m}
+          onChange={(e) => handleStopPartChange('minute', e.target.value)}
+          className="bg-slate-50 border border-slate-200 rounded-lg px-1 py-1 text-[10px] font-semibold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
+        >
+          {minutesList.map(item => <option key={item} value={item}>{item}</option>)}
+        </select>
+        <select
+          value={a}
+          onChange={(e) => handleStopPartChange('ampm', e.target.value)}
+          className="bg-slate-50 border border-slate-200 rounded-lg px-1 py-1 text-[10px] font-bold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
+        >
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
+    );
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 font-sans space-y-6 animate-slide-in">
@@ -524,26 +609,16 @@ const AdminSchedules = () => {
               )}
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-550 uppercase">Departure Time</label>
-                  <input
-                    type="time"
-                    value={convertTo24Hour(depTime)}
-                    onChange={(e) => setDepTime(convertTo12Hour(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-550 uppercase">Arrival Time</label>
-                  <input
-                    type="time"
-                    value={convertTo24Hour(arrTime)}
-                    onChange={(e) => setArrTime(convertTo12Hour(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
+                <TimePicker
+                  label="Departure Time"
+                  value={depTime}
+                  onChange={(val) => setDepTime(val)}
+                />
+                <TimePicker
+                  label="Arrival Time"
+                  value={arrTime}
+                  onChange={(val) => setArrTime(val)}
+                />
               </div>
 
               {/* Dynamic stops container */}
@@ -566,7 +641,7 @@ const AdminSchedules = () => {
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1 border border-slate-100 rounded-xl p-2.5 bg-slate-50/50">
                   {stopsInput.map((stop, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white border border-slate-100 rounded-xl p-2 shadow-xs">
-                      <div className="col-span-3">
+                      <div className="col-span-2">
                         <input
                           type="text"
                           placeholder="Code"
@@ -576,31 +651,19 @@ const AdminSchedules = () => {
                           required
                         />
                       </div>
-                      <div className="col-span-3">
-                        <input
-                          type="time"
-                          value={convertTo24Hour(stop.arrTime)}
-                          onChange={(e) => handleStopChange(idx, 'arrTime', convertTo12Hour(e.target.value))}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                          required
-                        />
+                      <div className="col-span-4">
+                        {renderStopGridTimePicker(idx, 'arrTime', stop.arrTime || '12:00 AM')}
                       </div>
-                      <div className="col-span-3">
-                        <input
-                          type="time"
-                          value={convertTo24Hour(stop.depTime)}
-                          onChange={(e) => handleStopChange(idx, 'depTime', convertTo12Hour(e.target.value))}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                          required
-                        />
+                      <div className="col-span-4">
+                        {renderStopGridTimePicker(idx, 'depTime', stop.depTime || '12:00 AM')}
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-1">
                         <input
                           type="text"
                           placeholder="Halt"
                           value={stop.haltMinutes}
                           onChange={(e) => handleStopChange(idx, 'haltMinutes', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-[11px] font-bold text-center text-slate-855 focus:outline-none"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1 py-1.5 text-[11px] font-bold text-center text-slate-855 focus:outline-none"
                         />
                       </div>
                       <div className="col-span-1 text-center">
@@ -653,7 +716,7 @@ const AdminSchedules = () => {
             <form onSubmit={handleUpdateSchedule} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-550 uppercase">Train Number</label>
+                  <label className="text-[10px] font-bold text-slate-555 uppercase">Train Number</label>
                   <input
                     type="text"
                     value={trainNo}
@@ -663,7 +726,7 @@ const AdminSchedules = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-550 uppercase">Train Name</label>
+                  <label className="text-[10px] font-bold text-slate-555 uppercase">Train Name</label>
                   <input
                     type="text"
                     value={trainName}
@@ -676,7 +739,7 @@ const AdminSchedules = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-550 uppercase">Source Terminal</label>
+                  <label className="text-[10px] font-bold text-slate-555 uppercase">Source Terminal</label>
                   <input
                     type="text"
                     value={source}
@@ -686,7 +749,7 @@ const AdminSchedules = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-550 uppercase">Destination Terminal</label>
+                  <label className="text-[10px] font-bold text-slate-555 uppercase">Destination Terminal</label>
                   <input
                     type="text"
                     value={dest}
@@ -698,7 +761,7 @@ const AdminSchedules = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-550 uppercase">Frequency</label>
+                <label className="text-[10px] font-bold text-slate-555 uppercase">Frequency</label>
                 <select
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value)}
@@ -738,26 +801,16 @@ const AdminSchedules = () => {
               )}
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-550 uppercase">Departure Time</label>
-                  <input
-                    type="time"
-                    value={convertTo24Hour(depTime)}
-                    onChange={(e) => setDepTime(convertTo12Hour(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-550 uppercase">Arrival Time</label>
-                  <input
-                    type="time"
-                    value={convertTo24Hour(arrTime)}
-                    onChange={(e) => setArrTime(convertTo12Hour(e.target.value))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
+                <TimePicker
+                  label="Departure Time"
+                  value={depTime}
+                  onChange={(val) => setDepTime(val)}
+                />
+                <TimePicker
+                  label="Arrival Time"
+                  value={arrTime}
+                  onChange={(val) => setArrTime(val)}
+                />
               </div>
 
               {/* Dynamic stops container */}
@@ -780,7 +833,7 @@ const AdminSchedules = () => {
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1 border border-slate-100 rounded-xl p-2.5 bg-slate-50/50">
                   {stopsInput.map((stop, idx) => (
                     <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white border border-slate-100 rounded-xl p-2 shadow-xs">
-                      <div className="col-span-3">
+                      <div className="col-span-2">
                         <input
                           type="text"
                           placeholder="Code"
@@ -790,31 +843,19 @@ const AdminSchedules = () => {
                           required
                         />
                       </div>
-                      <div className="col-span-3">
-                        <input
-                          type="time"
-                          value={convertTo24Hour(stop.arrTime)}
-                          onChange={(e) => handleStopChange(idx, 'arrTime', convertTo12Hour(e.target.value))}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                          required
-                        />
+                      <div className="col-span-4">
+                        {renderStopGridTimePicker(idx, 'arrTime', stop.arrTime || '12:00 AM')}
                       </div>
-                      <div className="col-span-3">
-                        <input
-                          type="time"
-                          value={convertTo24Hour(stop.depTime)}
-                          onChange={(e) => handleStopChange(idx, 'depTime', convertTo12Hour(e.target.value))}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                          required
-                        />
+                      <div className="col-span-4">
+                        {renderStopGridTimePicker(idx, 'depTime', stop.depTime || '12:00 AM')}
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-1">
                         <input
                           type="text"
                           placeholder="Halt"
                           value={stop.haltMinutes}
                           onChange={(e) => handleStopChange(idx, 'haltMinutes', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-[11px] font-bold text-center text-slate-855 focus:outline-none"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1 py-1.5 text-[11px] font-bold text-center text-slate-855 focus:outline-none"
                         />
                       </div>
                       <div className="col-span-1 text-center">
