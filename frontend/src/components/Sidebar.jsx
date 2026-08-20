@@ -64,29 +64,24 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
   ];
 
   const menuItems = [];
-  if (isAdmin) {
+  if (isAdmin || isStaff) {
     menuItems.push(
       { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-      { name: 'User Management', path: '/admin/users', icon: Users },
-      { name: 'Train Fleet', path: '/admin/trains', icon: Train },
+      { name: 'Train Operations', path: '/admin/schedules', icon: Train },
+      { name: 'Route Management', path: '/admin/routes', icon: Compass },
+      { name: 'Station Management', path: '/admin/stations', icon: MapPin },
+      { name: 'Class Management', path: '/admin/classes', icon: Layers },
+      { name: 'Bookings Management', path: '/admin/bookings', icon: BookOpen },
+      { name: 'Passenger Directory', path: '/admin/users', icon: User },
+      { name: 'Staff Roster', path: '/admin/staff', icon: Users },
+      { name: 'Ticket Checking', path: '/admin/ticket-checking', icon: Ticket },
+      { name: 'RAC & Waiting List', path: '/admin/rac-waiting', icon: Clock },
+      { name: 'Food & Catering', path: '/admin/catering', icon: Utensils },
+      { name: 'Live Announcements', path: '/admin/announcements', icon: Megaphone },
       { name: 'Inquiry Center', path: '/admin/inquiries', icon: MessageSquare },
       { name: 'Refund Disputes', path: '/admin/refunds', icon: Receipt },
       { name: 'Fare & Policy', path: '/admin/policies', icon: Settings },
-      { name: 'Food & Catering', path: '/admin/catering', icon: Utensils },
-    );
-  } else if (isStaff) {
-    menuItems.push(
-      { name: 'Dashboard', path: '/staff', icon: LayoutDashboard },
-      { name: 'Train Operations', path: '/staff/schedules', icon: Train },
-      { name: 'Bookings', path: '/staff/bookings', icon: BookOpen },
-      { name: 'Passengers', path: '/staff/passengers', icon: Users },
-      { name: 'Ticket Checking', path: '/staff/ticket-checking', icon: Ticket },
-      { name: 'RAC / Waiting', path: '/staff/rac-waiting', icon: Clock },
-      { name: 'Reports', path: '/staff/reports', icon: FileText },
-      { name: 'Announcements', path: '/staff/announcements', icon: Megaphone },
-      { name: 'Pantry & Meals', path: '/staff/catering', icon: Utensils },
-      { name: 'Help & Support', path: '/staff/inquiries', icon: HelpCircle },
-      { name: 'Settings', path: '/staff/profile', icon: Settings },
+      { name: 'Reports & Analytics', path: '/admin/reports', icon: BarChart3 }
     );
   } else if (isPassenger) {
     menuItems.push(

@@ -147,35 +147,10 @@ const Login = () => {
 
     const cleanEmail = email ? email.trim().toLowerCase() : '';
 
-    if (isSignUp && role === 'staff') {
-      setError(lang === 'hi' ? 'कर्मचारी खाते स्वयं-पंजीकृत नहीं किए जा सकते। कृपया व्यवस्थापक से संपर्क करें।' : 'Staff accounts cannot be self-registered. Please contact the administrator.');
+    if (isSignUp && role === 'admin') {
+      setError(lang === 'hi' ? 'प्रशासक खाते स्वयं-पंजीकृत नहीं किए जा सकते।' : 'Admin accounts cannot be self-registered.');
       setFormLoading(false);
       return;
-    }
-
-    // Helper to get all admin-approved staff emails
-    const getApprovedStaffEmails = () => {
-      const storedStaff = JSON.parse(localStorage.getItem('added_staff_members') || '[]');
-      const emails = new Set([
-        'staff@railway.com',
-        'shiva@gmail.com',
-        ...storedStaff.map(s => (s && s.email) ? s.email.trim().toLowerCase() : '')
-      ]);
-      return emails;
-    };
-
-    // Verify staff login is restricted to admin-approved staff only
-    if (!isSignUp && role === 'staff') {
-      const approvedStaffEmails = getApprovedStaffEmails();
-      if (!approvedStaffEmails.has(cleanEmail)) {
-        setError(
-          lang === 'hi'
-            ? 'पहुंच अस्वीकृत: केवल व्यवस्थापक-अनुमोदित कर्मचारी ही स्टाफ पोर्टल से लॉगिन कर सकते हैं।'
-            : 'Access Denied: Only admin-added staff members can log in as staff. Please contact your system administrator.'
-        );
-        setFormLoading(false);
-        return;
-      }
     }
 
     try {
@@ -193,23 +168,7 @@ const Login = () => {
       } else {
         const user = await login(cleanEmail, password, role);
         console.log('✅ Login successful. User received:', user);
-        
-        // Strict post-login check for Staff portal
-        if (role === 'staff' || (user?.role === 'staff' && !getApprovedStaffEmails().has(user?.email?.toLowerCase()))) {
-          const approvedStaffEmails = getApprovedStaffEmails();
-          if (!approvedStaffEmails.has(user?.email?.toLowerCase())) {
-            setError(
-              lang === 'hi'
-                ? 'पहुंच अस्वीकृत: केवल व्यवस्थापक-अनुमोदित कर्मचारी ही स्टाफ पोर्टल का उपयोग कर सकते हैं।'
-                : 'Access Denied: Only admin-added staff members can log in as staff.'
-            );
-            setFormLoading(false);
-            return;
-          }
-        }
-        
-        const targetNavRole = role === 'staff' ? 'staff' : (user?.role || role);
-        redirectUser(targetNavRole);
+        redirectUser(user?.role || role);
       }
     } catch (err) {
       console.error('❌ Authentication error:', err);
@@ -223,10 +182,8 @@ const Login = () => {
   const redirectUser = (userRole) => {
     const safeRole = (userRole || role || 'passenger').toLowerCase();
     console.log(`🔀 Navigating user to target role dashboard: /${safeRole}`);
-    if (safeRole === 'admin') {
+    if (safeRole === 'admin' || safeRole === 'staff') {
       navigate('/admin');
-    } else if (safeRole === 'staff') {
-      navigate('/staff');
     } else {
       navigate('/passenger');
     }
@@ -438,12 +395,12 @@ const Login = () => {
               )}
             </div>
 
-            {/* Toggle Tab header for login vs signup (Only show when not in forgot password mode) */}
+            {/* Toggle Tab header for login vs signup */}
             {!showForgotPassword && (
               <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl mb-6">
                 {[
                   { id: 'passenger', label: t.passenger, icon: User },
-                  { id: 'staff', label: t.staff, icon: Briefcase }
+                  { id: 'admin', label: 'ADMIN', icon: Shield }
                 ].map((item) => {
                   const Icon = item.icon;
                   const isSelected = role === item.id;
@@ -454,7 +411,7 @@ const Login = () => {
                       onClick={() => {
                         setRole(item.id);
                         setError(null);
-                        if (item.id === 'staff') {
+                        if (item.id === 'admin') {
                           setIsSignUp(false);
                         }
                       }}

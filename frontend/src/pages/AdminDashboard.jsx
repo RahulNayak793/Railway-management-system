@@ -364,6 +364,33 @@ const AdminDashboard = () => {
 
       </div>
 
+      {/* Quick Operational Controls Bar */}
+      <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-sm space-y-4">
+        <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+          <h3 className="text-sm font-black text-slate-850">Operational Operations Center</h3>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">All-in-one Control</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[
+            { label: 'Ticket Checking', path: '/admin/ticket-checking', icon: '🎫', color: 'hover:bg-blue-50 border-blue-100' },
+            { label: 'RAC / Waiting', path: '/admin/rac-waiting', icon: '⏱️', color: 'hover:bg-amber-50 border-amber-100' },
+            { label: 'Announcements', path: '/admin/announcements', icon: '📢', color: 'hover:bg-purple-50 border-purple-100' },
+            { label: 'Pantry & Catering', path: '/admin/catering', icon: '🍱', color: 'hover:bg-emerald-50 border-emerald-100' },
+            { label: 'Staff Roster', path: '/admin/staff', icon: '👥', color: 'hover:bg-indigo-50 border-indigo-100' },
+            { label: 'Support & Inquiries', path: '/admin/inquiries', icon: '💬', color: 'hover:bg-rose-50 border-rose-100' }
+          ].map((op, i) => (
+            <button
+              key={i}
+              onClick={() => navigate(op.path)}
+              className={`p-3.5 rounded-2xl border border-slate-200 bg-white text-left transition flex flex-col justify-between space-y-2 group shadow-2xs ${op.color}`}
+            >
+              <span className="text-xl">{op.icon}</span>
+              <span className="text-xs font-extrabold text-slate-800 group-hover:text-primary-700 block">{op.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Footer bar */}
       <footer className="flex flex-col sm:flex-row justify-between items-center text-[10px] font-bold text-slate-450 pt-8 border-t border-slate-200 gap-3 select-none">
         <span>© 2024 Railway Management System. All rights reserved.</span>

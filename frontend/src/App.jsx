@@ -163,10 +163,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (allowedRoles && allowedRoles.length > 0) {
     const normalizedAllowed = allowedRoles.map(r => r.toLowerCase());
-    const isAllowed = normalizedAllowed.includes(userRole) || (userRole === 'admin');
+    const isAllowed = normalizedAllowed.includes(userRole) || (userRole === 'admin' || userRole === 'staff');
     if (!isAllowed) {
-      if (userRole === 'admin') return <Navigate to="/admin" replace />;
-      if (userRole === 'staff') return <Navigate to="/staff" replace />;
+      if (userRole === 'admin' || userRole === 'staff') return <Navigate to="/admin" replace />;
       return <Navigate to="/passenger" replace />;
     }
   }
@@ -264,8 +263,7 @@ const RootRedirect = () => {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'admin') return <Navigate to="/admin" replace />;
-  if (user.role === 'staff') return <Navigate to="/staff" replace />;
+  if (user.role === 'admin' || user.role === 'staff') return <Navigate to="/admin" replace />;
   return <Navigate to="/passenger" replace />;
 };
 
@@ -511,133 +509,171 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* Admin Dashboard Flow */}
+                    {/* Admin Dashboard Flow (Unified Admin & Operations Module) */}
                     <Route path="/admin" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminDashboard />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/trains" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <StaffSchedules />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/routes" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminRoutes />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/schedules" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminSchedules />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/stations" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminStations />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/classes" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminClasses />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/users" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminUsers />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
+                    <Route path="/admin/passengers" element={
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                        <AdminLayout>
+                          <StaffPassengers />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/admin/staff" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminStaff />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
+                    <Route path="/admin/ticket-checking" element={
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                        <AdminLayout>
+                          <StaffTicketChecking />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/rac-waiting" element={
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                        <AdminLayout>
+                          <StaffRACWaiting />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/announcements" element={
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                        <AdminLayout>
+                          <StaffAnnouncements />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/admin/bookings" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <StaffBookings />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/payments" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminPayments />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/cancellations" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                        <AdminLayout>
+                          <StaffRefunds />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/refunds" element={
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <StaffRefunds />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/cancellation" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <StaffRefunds />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/inquiries" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <StaffInquiries />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/reports" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <StaffReports />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/analytics" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <StaffReports />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/policies" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminPolicies />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/catering" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminCatering />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/settings" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
                           <AdminPolicies />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
+
+                    {/* Legacy /staff route redirects to unified /admin */}
+                    <Route path="/staff/*" element={<Navigate to="/admin" replace />} />
 
                     {/* Default Route redirect */}
                     <Route path="/" element={<RootRedirect />} />
