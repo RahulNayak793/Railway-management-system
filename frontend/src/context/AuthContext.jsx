@@ -36,17 +36,40 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, [token]);
 
-  const login = async (email, password) => {
+  const login = async (email, password, targetRole) => {
     setError(null);
     setLoading(true);
     const cleanEmail = email ? email.trim().toLowerCase() : '';
 
+    const getApprovedStaff = () => {
+      try {
+        const storedStaff = JSON.parse(localStorage.getItem('added_staff_members') || '[]');
+        return new Set([
+          'staff@railway.com',
+          'shiva@gmail.com',
+          ...storedStaff.map(s => (s && s.email) ? s.email.trim().toLowerCase() : '')
+        ]);
+      } catch {
+        return new Set(['staff@railway.com', 'shiva@gmail.com']);
+      }
+    };
+
+    let userRole = targetRole || 'passenger';
+    if (!targetRole) {
+      if (cleanEmail === 'admin@railway.com' || cleanEmail.includes('admin')) userRole = 'admin';
+      else if (getApprovedStaff().has(cleanEmail) || cleanEmail.includes('staff')) userRole = 'staff';
+      else userRole = 'passenger';
+    }
+
     try {
-      const res = await api.post('/auth/login', { email, password });
+      const res = await api.post('/auth/login', { email, password, role: userRole });
       const { session, user: loggedUser } = res.data;
       
       const jwtToken = session?.access_token || res.data?.token || res.data?.access_token;
       if (jwtToken && loggedUser) {
+        if (userRole === 'staff' || getApprovedStaff().has(cleanEmail)) {
+          loggedUser.role = 'staff';
+        }
         localStorage.setItem('token', jwtToken);
         localStorage.setItem('user', JSON.stringify(loggedUser));
         setToken(jwtToken);
@@ -59,7 +82,12 @@ export const AuthProvider = ({ children }) => {
     }
 
     // High-availability local session fallback for smooth demo & Vercel serverless access
-    const userRole = cleanEmail.includes('admin') ? 'admin' : cleanEmail.includes('staff') ? 'staff' : 'passenger';
+    if (getApprovedStaff().has(cleanEmail) || targetRole === 'staff') {
+      userRole = 'staff';
+    } else if (cleanEmail.includes('admin') || targetRole === 'admin') {
+      userRole = 'admin';
+    }
+
     const fallbackUser = {
       id: 'usr-client-' + Math.random().toString(36).substr(2, 8),
       email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@railway.com`,

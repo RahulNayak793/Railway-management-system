@@ -191,7 +191,7 @@ const Login = () => {
         console.log('✅ Signup successful. User received:', user);
         redirectUser(user?.role || role);
       } else {
-        const user = await login(cleanEmail, password);
+        const user = await login(cleanEmail, password, role);
         console.log('✅ Login successful. User received:', user);
         
         // Strict post-login check for Staff portal
@@ -208,7 +208,8 @@ const Login = () => {
           }
         }
         
-        redirectUser(user?.role || role);
+        const targetNavRole = role === 'staff' ? 'staff' : (user?.role || role);
+        redirectUser(targetNavRole);
       }
     } catch (err) {
       console.error('❌ Authentication error:', err);

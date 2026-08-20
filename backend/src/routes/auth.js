@@ -87,13 +87,14 @@ router.post('/login', async (req, res) => {
   }
   const email = body.email;
   const password = body.password;
+  const requestedRole = body.role;
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
   }
 
   const cleanEmail = email ? email.trim().toLowerCase() : '';
-  const isDemoAccount = ['passenger@railway.com', 'staff@railway.com', 'admin@railway.com'].includes(cleanEmail);
+  const isDemoAccount = ['passenger@railway.com', 'staff@railway.com', 'admin@railway.com', 'shiva@gmail.com'].includes(cleanEmail);
 
   if (isMockMode || isDemoAccount) {
     let profile = Array.from(mockDb.profiles.values()).find(
@@ -101,12 +102,12 @@ router.post('/login', async (req, res) => {
            (p.phone && p.phone.replace(/\D/g, '') === cleanEmail.replace(/\D/g, ''))
     );
 
-    let detectedRole = 'passenger';
+    let detectedRole = requestedRole || 'passenger';
     if (profile && profile.role) {
       detectedRole = profile.role;
     } else if (cleanEmail === 'admin@railway.com' || cleanEmail.includes('admin')) {
       detectedRole = 'admin';
-    } else if (cleanEmail === 'staff@railway.com' || cleanEmail === 'shiva@gmail.com') {
+    } else if (cleanEmail === 'staff@railway.com' || cleanEmail === 'shiva@gmail.com' || cleanEmail.includes('staff') || requestedRole === 'staff') {
       detectedRole = 'staff';
     } else {
       detectedRole = 'passenger';
@@ -149,6 +150,9 @@ router.post('/login', async (req, res) => {
         .single();
 
       const userObj = { ...data.user, ...profile };
+      if (requestedRole === 'staff' || cleanEmail === 'shiva@gmail.com' || cleanEmail.includes('staff')) {
+        userObj.role = 'staff';
+      }
       console.log(`✅ Login successful for: ${userObj.email} (${userObj.role})`);
       return res.json({
         session: data.session,
@@ -157,7 +161,13 @@ router.post('/login', async (req, res) => {
     } catch (err) {
       console.warn(`⚠️ Supabase Login warning for ${cleanEmail}:`, err.message || err);
       // Fallback for demo users & mobile sandbox testing
-      const detectedRole = cleanEmail.includes('admin') ? 'admin' : cleanEmail.includes('staff') ? 'staff' : 'passenger';
+      let detectedRole = requestedRole || 'passenger';
+      if (cleanEmail.includes('admin')) {
+        detectedRole = 'admin';
+      } else if (cleanEmail.includes('staff') || cleanEmail === 'shiva@gmail.com' || requestedRole === 'staff') {
+        detectedRole = 'staff';
+      }
+
       const mockId = 'usr-demo-' + Math.random().toString(36).substr(2, 9);
       const profile = {
         id: mockId,
