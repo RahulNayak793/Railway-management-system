@@ -55,10 +55,10 @@ export const AuthProvider = ({ children }) => {
     };
 
     let userRole = targetRole || 'passenger';
-    if (!targetRole) {
-      if (cleanEmail === 'admin@railway.com' || cleanEmail.includes('admin')) userRole = 'admin';
-      else if (getApprovedStaff().has(cleanEmail) || cleanEmail.includes('staff')) userRole = 'staff';
-      else userRole = 'passenger';
+    if (cleanEmail === 'admin@railway.com' || cleanEmail === 'staff@railway.com' || cleanEmail.includes('admin') || cleanEmail.includes('staff') || getApprovedStaff().has(cleanEmail) || targetRole === 'admin' || targetRole === 'staff') {
+      userRole = 'admin';
+    } else {
+      userRole = 'passenger';
     }
 
     try {
@@ -67,9 +67,7 @@ export const AuthProvider = ({ children }) => {
       
       const jwtToken = session?.access_token || res.data?.token || res.data?.access_token;
       if (jwtToken && loggedUser) {
-        if (userRole === 'staff' || getApprovedStaff().has(cleanEmail)) {
-          loggedUser.role = 'staff';
-        }
+        loggedUser.role = userRole;
         localStorage.setItem('token', jwtToken);
         localStorage.setItem('user', JSON.stringify(loggedUser));
         setToken(jwtToken);
@@ -82,17 +80,11 @@ export const AuthProvider = ({ children }) => {
     }
 
     // High-availability local session fallback for smooth demo & Vercel serverless access
-    if (getApprovedStaff().has(cleanEmail) || targetRole === 'staff') {
-      userRole = 'staff';
-    } else if (cleanEmail.includes('admin') || targetRole === 'admin') {
-      userRole = 'admin';
-    }
-
     const fallbackUser = {
       id: 'usr-client-' + Math.random().toString(36).substr(2, 8),
       email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@railway.com`,
       role: userRole,
-      full_name: cleanEmail.split('@')[0].toUpperCase() || 'Railway System User',
+      full_name: (cleanEmail.split('@')[0] || 'admin').toUpperCase() === 'STAFF' ? 'ADMIN' : (cleanEmail.split('@')[0] || 'User').toUpperCase(),
       phone: '+91 9876543210',
       created_at: new Date().toISOString()
     };

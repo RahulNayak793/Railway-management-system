@@ -162,15 +162,7 @@ const Navbar = ({ onToggleSidebar }) => {
               className="hidden sm:flex items-center gap-1.5 rounded-full px-3 h-7 text-xs font-bold text-red-300"
               style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)' }}
             >
-              <Shield className="h-3 w-3" /> Admin
-            </span>
-          )}
-          {userRole === 'staff' && (
-            <span
-              className="hidden sm:flex items-center gap-1.5 rounded-full px-3 h-7 text-xs font-bold text-emerald-300"
-              style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}
-            >
-              <Zap className="h-3 w-3" /> Staff Portal
+              <Shield className="h-3 w-3" /> Admin Portal
             </span>
           )}
 

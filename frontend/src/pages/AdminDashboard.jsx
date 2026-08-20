@@ -366,12 +366,12 @@ const AdminDashboard = () => {
 
       </div>
 
-      {/* Staff Operations Center Hub - Integrated Staff & Operations Module */}
+      {/* Operations Center Hub */}
       <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-sm space-y-5">
         <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
-            <h3 className="text-base font-black text-slate-900 tracking-tight">Staff & Operations Management Hub</h3>
-            <p className="text-xs text-slate-500 font-medium">All staff operational tools and terminal control features integrated into Admin.</p>
+            <h3 className="text-base font-black text-slate-900 tracking-tight">Operations Management Hub</h3>
+            <p className="text-xs text-slate-500 font-medium">All operational tools and terminal control features integrated into Admin.</p>
           </div>
           <span className="bg-blue-50 text-blue-700 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border border-blue-100">
             Unified Master Control
@@ -409,8 +409,8 @@ const AdminDashboard = () => {
               color: 'text-emerald-600 bg-emerald-50 border-emerald-100 hover:border-emerald-300' 
             },
             { 
-              title: 'Staff Roster & Access', 
-              desc: 'Manage staff accounts & terminal shifts', 
+              title: 'Operations & Access', 
+              desc: 'Manage admin accounts & terminal access', 
               path: '/admin/staff', 
               icon: UserCheck, 
               color: 'text-indigo-600 bg-indigo-50 border-indigo-100 hover:border-indigo-300' 

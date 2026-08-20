@@ -144,25 +144,21 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
             <div
               className="flex h-10 w-10 items-center justify-center rounded-xl text-sm font-black text-white flex-shrink-0"
               style={{
-                background: isAdmin
-                  ? 'linear-gradient(135deg, #ef4444, #dc2626)'
-                  : 'linear-gradient(135deg, #10b981, #059669)',
-                boxShadow: isAdmin
-                  ? '0 0 12px rgba(239,68,68,0.35)'
-                  : '0 0 12px rgba(16,185,129,0.35)',
+                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                boxShadow: '0 0 12px rgba(239,68,68,0.35)',
               }}
             >
               {getInitials(user.full_name)}
             </div>
             <div className="overflow-hidden">
               <p className="text-xs font-black text-white truncate leading-tight">
-                {user.full_name || 'Staff User'}
+                {user.full_name || 'Admin User'}
               </p>
               <span
                 className="text-[9px] font-bold uppercase tracking-widest block mt-0.5"
-                style={{ color: isAdmin ? '#fca5a5' : '#6ee7b7' }}
+                style={{ color: '#fca5a5' }}
               >
-                {isAdmin ? '● Administrator' : '● Station Staff'}
+                ● Administrator
               </span>
             </div>
           </div>
