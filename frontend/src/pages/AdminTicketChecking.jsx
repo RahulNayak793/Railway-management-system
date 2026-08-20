@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 
-const StaffTicketChecking = () => {
+const AdminTicketChecking = () => {
   const [pnrInput, setPnrInput] = useState('');
   const [checkedResult, setCheckedResult] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
@@ -185,8 +185,6 @@ const StaffTicketChecking = () => {
               </button>
             </div>
 
-
-
             {errorMsg && (
               <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
                 {errorMsg}
@@ -276,7 +274,7 @@ const StaffTicketChecking = () => {
               <div className="flex items-center space-x-1">
                 <Filter className="h-3.5 w-3.5 text-slate-400 mr-1" />
                 {[
-                  { id: 'all', label: 'All (24)' },
+                  { id: 'all', label: `All (${seatsState.length})` },
                   { id: 'verified', label: `Verified (${verifiedCount})` },
                   { id: 'unverified', label: `Pending (${unverifiedCount})` },
                   { id: 'no_show', label: `No-Show (${noShowCount})` },
@@ -298,80 +296,81 @@ const StaffTicketChecking = () => {
                 type="button"
                 onClick={() => {
                   setEftSeat(`${selectedCoach}-05`);
-                  setEftPassenger('Unbooked Passenger');
                   setShowEftModal(true);
                 }}
-                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-[11px] shadow-sm transition active:scale-95 flex items-center space-x-1"
+                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] shadow-xs flex items-center space-x-1"
               >
-                <Receipt className="h-3.5 w-3.5" />
-                <span>Issue EFT Fine Ticket</span>
+                <Receipt className="h-3 w-3" />
+                <span>Issue EFT Fine Fine Penalty</span>
               </button>
             </div>
 
-            {/* 2D Berth Seat Layout Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-1">
+            {/* Grid list of seats */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-2">
               {seatsState
                 .filter(s => filterStatus === 'all' || s.status === filterStatus)
-                .map((s) => {
-                  const isVerified = s.status === 'verified';
-                  const isNoShow = s.status === 'no_show';
-
+                .map(seat => {
+                  const isVerified = seat.status === 'verified';
+                  const isNoShow = seat.status === 'no_show';
                   return (
                     <div
-                      key={s.id}
-                      className={`rounded-2xl border p-3 space-y-2 transition-all duration-200 relative ${
+                      key={seat.id}
+                      className={`p-3 rounded-2xl border transition duration-150 flex flex-col justify-between space-y-2 relative ${
                         isVerified
-                          ? 'border-emerald-500/40 bg-emerald-50/50'
+                          ? 'bg-emerald-50/70 border-emerald-200'
                           : isNoShow
-                          ? 'border-rose-500/40 bg-rose-50/50'
-                          : 'border-slate-200 bg-white hover:border-primary-400'
+                          ? 'bg-rose-50/70 border-rose-200'
+                          : 'bg-white border-slate-200 hover:border-slate-300'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-black font-mono text-slate-800">{selectedCoach}-{s.seatNo}</span>
-                        <span className="text-[9px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">
-                          {s.berthType}
+                      <div className="flex justify-between items-start">
+                        <span className="font-mono font-black text-xs text-slate-800">{seat.id}</span>
+                        <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-200/60 text-slate-600">
+                          {seat.berthType}
                         </span>
                       </div>
 
-                      <div className="text-[11px] leading-tight">
-                        <span className="block font-bold text-slate-800 truncate">{s.passengerName}</span>
-                        <span className="text-[9px] text-slate-400 font-mono font-semibold">PNR: {s.pnr.slice(0,6)}...</span>
+                      <div>
+                        <span className="block text-xs font-extrabold text-slate-900 truncate">{seat.passengerName}</span>
+                        <span className="text-[10px] text-slate-400 font-mono block">PNR: {seat.pnr}</span>
                       </div>
 
-                      {/* Quick Toggle Actions */}
+                      {/* Action toggle buttons */}
                       <div className="flex gap-1 pt-1">
                         <button
-                          onClick={() => toggleSeatStatus(s.id, 'verified')}
-                          className={`flex-1 py-1 rounded-lg text-[9px] font-bold transition ${
-                            isVerified ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-emerald-100'
+                          type="button"
+                          onClick={() => toggleSeatStatus(seat.id, isVerified ? 'unverified' : 'verified')}
+                          className={`flex-1 py-1 rounded-xl text-[10px] font-black transition flex items-center justify-center space-x-1 ${
+                            isVerified
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-700'
                           }`}
                         >
-                          Present
+                          <Check className="h-3 w-3" />
+                          <span>{isVerified ? 'Present' : 'Verify'}</span>
                         </button>
+
                         <button
-                          onClick={() => toggleSeatStatus(s.id, 'no_show')}
-                          className={`flex-1 py-1 rounded-lg text-[9px] font-bold transition ${
-                            isNoShow ? 'bg-rose-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-rose-100'
+                          type="button"
+                          onClick={() => {
+                            if (isNoShow) {
+                              toggleSeatStatus(seat.id, 'unverified');
+                            } else {
+                              toggleSeatStatus(seat.id, 'no_show');
+                              setRacTargetSeat(seat.id);
+                              setShowRacModal(true);
+                            }
+                          }}
+                          className={`py-1 px-2 rounded-xl text-[10px] font-black transition ${
+                            isNoShow
+                              ? 'bg-rose-600 text-white shadow-xs'
+                              : 'bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700'
                           }`}
+                          title="Mark No-Show"
                         >
-                          No-Show
+                          <X className="h-3 w-3" />
                         </button>
                       </div>
-
-                      {/* RAC Reassignment Trigger on No-Show Seats */}
-                      {isNoShow && (
-                        <button
-                          onClick={() => {
-                            setRacTargetSeat(`${selectedCoach}-${s.seatNo}`);
-                            setShowRacModal(true);
-                          }}
-                          className="w-full mt-1.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[9px] font-black transition flex items-center justify-center space-x-1 shadow-xs"
-                        >
-                          <RefreshCw className="h-3 w-3" />
-                          <span>Reassign Berth to RAC</span>
-                        </button>
-                      )}
                     </div>
                   );
                 })}
@@ -382,151 +381,110 @@ const StaffTicketChecking = () => {
 
       </div>
 
-      {/* ISSUE EXCESS FARE TICKET (EFT) MODAL */}
+      {/* EFT Excess Fare Ticket Penalty Modal */}
       {showEftModal && createPortal(
-        <div 
-          onClick={(e) => { if (e.target === e.currentTarget) setShowEftModal(false); }}
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fade-in font-sans"
-        >
-          <div className="bg-white border border-slate-200 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative animate-scale-in my-auto">
-            
-            <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 p-6 text-white relative">
-              <button 
-                onClick={() => setShowEftModal(false)}
-                className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition"
-              >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-slate-100">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2 text-amber-600">
+                <Receipt className="h-5 w-5" />
+                <h3 className="text-base font-black text-slate-800">Issue Excess Fare Ticket (EFT)</h3>
+              </div>
+              <button onClick={() => setShowEftModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
               </button>
-
-              <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
-                  <Receipt className="h-5 w-5" />
-                </div>
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    TTE Handheld Terminal
-                  </span>
-                  <h2 className="text-lg font-black tracking-tight mt-0.5">Issue Excess Fare Ticket (EFT)</h2>
-                </div>
-              </div>
             </div>
 
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                alert(`EFT Receipt #${Math.floor(100000 + Math.random() * 900000)} issued for ₹${eftAmount} to ${eftPassenger}!`);
-                setShowEftModal(false);
-              }}
-              className="p-6 space-y-4 text-xs font-medium text-slate-700"
-            >
+            <div className="space-y-3 text-xs">
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block mb-1">Target Coach & Seat</label>
+                <label className="block font-bold text-slate-600 mb-1">Berth / Seat Number</label>
                 <input
                   type="text"
                   value={eftSeat}
                   onChange={(e) => setEftSeat(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 p-3 text-xs font-mono font-bold text-slate-800"
-                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold font-mono text-slate-800"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block mb-1">Passenger Name</label>
+                <label className="block font-bold text-slate-600 mb-1">Passenger Name</label>
                 <input
                   type="text"
+                  placeholder="Enter passenger name..."
                   value={eftPassenger}
                   onChange={(e) => setEftPassenger(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 p-3 text-xs font-bold text-slate-800"
-                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block mb-1">Violation / Offence Reason</label>
+                <label className="block font-bold text-slate-600 mb-1">Violation Reason</label>
                 <select
                   value={eftReason}
                   onChange={(e) => setEftReason(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 p-3 text-xs font-bold text-slate-800 cursor-pointer"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800"
                 >
                   <option value="Traveling Without Ticket (TWT)">Traveling Without Ticket (TWT)</option>
-                  <option value="Class Upgrade Penalty (SL to 3A)">Class Upgrade Penalty (SL to 3A)</option>
-                  <option value="Un-booked Excess Luggage">Un-booked Excess Luggage</option>
-                  <option value="Invalid Identity Proof Penalty">Invalid Identity Proof Penalty</option>
+                  <option value="Unbooked Luggage Penalty">Unbooked Luggage Penalty</option>
+                  <option value="Traveling in Higher Class">Traveling in Higher Class</option>
+                  <option value="Expired Ticket / Out-of-Zone">Expired Ticket / Out-of-Zone</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block mb-1">Penalty Fine Amount (₹)</label>
+                <label className="block font-bold text-slate-600 mb-1">Fine Amount (₹)</label>
                 <input
                   type="number"
                   value={eftAmount}
                   onChange={(e) => setEftAmount(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 p-3 text-xs font-mono font-bold text-slate-800"
-                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold font-mono text-emerald-600 text-sm"
                 />
               </div>
+            </div>
 
+            <div className="pt-2">
               <button
-                type="submit"
-                className="w-full py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-lg shadow-amber-600/25 transition active:scale-95 flex items-center justify-center space-x-2"
+                type="button"
+                onClick={() => {
+                  alert(`EFT Receipt Issued successfully for ₹${eftAmount} to ${eftPassenger || 'Passenger'}! Digital receipt generated.`);
+                  setShowEftModal(false);
+                }}
+                className="w-full py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-lg shadow-amber-600/25 transition active:scale-95"
               >
-                <Receipt className="h-4 w-4" />
-                <span>Generate & Issue Official EFT Receipt</span>
+                Issue Digital EFT Fine Receipt
               </button>
-            </form>
-
+            </div>
           </div>
         </div>,
         document.body
       )}
 
-      {/* RAC BERTH REASSIGNMENT MODAL */}
+      {/* RAC Auto-Reassignment Modal */}
       {showRacModal && createPortal(
-        <div 
-          onClick={(e) => { if (e.target === e.currentTarget) setShowRacModal(false); }}
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fade-in font-sans"
-        >
-          <div className="bg-white border border-slate-200 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative animate-scale-in my-auto">
-            
-            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 text-white relative">
-              <button 
-                onClick={() => setShowRacModal(false)}
-                className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition"
-              >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-slate-100">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2 text-indigo-600">
+                <Sparkles className="h-5 w-5" />
+                <h3 className="text-base font-black text-slate-800">Auto RAC Berth Promotion</h3>
+              </div>
+              <button onClick={() => setShowRacModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
               </button>
+            </div>
 
-              <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
-                  <RefreshCw className="h-5 w-5" />
-                </div>
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
-                    RAC Auto-Allocation Engine
-                  </span>
-                  <h2 className="text-lg font-black tracking-tight mt-0.5">Reassign Vacant Berth</h2>
-                </div>
+            <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-2 text-xs">
+              <p className="text-indigo-900 font-bold">
+                Berth <span className="font-mono text-indigo-700 font-black">{racTargetSeat}</span> is marked as No-Show. Reassign to next queued RAC passenger?
+              </p>
+              <div className="bg-white p-3 rounded-xl border border-indigo-200/60 space-y-1">
+                <span className="block text-[10px] text-slate-400 font-bold uppercase">Next in RAC Queue</span>
+                <span className="font-extrabold text-slate-800 block text-sm">{nextRacPassenger.name}</span>
+                <span className="text-[10px] font-mono text-slate-500">PNR: {nextRacPassenger.pnr} &bull; Age {nextRacPassenger.age} ({nextRacPassenger.gender})</span>
               </div>
             </div>
 
-            <div className="p-6 space-y-4 text-xs font-medium text-slate-700">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Vacant Berth Target</span>
-                <span className="text-base font-black text-slate-800 font-mono">{racTargetSeat}</span>
-                <span className="text-[10px] text-rose-600 font-bold block">Status: Absent / No-Show Passenger</span>
-              </div>
-
-              <div className="bg-indigo-50/70 p-4 rounded-2xl border border-indigo-200 space-y-2">
-                <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">Next Eligible RAC Passenger</span>
-                <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-indigo-950 text-sm">{nextRacPassenger.name}</span>
-                  <span className="font-mono text-xs font-bold text-indigo-800 bg-white px-2 py-0.5 rounded border border-indigo-200">
-                    PNR #{nextRacPassenger.pnr}
-                  </span>
-                </div>
-                <span className="text-[10px] text-indigo-700 block">{nextRacPassenger.age} yrs • {nextRacPassenger.gender}</span>
-              </div>
-
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={() => {
@@ -550,4 +508,4 @@ const StaffTicketChecking = () => {
   );
 };
 
-export default StaffTicketChecking;
+export default AdminTicketChecking;

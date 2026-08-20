@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle, ArrowUpCircle, UserCheck, ShieldAlert, Sparkles, Zap, Send, Award } from 'lucide-react';
 import api from '../services/api';
 
-const StaffRACWaiting = () => {
+const AdminRACWaiting = () => {
   const [waitlist, setWaitlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [promotedLogs, setPromotedLogs] = useState([]);
@@ -192,4 +192,4 @@ const StaffRACWaiting = () => {
   );
 };
 
-export default StaffRACWaiting;
+export default AdminRACWaiting;

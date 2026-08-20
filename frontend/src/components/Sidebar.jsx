@@ -64,7 +64,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
   ];
 
   const menuItems = [];
-  if (isAdmin || isStaff) {
+  if (isAdmin) {
     menuItems.push(
       { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
       { name: 'Train Operations', path: '/admin/schedules', icon: Train },

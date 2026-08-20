@@ -15,7 +15,6 @@ import { Radio, ShieldAlert } from 'lucide-react';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import PassengerDashboard from './pages/PassengerDashboard';
-import StaffDashboard from './pages/StaffDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 
 // Retry helper for dynamic imports of subpages
@@ -53,16 +52,8 @@ const PassengerWallet = lazyWithRetry(() => import('./pages/PassengerWallet'));
 const PassengerCatering = lazyWithRetry(() => import('./pages/PassengerCatering'));
 const PassengerFeedback = lazyWithRetry(() => import('./pages/PassengerFeedback'));
 
-const StaffSchedules = lazyWithRetry(() => import('./pages/StaffSchedules'));
-const StaffInquiries = lazyWithRetry(() => import('./pages/StaffInquiries'));
-const StaffRefunds = lazyWithRetry(() => import('./pages/StaffRefunds'));
-const StaffBookings = lazyWithRetry(() => import('./pages/StaffBookings'));
-const StaffPassengers = lazyWithRetry(() => import('./pages/StaffPassengers'));
-const StaffTicketChecking = lazyWithRetry(() => import('./pages/StaffTicketChecking'));
-const StaffRACWaiting = lazyWithRetry(() => import('./pages/StaffRACWaiting'));
-const StaffReports = lazyWithRetry(() => import('./pages/StaffReports'));
-const StaffAnnouncements = lazyWithRetry(() => import('./pages/StaffAnnouncements'));
-const StaffCatering = lazyWithRetry(() => import('./pages/StaffCatering'));
+const AdminTicketChecking = lazyWithRetry(() => import('./pages/AdminTicketChecking'));
+const AdminRACWaiting = lazyWithRetry(() => import('./pages/AdminRACWaiting'));
 
 const AdminRoutes = lazyWithRetry(() => import('./pages/AdminRoutes'));
 const AdminSchedules = lazyWithRetry(() => import('./pages/AdminSchedules'));
@@ -576,14 +567,14 @@ function App() {
                     <Route path="/admin/ticket-checking" element={
                       <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
-                          <StaffTicketChecking />
+                          <AdminTicketChecking />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/rac-waiting" element={
                       <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
-                          <StaffRACWaiting />
+                          <AdminRACWaiting />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
