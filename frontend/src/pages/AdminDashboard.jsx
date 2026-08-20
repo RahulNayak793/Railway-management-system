@@ -14,7 +14,8 @@ import {
   Layers, 
   CreditCard,
   AlertCircle,
-  Ticket
+  Ticket,
+  Clock
 } from 'lucide-react';
 
 const AdminDashboard = () => {
