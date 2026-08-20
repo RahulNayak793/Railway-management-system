@@ -147,7 +147,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    const isAdminPath = window.location.pathname.startsWith('/admin');
+    return <Navigate to={isAdminPath ? "/admin/login" : "/login"} replace />;
   }
 
   // Normalize: treat 'staff' as 'admin' everywhere
