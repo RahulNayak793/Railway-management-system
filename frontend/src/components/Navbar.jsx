@@ -71,7 +71,15 @@ const Navbar = ({ onToggleSidebar }) => {
     return 'from-primary-500 to-primary-600';
   };
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = () => { 
+    const currentRole = (user?.role || '').toLowerCase();
+    logout(); 
+    if (currentRole === 'admin' || currentRole === 'staff') {
+      navigate('/admin/login');
+    } else {
+      navigate('/login');
+    }
+  };
 
   if (!user) return null;
   const userRole = (user?.role || 'passenger').toLowerCase();

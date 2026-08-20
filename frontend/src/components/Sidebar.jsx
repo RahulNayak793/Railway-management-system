@@ -100,7 +100,15 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
     );
   }
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = () => { 
+    const currentRole = (user?.role || '').toLowerCase();
+    logout(); 
+    if (currentRole === 'admin' || currentRole === 'staff') {
+      navigate('/admin/login');
+    } else {
+      navigate('/login');
+    }
+  };
   const handleLinkClick = () => { if (handleClose) handleClose(); };
 
   const getInitials = (name) => {
