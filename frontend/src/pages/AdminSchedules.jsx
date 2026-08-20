@@ -11,7 +11,9 @@ const AdminSchedules = () => {
       trainName: 'Mumbai Rajdhani', 
       source: 'NDLS', 
       dest: 'MMCT', 
+      depDate: '2026-08-21',
       depTime: '04:55 PM', 
+      arrDate: '2026-08-22',
       arrTime: '08:35 AM', 
       frequency: 'Daily', 
       status: 'Active',
@@ -27,7 +29,9 @@ const AdminSchedules = () => {
       trainName: 'New Delhi Shatabdi', 
       source: 'NDLS', 
       dest: 'BPL', 
+      depDate: '2026-08-21',
       depTime: '06:00 AM', 
+      arrDate: '2026-08-21',
       arrTime: '02:40 PM', 
       frequency: 'Daily', 
       status: 'Active',
@@ -44,7 +48,9 @@ const AdminSchedules = () => {
       trainName: 'Vande Bharat Exp', 
       source: 'NDLS', 
       dest: 'BSB', 
+      depDate: '2026-08-21',
       depTime: '06:00 AM', 
+      arrDate: '2026-08-21',
       arrTime: '02:00 PM', 
       frequency: 'Except Thu', 
       status: 'Active',
@@ -59,7 +65,9 @@ const AdminSchedules = () => {
       trainName: 'Karnataka Express', 
       source: 'NDLS', 
       dest: 'SBC', 
+      depDate: '2026-08-21',
       depTime: '08:15 PM', 
+      arrDate: '2026-08-22',
       arrTime: '01:40 PM', 
       frequency: 'Daily', 
       status: 'Active',
@@ -85,7 +93,9 @@ const AdminSchedules = () => {
   const [trainName, setTrainName] = useState('');
   const [source, setSource] = useState('');
   const [dest, setDest] = useState('');
+  const [depDate, setDepDate] = useState('');
   const [depTime, setDepTime] = useState('');
+  const [arrDate, setArrDate] = useState('');
   const [arrTime, setArrTime] = useState('');
   const [frequency, setFrequency] = useState('Daily');
   const [stopsInput, setStopsInput] = useState([]);
@@ -95,7 +105,9 @@ const AdminSchedules = () => {
     setTrainName('');
     setSource('');
     setDest('');
+    setDepDate('');
     setDepTime('');
+    setArrDate('');
     setArrTime('');
     setFrequency('Daily');
     setStopsInput([]);
@@ -108,8 +120,10 @@ const AdminSchedules = () => {
     setTrainName(sch.trainName);
     setSource(sch.source);
     setDest(sch.dest);
-    setDepTime(sch.depTime);
-    setArrTime(sch.arrTime);
+    setDepDate(sch.depDate || '');
+    setDepTime(sch.depTime || '');
+    setArrDate(sch.arrDate || '');
+    setArrTime(sch.arrTime || '');
     setFrequency(sch.frequency);
     setStopsInput(sch.stops ? [...sch.stops] : []);
     setShowEditModal(true);
@@ -144,7 +158,9 @@ const AdminSchedules = () => {
       trainName,
       source: source.toUpperCase(),
       dest: dest.toUpperCase(),
+      depDate,
       depTime,
+      arrDate,
       arrTime,
       frequency,
       status: 'Active',
@@ -168,7 +184,9 @@ const AdminSchedules = () => {
           trainName,
           source: source.toUpperCase(),
           dest: dest.toUpperCase(),
+          depDate,
           depTime,
+          arrDate,
           arrTime,
           frequency,
           stops: stopsInput.filter(st => st.stationCode)
@@ -235,7 +253,8 @@ const AdminSchedules = () => {
                 <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Train No.</th>
                 <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Train Name</th>
                 <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Route</th>
-                <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Times</th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Departure (Date & Time)</th>
+                <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Arrival (Date & Time)</th>
                 <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Route Stops</th>
                 <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Frequency</th>
                 <th className="px-6 py-3 text-[10px] font-bold uppercase text-slate-400">Status</th>
@@ -249,8 +268,12 @@ const AdminSchedules = () => {
                   <td className="px-6 py-4 text-sm font-bold text-slate-800">{s.trainName}</td>
                   <td className="px-6 py-4 text-sm text-slate-600 font-bold">{s.source} &rarr; {s.dest}</td>
                   <td className="px-6 py-4 text-xs text-slate-500 font-semibold font-mono">
-                    <div>Dep: {s.depTime}</div>
-                    <div>Arr: {s.arrTime}</div>
+                    <div className="font-bold text-slate-700">{s.depDate || 'N/A'}</div>
+                    <div className="text-slate-400">{s.depTime}</div>
+                  </td>
+                  <td className="px-6 py-4 text-xs text-slate-500 font-semibold font-mono">
+                    <div className="font-bold text-slate-700">{s.arrDate || 'N/A'}</div>
+                    <div className="text-slate-400">{s.arrTime}</div>
                   </td>
                   <td className="px-6 py-4 text-xs font-semibold text-slate-600">
                     <button
@@ -289,7 +312,7 @@ const AdminSchedules = () => {
               ))}
               {filteredSchedules.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="text-center py-8 text-xs font-bold text-slate-400">
+                  <td colSpan="9" className="text-center py-8 text-xs font-bold text-slate-400">
                     No active train schedules matching search criteria.
                   </td>
                 </tr>
@@ -360,7 +383,17 @@ const AdminSchedules = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 border-l-2 border-primary-500 pl-3 py-1 bg-slate-50/50 rounded-r-xl">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Date</label>
+                  <input
+                    type="date"
+                    value={depDate}
+                    onChange={(e) => setDepDate(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
+                  />
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Time</label>
                   <input
@@ -368,7 +401,21 @@ const AdminSchedules = () => {
                     placeholder="e.g. 04:55 PM"
                     value={depTime}
                     onChange={(e) => setDepTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-l-2 border-emerald-500 pl-3 py-1 bg-slate-50/50 rounded-r-xl">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Arrival Date</label>
+                  <input
+                    type="date"
+                    value={arrDate}
+                    onChange={(e) => setArrDate(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -378,7 +425,8 @@ const AdminSchedules = () => {
                     placeholder="e.g. 08:35 AM"
                     value={arrTime}
                     onChange={(e) => setArrTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
                   />
                 </div>
               </div>
@@ -477,7 +525,7 @@ const AdminSchedules = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-500"
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-55 rounded-xl text-xs font-bold text-slate-500"
                 >
                   Cancel
                 </button>
@@ -550,14 +598,38 @@ const AdminSchedules = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 border-l-2 border-primary-500 pl-3 py-1 bg-slate-50/50 rounded-r-xl">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Date</label>
+                  <input
+                    type="date"
+                    value={depDate}
+                    onChange={(e) => setDepDate(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
+                  />
+                </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Time</label>
                   <input
                     type="text"
                     value={depTime}
                     onChange={(e) => setDepTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-l-2 border-emerald-500 pl-3 py-1 bg-slate-50/50 rounded-r-xl">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Arrival Date</label>
+                  <input
+                    type="date"
+                    value={arrDate}
+                    onChange={(e) => setArrDate(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -566,7 +638,8 @@ const AdminSchedules = () => {
                     type="text"
                     value={arrTime}
                     onChange={(e) => setArrTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
                   />
                 </div>
               </div>
@@ -702,7 +775,12 @@ const AdminSchedules = () => {
                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 ring-4 ring-primary-500/20 text-[9px] font-black text-white z-10 shrink-0 uppercase">S</div>
                 <div className="leading-tight">
                   <span className="text-xs font-black text-white block uppercase tracking-wider">{selectedSch.source} &bull; Origin Terminal</span>
-                  <span className="text-[10px] font-mono text-slate-400 block mt-0.5">Departure Time: {selectedSch.depTime}</span>
+                  <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
+                    Departure Date: <span className="text-white font-bold">{selectedSch.depDate || 'N/A'}</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
+                    Departure Time: <span className="text-white">{selectedSch.depTime}</span>
+                  </span>
                 </div>
               </div>
 
@@ -732,7 +810,12 @@ const AdminSchedules = () => {
                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 text-[9px] font-black text-white z-10 shrink-0 uppercase">D</div>
                 <div className="leading-tight">
                   <span className="text-xs font-black text-white block uppercase tracking-wider">{selectedSch.dest} &bull; Destination Terminal</span>
-                  <span className="text-[10px] font-mono text-slate-400 block mt-0.5">Arrival Time: {selectedSch.arrTime}</span>
+                  <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
+                    Arrival Date: <span className="text-white font-bold">{selectedSch.arrDate || 'N/A'}</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
+                    Arrival Time: <span className="text-white">{selectedSch.arrTime}</span>
+                  </span>
                 </div>
               </div>
             </div>
