@@ -71,62 +71,150 @@ const defaultSchedules = [
   }
 ];
 
-// Helper to render Hour, Minute, and AM/PM selects for the main form
-const TimePicker = ({ label, value, onChange }) => {
-  let initialHour = '12';
-  let initialMinute = '00';
-  let initialAmpm = 'AM';
+// Custom Popover Time Picker that displays time in a single input-like box
+const PopoverTimePicker = ({ label, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  let h = '12';
+  let m = '00';
+  let a = 'AM';
   
   if (value && value.includes(' ')) {
     const [timePart, ampmPart] = value.split(' ');
     if (timePart.includes(':')) {
-      const [h, m] = timePart.split(':');
-      initialHour = h;
-      initialMinute = m;
+      const [hourStr, minStr] = timePart.split(':');
+      h = hourStr;
+      m = minStr;
     }
-    initialAmpm = ampmPart;
+    a = ampmPart;
   }
   
   const handlePartChange = (part, val) => {
-    let h = initialHour;
-    let m = initialMinute;
-    let a = initialAmpm;
-    if (part === 'hour') h = val;
-    if (part === 'minute') m = val;
-    if (part === 'ampm') a = val;
-    onChange(`${h}:${m} ${a}`);
+    let newH = h;
+    let newM = m;
+    let newA = a;
+    if (part === 'hour') newH = val;
+    if (part === 'minute') newM = val;
+    if (part === 'ampm') newA = val;
+    onChange(`${newH}:${newM} ${newA}`);
   };
 
   const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
   const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
   return (
-    <div className="space-y-1.5 w-full">
-      <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
-      <div className="flex gap-1.5">
-        <select
-          value={initialHour}
-          onChange={(e) => handlePartChange('hour', e.target.value)}
-          className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-primary-500 w-1/3 text-center cursor-pointer"
-        >
-          {hours.map(h => <option key={h} value={h}>{h}</option>)}
-        </select>
-        <select
-          value={initialMinute}
-          onChange={(e) => handlePartChange('minute', e.target.value)}
-          className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-primary-500 w-1/3 text-center cursor-pointer"
-        >
-          {minutes.map(m => <option key={m} value={m}>{m}</option>)}
-        </select>
-        <select
-          value={initialAmpm}
-          onChange={(e) => handlePartChange('ampm', e.target.value)}
-          className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-primary-500 w-1/3 text-center cursor-pointer"
-        >
-          <option value="AM">AM</option>
-          <option value="PM">PM</option>
-        </select>
+    <div className="space-y-1.5 relative w-full">
+      <label className="text-[10px] font-bold text-slate-550 uppercase">{label}</label>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 flex items-center justify-between cursor-pointer select-none"
+      >
+        <span>{value || '12:00 PM'}</span>
+        <Clock className="h-3.5 w-3.5 text-slate-400" />
       </div>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+          <div className="absolute left-0 mt-1 z-20 bg-white border border-slate-200 rounded-2xl p-3 shadow-xl flex gap-1.5 animate-scale-in w-64 justify-between">
+            <select
+              value={h}
+              onChange={(e) => handlePartChange('hour', e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-semibold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
+            >
+              {hours.map(hour => <option key={hour} value={hour}>{hour}</option>)}
+            </select>
+            <select
+              value={m}
+              onChange={(e) => handlePartChange('minute', e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-semibold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
+            >
+              {minutes.map(minute => <option key={minute} value={minute}>{minute}</option>)}
+            </select>
+            <select
+              value={a}
+              onChange={(e) => handlePartChange('ampm', e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-bold text-slate-850 focus:outline-none w-1/3 text-center cursor-pointer"
+            >
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Custom Popover Time Picker for Stops Routing grid
+const StopPopoverTimePicker = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  let h = '12';
+  let m = '00';
+  let a = 'AM';
+  if (value && value.includes(' ')) {
+    const [t, ampm] = value.split(' ');
+    if (t.includes(':')) {
+      const [hourStr, minStr] = t.split(':');
+      h = hourStr;
+      m = minStr;
+    }
+    a = ampm;
+  }
+  
+  const handleStopPartChange = (part, val) => {
+    let newH = h;
+    let newM = m;
+    let newA = a;
+    if (part === 'hour') newH = val;
+    if (part === 'minute') newM = val;
+    if (part === 'ampm') newA = val;
+    onChange(`${newH}:${newM} ${newA}`);
+  };
+
+  const hoursList = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
+  const minutesList = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
+  return (
+    <div className="relative w-full">
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="bg-slate-50 border border-slate-200 hover:border-slate-350 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-800 flex items-center justify-between cursor-pointer select-none"
+      >
+        <span>{value || '12:00 AM'}</span>
+        <Clock className="h-3 w-3 text-slate-400" />
+      </div>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 mt-1 z-20 bg-white border border-slate-200 rounded-lg p-2 shadow-lg flex gap-1 animate-scale-in w-44">
+            <select
+              value={h}
+              onChange={(e) => handleStopPartChange('hour', e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-[10px] font-semibold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
+            >
+              {hoursList.map(item => <option key={item} value={item}>{item}</option>)}
+            </select>
+            <select
+              value={m}
+              onChange={(e) => handleStopPartChange('minute', e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-[10px] font-semibold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
+            >
+              {minutesList.map(item => <option key={item} value={item}>{item}</option>)}
+            </select>
+            <select
+              value={a}
+              onChange={(e) => handleStopPartChange('ampm', e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded px-1 py-0.5 text-[10px] font-bold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
+            >
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -330,59 +418,6 @@ const AdminSchedules = () => {
     s.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.dest.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const renderStopGridTimePicker = (idx, field, value) => {
-    let h = '12';
-    let m = '00';
-    let a = 'AM';
-    if (value && value.includes(' ')) {
-      const [t, ampm] = value.split(' ');
-      if (t.includes(':')) {
-        [h, m] = t.split(':');
-      }
-      a = ampm;
-    }
-    
-    const handleStopPartChange = (part, val) => {
-      let newH = h;
-      let newM = m;
-      let newA = a;
-      if (part === 'hour') newH = val;
-      if (part === 'minute') newM = val;
-      if (part === 'ampm') newA = val;
-      handleStopChange(idx, field, `${newH}:${newM} ${newA}`);
-    };
-
-    const hoursList = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
-    const minutesList = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
-
-    return (
-      <div className="flex gap-0.5 w-full">
-        <select
-          value={h}
-          onChange={(e) => handleStopPartChange('hour', e.target.value)}
-          className="bg-slate-50 border border-slate-200 rounded-lg px-1 py-1 text-[10px] font-semibold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
-        >
-          {hoursList.map(item => <option key={item} value={item}>{item}</option>)}
-        </select>
-        <select
-          value={m}
-          onChange={(e) => handleStopPartChange('minute', e.target.value)}
-          className="bg-slate-50 border border-slate-200 rounded-lg px-1 py-1 text-[10px] font-semibold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
-        >
-          {minutesList.map(item => <option key={item} value={item}>{item}</option>)}
-        </select>
-        <select
-          value={a}
-          onChange={(e) => handleStopPartChange('ampm', e.target.value)}
-          className="bg-slate-50 border border-slate-200 rounded-lg px-1 py-1 text-[10px] font-bold text-slate-800 focus:outline-none w-1/3 text-center cursor-pointer"
-        >
-          <option value="AM">AM</option>
-          <option value="PM">PM</option>
-        </select>
-      </div>
-    );
-  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 font-sans space-y-6 animate-slide-in">
@@ -609,12 +644,12 @@ const AdminSchedules = () => {
               )}
 
               <div className="grid grid-cols-2 gap-4">
-                <TimePicker
+                <PopoverTimePicker
                   label="Departure Time"
                   value={depTime}
                   onChange={(val) => setDepTime(val)}
                 />
-                <TimePicker
+                <PopoverTimePicker
                   label="Arrival Time"
                   value={arrTime}
                   onChange={(val) => setArrTime(val)}
@@ -652,10 +687,10 @@ const AdminSchedules = () => {
                         />
                       </div>
                       <div className="col-span-4">
-                        {renderStopGridTimePicker(idx, 'arrTime', stop.arrTime || '12:00 AM')}
+                        <StopPopoverTimePicker value={stop.arrTime || '12:00 AM'} onChange={(val) => handleStopChange(idx, 'arrTime', val)} />
                       </div>
                       <div className="col-span-4">
-                        {renderStopGridTimePicker(idx, 'depTime', stop.depTime || '12:00 AM')}
+                        <StopPopoverTimePicker value={stop.depTime || '12:00 AM'} onChange={(val) => handleStopChange(idx, 'depTime', val)} />
                       </div>
                       <div className="col-span-1">
                         <input
@@ -801,12 +836,12 @@ const AdminSchedules = () => {
               )}
 
               <div className="grid grid-cols-2 gap-4">
-                <TimePicker
+                <PopoverTimePicker
                   label="Departure Time"
                   value={depTime}
                   onChange={(val) => setDepTime(val)}
                 />
-                <TimePicker
+                <PopoverTimePicker
                   label="Arrival Time"
                   value={arrTime}
                   onChange={(val) => setArrTime(val)}
@@ -844,10 +879,10 @@ const AdminSchedules = () => {
                         />
                       </div>
                       <div className="col-span-4">
-                        {renderStopGridTimePicker(idx, 'arrTime', stop.arrTime || '12:00 AM')}
+                        <StopPopoverTimePicker value={stop.arrTime || '12:00 AM'} onChange={(val) => handleStopChange(idx, 'arrTime', val)} />
                       </div>
                       <div className="col-span-4">
-                        {renderStopGridTimePicker(idx, 'depTime', stop.depTime || '12:00 AM')}
+                        <StopPopoverTimePicker value={stop.depTime || '12:00 AM'} onChange={(val) => handleStopChange(idx, 'depTime', val)} />
                       </div>
                       <div className="col-span-1">
                         <input
