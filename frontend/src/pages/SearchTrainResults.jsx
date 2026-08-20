@@ -95,9 +95,64 @@ const SearchTrainResults = () => {
           if (!existingTrainNumbers.has(st.trainNo)) {
             const stSrc = extractCode(st.source || st.from || 'NDLS');
             const stDest = extractCode(st.to || st.dest || 'MMCT');
-            const matchesRoute = !srcCode || !destCode || 
-              (stSrc === srcCode && stDest === destCode) ||
-              (stSrc === srcCode || stDest === destCode);
+            
+            // Build the sequence of all stations on the route
+            const routeStations = [
+              stSrc,
+              ...(st.stops || []).map(s => extractCode(s.stationCode)),
+              stDest
+            ].filter(Boolean);
+
+            let matchesRoute = false;
+            let matchedDepTime = st.depTime || '10:00:00';
+            let matchedArrTime = st.arrTime || '18:00:00';
+
+            if (!srcCode && !destCode) {
+              matchesRoute = true;
+            } else if (srcCode && !destCode) {
+              matchesRoute = routeStations.includes(srcCode);
+              if (matchesRoute) {
+                if (srcCode === stSrc) {
+                  matchedDepTime = st.depTime;
+                } else {
+                  const matchStop = (st.stops || []).find(s => extractCode(s.stationCode) === srcCode);
+                  if (matchStop) matchedDepTime = matchStop.depTime;
+                }
+              }
+            } else if (!srcCode && destCode) {
+              matchesRoute = routeStations.includes(destCode);
+              if (matchesRoute) {
+                if (destCode === stDest) {
+                  matchedArrTime = st.arrTime;
+                } else {
+                  const matchStop = (st.stops || []).find(s => extractCode(s.stationCode) === destCode);
+                  if (matchStop) matchedArrTime = matchStop.arrTime;
+                }
+              }
+            } else {
+              // Both srcCode and destCode are specified
+              const srcIdx = routeStations.indexOf(srcCode);
+              const destIdx = routeStations.indexOf(destCode);
+              if (srcIdx !== -1 && destIdx !== -1 && srcIdx < destIdx) {
+                matchesRoute = true;
+                
+                // Get Departure Time from the starting point of the search
+                if (srcCode === stSrc) {
+                  matchedDepTime = st.depTime;
+                } else {
+                  const matchStop = (st.stops || []).find(s => extractCode(s.stationCode) === srcCode);
+                  if (matchStop) matchedDepTime = matchStop.depTime;
+                }
+
+                // Get Arrival Time at the ending point of the search
+                if (destCode === stDest) {
+                  matchedArrTime = st.arrTime;
+                } else {
+                  const matchStop = (st.stops || []).find(s => extractCode(s.stationCode) === destCode);
+                  if (matchStop) matchedArrTime = matchStop.arrTime;
+                }
+              }
+            }
 
             if (matchesRoute) {
               fetched.unshift({
@@ -106,13 +161,13 @@ const SearchTrainResults = () => {
                 train_name: st.trainName,
                 status: st.status === 'On Time' || st.status === 'Active' ? 'on_time' : 'delayed',
                 delay_minutes: 0,
-                source: stSrc || srcCode || 'NDLS',
-                destination: stDest || destCode || 'MMCT',
+                source: srcCode || stSrc,
+                destination: destCode || stDest,
                 route: {
-                  source_station_code: stSrc || srcCode || 'NDLS',
-                  destination_station_code: stDest || destCode || 'MMCT',
-                  departure_time: st.depTime || '10:00:00',
-                  arrival_time: '18:00:00',
+                  source_station_code: srcCode || stSrc,
+                  destination_station_code: destCode || stDest,
+                  departure_time: matchedDepTime,
+                  arrival_time: matchedArrTime,
                   distance_km: 500,
                   fare_multiplier: 1.2
                 }
