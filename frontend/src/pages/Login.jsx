@@ -395,40 +395,6 @@ const Login = () => {
               )}
             </div>
 
-            {/* Toggle Tab header for login vs signup */}
-            {!showForgotPassword && (
-              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl mb-6">
-                {[
-                  { id: 'passenger', label: t.passenger, icon: User },
-                  { id: 'admin', label: 'ADMIN', icon: Shield }
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isSelected = role === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        setRole(item.id);
-                        setError(null);
-                        if (item.id === 'admin') {
-                          setIsSignUp(false);
-                        }
-                      }}
-                      className={`flex flex-col items-center justify-center py-2.5 rounded-xl border transition-all duration-200 ${
-                        isSelected
-                          ? 'border-white bg-white text-blue-600 font-bold shadow-md shadow-slate-200'
-                          : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-white/40'
-                      }`}
-                    >
-                      <Icon className="h-5 w-5 mb-1" />
-                      <span className="text-[10px] uppercase font-bold tracking-wider">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
             {/* Display Notification Messages */}
             {error && (
               <div className="rounded-2xl bg-red-50 border border-red-100 p-4 text-xs text-red-600 mb-6 font-medium animate-shake">
@@ -593,7 +559,7 @@ const Login = () => {
                   disabled={formLoading}
                   className="w-full mt-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white py-3.5 px-4 rounded-xl font-bold flex items-center justify-center space-x-2 transition-all shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  <span>{formLoading ? 'Connecting...' : isSignUp ? `${t.registerAs} ${role}` : `${t.loginAs} ${role}`}</span>
+                  <span>{formLoading ? 'Connecting...' : isSignUp ? 'Create Account' : 'Sign In'}</span>
                   {!formLoading && <ArrowRight className="h-4 w-4" />}
                 </button>
               </form>
