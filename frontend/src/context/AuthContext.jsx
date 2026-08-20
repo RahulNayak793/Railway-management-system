@@ -41,21 +41,21 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     const cleanEmail = email ? email.trim().toLowerCase() : '';
 
-    const getApprovedStaff = () => {
+    const getApprovedAdmins = () => {
       try {
-        const storedStaff = JSON.parse(localStorage.getItem('added_staff_members') || '[]');
+        const storedMembers = JSON.parse(localStorage.getItem('added_staff_members') || '[]');
         return new Set([
-          'staff@railway.com',
+          'admin@railway.com',
           'shiva@gmail.com',
-          ...storedStaff.map(s => (s && s.email) ? s.email.trim().toLowerCase() : '')
+          ...storedMembers.map(s => (s && s.email) ? s.email.trim().toLowerCase() : '')
         ]);
       } catch {
-        return new Set(['staff@railway.com', 'shiva@gmail.com']);
+        return new Set(['admin@railway.com', 'shiva@gmail.com']);
       }
     };
 
     let userRole = targetRole || 'passenger';
-    if (cleanEmail === 'admin@railway.com' || cleanEmail === 'staff@railway.com' || cleanEmail.includes('admin') || cleanEmail.includes('staff') || getApprovedStaff().has(cleanEmail) || targetRole === 'admin' || targetRole === 'staff') {
+    if (cleanEmail === 'admin@railway.com' || cleanEmail.includes('admin') || getApprovedAdmins().has(cleanEmail) || targetRole === 'admin') {
       userRole = 'admin';
     } else {
       userRole = 'passenger';
@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }) => {
       id: 'usr-client-' + Math.random().toString(36).substr(2, 8),
       email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@railway.com`,
       role: userRole,
-      full_name: (cleanEmail.split('@')[0] || 'admin').toUpperCase() === 'STAFF' ? 'ADMIN' : (cleanEmail.split('@')[0] || 'User').toUpperCase(),
+      full_name: (cleanEmail.split('@')[0] || 'User').toUpperCase(),
       phone: '+91 9876543210',
       created_at: new Date().toISOString()
     };

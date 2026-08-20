@@ -37,7 +37,6 @@ const locales = {
     welcome: "Welcome Back",
     welcomeSub: "Sign in to continue to RailControl",
     passenger: "Passenger",
-    staff: "Staff",
     admin: "Admin",
     email: "Email Address",
     password: "Password",
@@ -60,7 +59,7 @@ const locales = {
     enterCaptcha: "Enter Verification Code",
     captchaPlaceholder: "Enter CAPTCHA",
     advisoryTitle: "⚠️ SECURITY ADVISORY",
-    advisoryText: "Never share your OTP or Password. RailControl staff never asks for login credentials. Report security concerns to helpline 139.",
+    advisoryText: "Never share your OTP or Password. RailControl never asks for login credentials. Report security concerns to helpline 139.",
     tickerText: "📢 LATEST UPDATE: Special summer trains running between New Delhi (NDLS) and Mumbai Central (MMCT). Please verify schedules. | Avoid sharing OTPs. RailControl will never ask for your password. | E-Ticketing and support services are available 24/7.",
     emergencyHelpline: "Emergency Helpline: 139",
     selectLang: "Select Language",
@@ -75,7 +74,6 @@ const locales = {
     welcome: "स्वागत है",
     welcomeSub: "रेलकंट्रोल पर जारी रखने के लिए लॉगिन करें",
     passenger: "यात्री",
-    staff: "कर्मचारी",
     admin: "प्रशासक",
     email: "ईमेल पता",
     password: "पासवर्ड",
@@ -173,25 +171,25 @@ const Login = ({ mode }) => {
         const user = await login(cleanEmail, password, role);
         console.log('✅ Login successful. User received:', user);
         
-        const detectedRole = (user?.role || (cleanEmail.includes('admin') || cleanEmail.includes('staff') ? 'admin' : 'passenger')).toLowerCase();
-        const isStaffOrAdmin = detectedRole === 'admin' || detectedRole === 'staff' || cleanEmail.includes('admin') || cleanEmail.includes('staff');
+        const detectedRole = (user?.role || (cleanEmail.includes('admin') ? 'admin' : 'passenger')).toLowerCase();
+        const isAdmin = detectedRole === 'admin' || cleanEmail.includes('admin');
 
-        // Separate Page Restriction: Staff and Admin accounts CANNOT log in through Passenger login page (/login)
-        if (!isAdminPage && isStaffOrAdmin) {
+        // Separate Page Restriction: Admin accounts CANNOT log in through Passenger login page (/login)
+        if (!isAdminPage && isAdmin) {
           setError(
             lang === 'hi'
-              ? 'पहुंच अस्वीकृत: कर्मचारी और व्यवस्थापक खाते यात्री लॉगिन पृष्ठ से प्रवेश नहीं कर सकते। कृपया /admin/login का उपयोग करें।'
-              : 'Access Denied: Staff and Admin accounts cannot log in on the Passenger Login page. Please use the Admin Login page at /admin/login.'
+              ? 'पहुंच अस्वीकृत: व्यवस्थापक खाते यात्री लॉगिन पृष्ठ से प्रवेश नहीं कर सकते। कृपया /admin/login का उपयोग करें।'
+              : 'Access Denied: Admin accounts cannot log in on the Passenger Login page. Please use the Admin Login page at /admin/login.'
           );
           setFormLoading(false);
           return;
         }
 
         // Separate Page Restriction: Passenger accounts CANNOT log in through Admin login page (/admin/login)
-        if (isAdminPage && !isStaffOrAdmin) {
+        if (isAdminPage && !isAdmin) {
           setError(
             lang === 'hi'
-              ? 'पहुंच अस्वीकृत: केवल व्यवस्थापक और कर्मचारी ही एडमिन पोर्टल में लॉगिन कर सकते हैं। कृपया /login पृष्ठ का उपयोग करें।'
+              ? 'पहुंच अस्वीकृत: केवल व्यवस्थापक ही एडमिन पोर्टल में लॉगिन कर सकते हैं। कृपया /login पृष्ठ का उपयोग करें।'
               : 'Access Denied: Passenger accounts cannot log in on the Admin Login page. Please use the Passenger Login page at /login.'
           );
           setFormLoading(false);

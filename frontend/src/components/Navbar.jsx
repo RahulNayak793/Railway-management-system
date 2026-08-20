@@ -66,15 +66,14 @@ const Navbar = ({ onToggleSidebar }) => {
   };
 
   const getRoleColor = (role) => {
-    if (role === 'admin') return 'from-rose-500 to-red-600';
-    if (role === 'staff') return 'from-emerald-500 to-teal-600';
+    if (role === 'admin' || role === 'staff') return 'from-rose-500 to-red-600';
     return 'from-primary-500 to-primary-600';
   };
 
   const handleLogout = () => { 
     const currentRole = (user?.role || '').toLowerCase();
     logout(); 
-    if (currentRole === 'admin' || currentRole === 'staff') {
+    if (currentRole === 'admin') {
       navigate('/admin/login');
     } else {
       navigate('/login');
@@ -97,7 +96,7 @@ const Navbar = ({ onToggleSidebar }) => {
 
         <div className="flex-1 overflow-hidden mx-4 text-center">
           <p className="truncate text-slate-300 font-medium animate-pulse">
-            📢 <strong className="text-white">Live Staff Bulletin:</strong> {topAnnouncement}
+            📢 <strong className="text-white">Live Bulletin:</strong> {topAnnouncement}
           </p>
         </div>
 
@@ -132,7 +131,6 @@ const Navbar = ({ onToggleSidebar }) => {
           <div
             onClick={() => {
               if (userRole === 'passenger') navigate('/passenger');
-              else if (userRole === 'staff') navigate('/staff');
               else navigate('/admin');
             }}
             className="flex cursor-pointer items-center gap-2.5 group"

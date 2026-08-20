@@ -17,8 +17,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
 
   if (!user) return null;
 
-  const isAdmin = user.role === 'admin';
-  const isStaff = user.role === 'staff';
+  const isAdmin = user.role === 'admin' || user.role === 'staff';
   const isPassenger = user.role === 'passenger';
 
   const adminSections = [
@@ -36,7 +35,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
     {
       group: 'USER MANAGEMENT',
       items: [
-        { name: 'Staff Management', path: '/admin/staff', icon: Users },
+        { name: 'Operations Management', path: '/admin/staff', icon: Users },
         { name: 'Passengers', path: '/admin/users', icon: User },
       ]
     },
@@ -73,7 +72,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
       { name: 'Class Management', path: '/admin/classes', icon: Layers },
       { name: 'Bookings Management', path: '/admin/bookings', icon: BookOpen },
       { name: 'Passenger Directory', path: '/admin/users', icon: User },
-      { name: 'Staff Roster', path: '/admin/staff', icon: Users },
+      { name: 'Operations Access', path: '/admin/staff', icon: Users },
       { name: 'Ticket Checking', path: '/admin/ticket-checking', icon: Ticket },
       { name: 'RAC & Waiting List', path: '/admin/rac-waiting', icon: Clock },
       { name: 'Food & Catering', path: '/admin/catering', icon: Utensils },
@@ -103,7 +102,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
   const handleLogout = () => { 
     const currentRole = (user?.role || '').toLowerCase();
     logout(); 
-    if (currentRole === 'admin' || currentRole === 'staff') {
+    if (currentRole === 'admin') {
       navigate('/admin/login');
     } else {
       navigate('/login');
@@ -250,7 +249,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
                   key={idx}
                   to={item.path}
                   onClick={handleLinkClick}
-                  end={['/', '/passenger', '/admin', '/staff'].includes(item.path)}
+                  end={['/', '/passenger', '/admin'].includes(item.path)}
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold mb-0.5 transition-all duration-200 ${
                       isActive
