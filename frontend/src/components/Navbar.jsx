@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Bell, Shield, Server, Train, Menu, ChevronDown, LogOut, Clock, Zap, Eye, Globe } from 'lucide-react';
+import { Bell, Shield, Server, Train, Menu, ChevronDown, LogOut, Clock, Zap, Eye, Globe, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrency } from '../context/CurrencyContext';
 import CoachVRModal from './CoachVRModal';
