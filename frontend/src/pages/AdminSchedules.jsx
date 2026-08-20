@@ -11,9 +11,7 @@ const AdminSchedules = () => {
       trainName: 'Mumbai Rajdhani', 
       source: 'NDLS', 
       dest: 'MMCT', 
-      depDate: '2026-08-21',
       depTime: '04:55 PM', 
-      arrDate: '2026-08-22',
       arrTime: '08:35 AM', 
       frequency: 'Daily', 
       status: 'Active',
@@ -29,9 +27,7 @@ const AdminSchedules = () => {
       trainName: 'New Delhi Shatabdi', 
       source: 'NDLS', 
       dest: 'BPL', 
-      depDate: '2026-08-21',
       depTime: '06:00 AM', 
-      arrDate: '2026-08-21',
       arrTime: '02:40 PM', 
       frequency: 'Daily', 
       status: 'Active',
@@ -48,9 +44,7 @@ const AdminSchedules = () => {
       trainName: 'Vande Bharat Exp', 
       source: 'NDLS', 
       dest: 'BSB', 
-      depDate: '2026-08-21',
       depTime: '06:00 AM', 
-      arrDate: '2026-08-21',
       arrTime: '02:00 PM', 
       frequency: 'Except Thu', 
       status: 'Active',
@@ -65,9 +59,7 @@ const AdminSchedules = () => {
       trainName: 'Karnataka Express', 
       source: 'NDLS', 
       dest: 'SBC', 
-      depDate: '2026-08-21',
       depTime: '08:15 PM', 
-      arrDate: '2026-08-22',
       arrTime: '01:40 PM', 
       frequency: 'Daily', 
       status: 'Active',
@@ -99,6 +91,8 @@ const AdminSchedules = () => {
   const [arrTime, setArrTime] = useState('');
   const [frequency, setFrequency] = useState('Daily');
   const [stopsInput, setStopsInput] = useState([]);
+
+  const isDateRequired = frequency === 'Weekly' || frequency === 'Bi-Weekly';
 
   const openAddModal = () => {
     setTrainNo('');
@@ -158,9 +152,9 @@ const AdminSchedules = () => {
       trainName,
       source: source.toUpperCase(),
       dest: dest.toUpperCase(),
-      depDate,
+      depDate: isDateRequired ? depDate : '',
       depTime,
-      arrDate,
+      arrDate: isDateRequired ? arrDate : '',
       arrTime,
       frequency,
       status: 'Active',
@@ -184,9 +178,9 @@ const AdminSchedules = () => {
           trainName,
           source: source.toUpperCase(),
           dest: dest.toUpperCase(),
-          depDate,
+          depDate: isDateRequired ? depDate : '',
           depTime,
-          arrDate,
+          arrDate: isDateRequired ? arrDate : '',
           arrTime,
           frequency,
           stops: stopsInput.filter(st => st.stationCode)
@@ -268,12 +262,24 @@ const AdminSchedules = () => {
                   <td className="px-6 py-4 text-sm font-bold text-slate-800">{s.trainName}</td>
                   <td className="px-6 py-4 text-sm text-slate-600 font-bold">{s.source} &rarr; {s.dest}</td>
                   <td className="px-6 py-4 text-xs text-slate-500 font-semibold font-mono">
-                    <div className="font-bold text-slate-700">{s.depDate || 'N/A'}</div>
-                    <div className="text-slate-400">{s.depTime}</div>
+                    {s.depDate && (s.frequency === 'Weekly' || s.frequency === 'Bi-Weekly') ? (
+                      <>
+                        <div className="font-bold text-slate-700">{s.depDate}</div>
+                        <div className="text-slate-400">{s.depTime}</div>
+                      </>
+                    ) : (
+                      <div className="text-slate-700 font-bold">{s.depTime}</div>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-xs text-slate-500 font-semibold font-mono">
-                    <div className="font-bold text-slate-700">{s.arrDate || 'N/A'}</div>
-                    <div className="text-slate-400">{s.arrTime}</div>
+                    {s.arrDate && (s.frequency === 'Weekly' || s.frequency === 'Bi-Weekly') ? (
+                      <>
+                        <div className="font-bold text-slate-700">{s.arrDate}</div>
+                        <div className="text-slate-400">{s.arrTime}</div>
+                      </>
+                    ) : (
+                      <div className="text-slate-700 font-bold">{s.arrTime}</div>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-xs font-semibold text-slate-600">
                     <button
@@ -383,54 +389,6 @@ const AdminSchedules = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 border-l-2 border-primary-500 pl-3 py-1 bg-slate-50/50 rounded-r-xl">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Date</label>
-                  <input
-                    type="date"
-                    value={depDate}
-                    onChange={(e) => setDepDate(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Time</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 04:55 PM"
-                    value={depTime}
-                    onChange={(e) => setDepTime(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border-l-2 border-emerald-500 pl-3 py-1 bg-slate-50/50 rounded-r-xl">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Arrival Date</label>
-                  <input
-                    type="date"
-                    value={arrDate}
-                    onChange={(e) => setArrDate(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Arrival Time</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 08:35 AM"
-                    value={arrTime}
-                    onChange={(e) => setArrTime(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
-              </div>
-
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase">Frequency</label>
                 <select
@@ -443,6 +401,57 @@ const AdminSchedules = () => {
                   <option value="Weekly">Weekly</option>
                   <option value="Bi-Weekly">Bi-Weekly</option>
                 </select>
+              </div>
+
+              {/* Conditional Date inputs for Weekly and Bi-Weekly */}
+              {isDateRequired && (
+                <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 border border-slate-200 rounded-2xl animate-fade-in">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-primary-600 uppercase">Departure Date</label>
+                    <input
+                      type="date"
+                      value={depDate}
+                      onChange={(e) => setDepDate(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                      required={isDateRequired}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-emerald-600 uppercase">Arrival Date</label>
+                    <input
+                      type="date"
+                      value={arrDate}
+                      onChange={(e) => setArrDate(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                      required={isDateRequired}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Time</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 04:55 PM"
+                    value={depTime}
+                    onChange={(e) => setDepTime(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Arrival Time</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 08:35 AM"
+                    value={arrTime}
+                    onChange={(e) => setArrTime(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Dynamic stops container */}
@@ -498,7 +507,7 @@ const AdminSchedules = () => {
                       <div className="col-span-2">
                         <input
                           type="text"
-                          placeholder="Halt (min)"
+                          placeholder="Halt"
                           value={stop.haltMinutes}
                           onChange={(e) => handleStopChange(idx, 'haltMinutes', e.target.value)}
                           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-[11px] font-bold text-center text-slate-850 focus:outline-none"
@@ -598,52 +607,6 @@ const AdminSchedules = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 border-l-2 border-primary-500 pl-3 py-1 bg-slate-50/50 rounded-r-xl">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Date</label>
-                  <input
-                    type="date"
-                    value={depDate}
-                    onChange={(e) => setDepDate(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Time</label>
-                  <input
-                    type="text"
-                    value={depTime}
-                    onChange={(e) => setDepTime(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 border-l-2 border-emerald-500 pl-3 py-1 bg-slate-50/50 rounded-r-xl">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Arrival Date</label>
-                  <input
-                    type="date"
-                    value={arrDate}
-                    onChange={(e) => setArrDate(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Arrival Time</label>
-                  <input
-                    type="text"
-                    value={arrTime}
-                    onChange={(e) => setArrTime(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
-                    required
-                  />
-                </div>
-              </div>
-
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase">Frequency</label>
                 <select
@@ -656,6 +619,55 @@ const AdminSchedules = () => {
                   <option value="Weekly">Weekly</option>
                   <option value="Bi-Weekly">Bi-Weekly</option>
                 </select>
+              </div>
+
+              {/* Conditional Date inputs for Weekly and Bi-Weekly */}
+              {isDateRequired && (
+                <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 border border-slate-200 rounded-2xl animate-fade-in">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-primary-600 uppercase">Departure Date</label>
+                    <input
+                      type="date"
+                      value={depDate}
+                      onChange={(e) => setDepDate(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                      required={isDateRequired}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-emerald-600 uppercase">Arrival Date</label>
+                    <input
+                      type="date"
+                      value={arrDate}
+                      onChange={(e) => setArrDate(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                      required={isDateRequired}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Time</label>
+                  <input
+                    type="text"
+                    value={depTime}
+                    onChange={(e) => setDepTime(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Arrival Time</label>
+                  <input
+                    type="text"
+                    value={arrTime}
+                    onChange={(e) => setArrTime(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Dynamic stops container */}
@@ -711,7 +723,7 @@ const AdminSchedules = () => {
                       <div className="col-span-2">
                         <input
                           type="text"
-                          placeholder="Halt (min)"
+                          placeholder="Halt"
                           value={stop.haltMinutes}
                           onChange={(e) => handleStopChange(idx, 'haltMinutes', e.target.value)}
                           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-[11px] font-bold text-center text-slate-850 focus:outline-none"
@@ -775,9 +787,11 @@ const AdminSchedules = () => {
                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-500 ring-4 ring-primary-500/20 text-[9px] font-black text-white z-10 shrink-0 uppercase">S</div>
                 <div className="leading-tight">
                   <span className="text-xs font-black text-white block uppercase tracking-wider">{selectedSch.source} &bull; Origin Terminal</span>
-                  <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
-                    Departure Date: <span className="text-white font-bold">{selectedSch.depDate || 'N/A'}</span>
-                  </span>
+                  {selectedSch.depDate && (selectedSch.frequency === 'Weekly' || selectedSch.frequency === 'Bi-Weekly') && (
+                    <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
+                      Departure Date: <span className="text-white font-bold">{selectedSch.depDate}</span>
+                    </span>
+                  )}
                   <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
                     Departure Time: <span className="text-white">{selectedSch.depTime}</span>
                   </span>
@@ -810,9 +824,11 @@ const AdminSchedules = () => {
                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 text-[9px] font-black text-white z-10 shrink-0 uppercase">D</div>
                 <div className="leading-tight">
                   <span className="text-xs font-black text-white block uppercase tracking-wider">{selectedSch.dest} &bull; Destination Terminal</span>
-                  <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
-                    Arrival Date: <span className="text-white font-bold">{selectedSch.arrDate || 'N/A'}</span>
-                  </span>
+                  {selectedSch.arrDate && (selectedSch.frequency === 'Weekly' || selectedSch.frequency === 'Bi-Weekly') && (
+                    <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
+                      Arrival Date: <span className="text-white font-bold">{selectedSch.arrDate}</span>
+                    </span>
+                  )}
                   <span className="text-[10px] font-mono text-slate-400 block mt-0.5">
                     Arrival Time: <span className="text-white">{selectedSch.arrTime}</span>
                   </span>
