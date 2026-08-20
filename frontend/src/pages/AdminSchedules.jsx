@@ -71,6 +71,34 @@ const defaultSchedules = [
   }
 ];
 
+const convertTo12Hour = (time24) => {
+  if (!time24) return '';
+  if (time24.includes('AM') || time24.includes('PM')) return time24;
+  const parts = time24.split(':');
+  if (parts.length < 2) return time24;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const hoursFormatted = hours < 10 ? `0${hours}` : hours;
+  return `${hoursFormatted}:${minutes} ${ampm}`;
+};
+
+const convertTo24Hour = (time12) => {
+  if (!time12) return '';
+  if (!time12.includes('AM') && !time12.includes('PM')) return time12;
+  const match = time12.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+  if (!match) return time12;
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const ampm = match[3].toUpperCase();
+  if (ampm === 'PM' && hours < 12) hours += 12;
+  if (ampm === 'AM' && hours === 12) hours = 0;
+  const hoursFormatted = hours < 10 ? `0${hours}` : hours;
+  return `${hoursFormatted}:${minutes}`;
+};
+
 const AdminSchedules = () => {
   const { showToast } = useToast();
 
@@ -204,7 +232,7 @@ const AdminSchedules = () => {
 
   const handleCreateSchedule = (e) => {
     e.preventDefault();
-    if (!trainNo || !trainName || !source || !dest) return;
+    if (!trainNo || !trainName || !source || !dest || !depTime || !arrTime) return;
     
     const newSch = {
       id: `sch-${Date.now()}`,
@@ -213,9 +241,9 @@ const AdminSchedules = () => {
       source: source.toUpperCase().trim(),
       dest: dest.toUpperCase().trim(),
       depDate: isDateRequired ? depDate : '',
-      depTime: depTime.trim(),
+      depTime,
       arrDate: isDateRequired ? arrDate : '',
-      arrTime: arrTime.trim(),
+      arrTime,
       frequency,
       status: 'Active',
       stops: stopsInput.filter(s => s.stationCode)
@@ -230,7 +258,7 @@ const AdminSchedules = () => {
 
   const handleUpdateSchedule = (e) => {
     e.preventDefault();
-    if (!trainNo || !trainName || !source || !dest) return;
+    if (!trainNo || !trainName || !source || !dest || !depTime || !arrTime) return;
 
     const updated = schedules.map(s => {
       if (s.id === selectedSch.id) {
@@ -241,9 +269,9 @@ const AdminSchedules = () => {
           source: source.toUpperCase().trim(),
           dest: dest.toUpperCase().trim(),
           depDate: isDateRequired ? depDate : '',
-          depTime: depTime.trim(),
+          depTime,
           arrDate: isDateRequired ? arrDate : '',
-          arrTime: arrTime.trim(),
+          arrTime,
           frequency,
           stops: stopsInput.filter(st => st.stationCode)
         };
@@ -294,7 +322,7 @@ const AdminSchedules = () => {
             <Clock className="h-4 w-4 text-slate-500" />
             <span>Active Schedules Timetable</span>
           </h3>
-          <div className="flex items-center space-x-2 border border-slate-200 bg-white rounded-xl px-3 py-1.5 text-xs text-slate-800 w-full sm:w-64">
+          <div className="flex items-center space-x-2 border border-slate-200 bg-white rounded-xl px-3 py-1.5 text-xs text-slate-855 w-full sm:w-64">
             <Search className="h-4 w-4 text-slate-400" />
             <input
               type="text"
@@ -407,7 +435,7 @@ const AdminSchedules = () => {
             <form onSubmit={handleCreateSchedule} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Train Number</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Train Number</label>
                   <input
                     type="text"
                     placeholder="e.g. 12951"
@@ -418,7 +446,7 @@ const AdminSchedules = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Train Name</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Train Name</label>
                   <input
                     type="text"
                     placeholder="e.g. Rajdhani Exp"
@@ -432,7 +460,7 @@ const AdminSchedules = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Source Terminal</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Source Terminal</label>
                   <input
                     type="text"
                     placeholder="e.g. NDLS"
@@ -443,7 +471,7 @@ const AdminSchedules = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Destination Terminal</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Destination Terminal</label>
                   <input
                     type="text"
                     placeholder="e.g. MMCT"
@@ -456,7 +484,7 @@ const AdminSchedules = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Frequency</label>
+                <label className="text-[10px] font-bold text-slate-550 uppercase">Frequency</label>
                 <select
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value)}
@@ -497,23 +525,21 @@ const AdminSchedules = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Time</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Departure Time</label>
                   <input
-                    type="text"
-                    placeholder="e.g. 04:55 PM"
-                    value={depTime}
-                    onChange={(e) => setDepTime(e.target.value)}
+                    type="time"
+                    value={convertTo24Hour(depTime)}
+                    onChange={(e) => setDepTime(convertTo12Hour(e.target.value))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Arrival Time</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Arrival Time</label>
                   <input
-                    type="text"
-                    placeholder="e.g. 08:35 AM"
-                    value={arrTime}
-                    onChange={(e) => setArrTime(e.target.value)}
+                    type="time"
+                    value={convertTo24Hour(arrTime)}
+                    onChange={(e) => setArrTime(convertTo12Hour(e.target.value))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
@@ -543,7 +569,7 @@ const AdminSchedules = () => {
                       <div className="col-span-3">
                         <input
                           type="text"
-                          placeholder="Code (e.g. KOTA)"
+                          placeholder="Code"
                           value={stop.stationCode}
                           onChange={(e) => handleStopChange(idx, 'stationCode', e.target.value.toUpperCase())}
                           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-bold text-center text-slate-850 uppercase focus:outline-none focus:border-primary-500"
@@ -552,21 +578,19 @@ const AdminSchedules = () => {
                       </div>
                       <div className="col-span-3">
                         <input
-                          type="text"
-                          placeholder="Arr"
-                          value={stop.arrTime}
-                          onChange={(e) => handleStopChange(idx, 'arrTime', e.target.value)}
+                          type="time"
+                          value={convertTo24Hour(stop.arrTime)}
+                          onChange={(e) => handleStopChange(idx, 'arrTime', convertTo12Hour(e.target.value))}
                           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
                           required
                         />
                       </div>
                       <div className="col-span-3">
                         <input
-                          type="text"
-                          placeholder="Dep"
-                          value={stop.depTime}
-                          onChange={(e) => handleStopChange(idx, 'depTime', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
+                          type="time"
+                          value={convertTo24Hour(stop.depTime)}
+                          onChange={(e) => handleStopChange(idx, 'depTime', convertTo12Hour(e.target.value))}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
                           required
                         />
                       </div>
@@ -629,7 +653,7 @@ const AdminSchedules = () => {
             <form onSubmit={handleUpdateSchedule} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Train Number</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Train Number</label>
                   <input
                     type="text"
                     value={trainNo}
@@ -639,7 +663,7 @@ const AdminSchedules = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Train Name</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Train Name</label>
                   <input
                     type="text"
                     value={trainName}
@@ -652,7 +676,7 @@ const AdminSchedules = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Source Terminal</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Source Terminal</label>
                   <input
                     type="text"
                     value={source}
@@ -662,7 +686,7 @@ const AdminSchedules = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Destination Terminal</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Destination Terminal</label>
                   <input
                     type="text"
                     value={dest}
@@ -674,7 +698,7 @@ const AdminSchedules = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Frequency</label>
+                <label className="text-[10px] font-bold text-slate-550 uppercase">Frequency</label>
                 <select
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value)}
@@ -715,21 +739,21 @@ const AdminSchedules = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Departure Time</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Departure Time</label>
                   <input
-                    type="text"
-                    value={depTime}
-                    onChange={(e) => setDepTime(e.target.value)}
+                    type="time"
+                    value={convertTo24Hour(depTime)}
+                    onChange={(e) => setDepTime(convertTo12Hour(e.target.value))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Arrival Time</label>
+                  <label className="text-[10px] font-bold text-slate-550 uppercase">Arrival Time</label>
                   <input
-                    type="text"
-                    value={arrTime}
-                    onChange={(e) => setArrTime(e.target.value)}
+                    type="time"
+                    value={convertTo24Hour(arrTime)}
+                    onChange={(e) => setArrTime(convertTo12Hour(e.target.value))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
@@ -768,20 +792,18 @@ const AdminSchedules = () => {
                       </div>
                       <div className="col-span-3">
                         <input
-                          type="text"
-                          placeholder="Arr"
-                          value={stop.arrTime}
-                          onChange={(e) => handleStopChange(idx, 'arrTime', e.target.value)}
+                          type="time"
+                          value={convertTo24Hour(stop.arrTime)}
+                          onChange={(e) => handleStopChange(idx, 'arrTime', convertTo12Hour(e.target.value))}
                           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
                           required
                         />
                       </div>
                       <div className="col-span-3">
                         <input
-                          type="text"
-                          placeholder="Dep"
-                          value={stop.depTime}
-                          onChange={(e) => handleStopChange(idx, 'depTime', e.target.value)}
+                          type="time"
+                          value={convertTo24Hour(stop.depTime)}
+                          onChange={(e) => handleStopChange(idx, 'depTime', convertTo12Hour(e.target.value))}
                           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
                           required
                         />
