@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   User, 
   Shield, 
@@ -111,13 +111,17 @@ const locales = {
   }
 };
 
-const Login = () => {
+const Login = ({ mode }) => {
   const { login, signup, error, setError } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Determine active login mode (Passenger vs Admin)
+  const isAdminPage = mode === 'admin' || location.pathname.includes('/admin/login');
+  const role = isAdminPage ? 'admin' : 'passenger';
 
   const [lang, setLang] = useState('en'); // 'en' | 'hi'
   const [isSignUp, setIsSignUp] = useState(false);
-  const [role, setRole] = useState('passenger'); // 'passenger' | 'staff' | 'admin'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -147,14 +151,14 @@ const Login = () => {
 
     const cleanEmail = email ? email.trim().toLowerCase() : '';
 
-    if (isSignUp && role === 'admin') {
+    if (isSignUp && isAdminPage) {
       setError(lang === 'hi' ? 'प्रशासक खाते स्वयं-पंजीकृत नहीं किए जा सकते।' : 'Admin accounts cannot be self-registered.');
       setFormLoading(false);
       return;
     }
 
     try {
-      console.log('🔑 Login request initiated for:', cleanEmail);
+      console.log('🔑 Login request initiated for:', cleanEmail, 'Mode:', role);
       if (isSignUp) {
         const user = await signup({
           email: cleanEmail,
@@ -169,31 +173,31 @@ const Login = () => {
         const user = await login(cleanEmail, password, role);
         console.log('✅ Login successful. User received:', user);
         
-        const detectedRole = (user?.role || (cleanEmail === 'admin@railway.com' ? 'admin' : 'passenger')).toLowerCase();
+        const userRole = (user?.role || (cleanEmail === 'admin@railway.com' ? 'admin' : 'passenger')).toLowerCase();
 
-        // Strict Separation: Admin accounts CANNOT log in through the Passenger tab
-        if (role === 'passenger' && detectedRole === 'admin') {
+        // Separate Page Restriction: Admin accounts CANNOT log in through Passenger login page (/login)
+        if (!isAdminPage && userRole === 'admin') {
           setError(
             lang === 'hi'
-              ? 'पहुंच अस्वीकृत: व्यवस्थापक खाते यात्री लॉगिन टैब से प्रवेश नहीं कर सकते। कृपया ADMIN टैब चुनें।'
-              : 'Access Denied: Admin accounts cannot log in through the Passenger tab. Please switch to the ADMIN tab.'
+              ? 'पहुंच अस्वीकृत: व्यवस्थापक खाते यात्री लॉगिन पृष्ठ से प्रवेश नहीं कर सकते। कृपया /admin/login पर जाएं।'
+              : 'Access Denied: Admin accounts cannot log in on the Passenger Login page. Please use the Admin Login page at /admin/login.'
           );
           setFormLoading(false);
           return;
         }
 
-        // Strict Separation: Non-admin accounts CANNOT log in through the Admin tab
-        if (role === 'admin' && detectedRole !== 'admin') {
+        // Separate Page Restriction: Passenger accounts CANNOT log in through Admin login page (/admin/login)
+        if (isAdminPage && userRole !== 'admin') {
           setError(
             lang === 'hi'
-              ? 'पहुंच अस्वीकृत: केवल व्यवस्थापक ही एडमिन पोर्टल में लॉगिन कर सकते हैं। कृपया PASSENGER टैब चुनें।'
-              : 'Access Denied: Passenger accounts cannot log in through the Admin tab. Please switch to the PASSENGER tab.'
+              ? 'पहुंच अस्वीकृत: केवल व्यवस्थापक ही एडमिन पोर्टल में लॉगिन कर सकते हैं। कृपया /login पृष्ठ का उपयोग करें।'
+              : 'Access Denied: Passenger accounts cannot log in on the Admin Login page. Please use the Passenger Login page at /login.'
           );
           setFormLoading(false);
           return;
         }
 
-        redirectUser(detectedRole);
+        redirectUser(userRole);
       }
     } catch (err) {
       console.error('❌ Authentication error:', err);
@@ -412,47 +416,19 @@ const Login = () => {
                 </>
               ) : (
                 <>
-                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900">{isSignUp ? t.welcomeAboard : t.welcome}</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
+                    {isAdminPage ? 'Admin Control Terminal' : isSignUp ? t.welcomeAboard : t.welcome}
+                  </h3>
                   <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                    {isSignUp ? t.welcomeAboardSub : t.welcomeSub}
+                    {isAdminPage 
+                      ? 'Sign in to access Railway Authority Operations Portal' 
+                      : isSignUp 
+                        ? t.welcomeAboardSub 
+                        : t.welcomeSub}
                   </p>
                 </>
               )}
             </div>
-
-            {/* Toggle Tab header for PASSENGER vs ADMIN */}
-            {!showForgotPassword && (
-              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl mb-6">
-                {[
-                  { id: 'passenger', label: t.passenger, icon: User },
-                  { id: 'admin', label: 'ADMIN', icon: Shield }
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isSelected = role === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        setRole(item.id);
-                        setError(null);
-                        if (item.id === 'admin') {
-                          setIsSignUp(false);
-                        }
-                      }}
-                      className={`flex flex-col items-center justify-center py-2.5 rounded-xl border transition-all duration-200 ${
-                        isSelected
-                          ? 'border-white bg-white text-blue-600 font-bold shadow-md shadow-slate-200'
-                          : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-white/40'
-                      }`}
-                    >
-                      <Icon className="h-5 w-5 mb-1" />
-                      <span className="text-[10px] uppercase font-bold tracking-wider">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
 
             {/* Display Notification Messages */}
             {error && (
@@ -661,8 +637,8 @@ const Login = () => {
                 </div>
 
                 {/* Bottom login/register toggle */}
-                {role !== 'staff' && (
-                  <div className="mt-8 text-center text-sm text-slate-500">
+                {!isAdminPage && (
+                  <div className="mt-6 text-center text-sm text-slate-500">
                     <span>{isSignUp ? t.alreadyHaveAccount : t.dontHaveAccount}</span>
                     <button
                       type="button"
@@ -676,6 +652,21 @@ const Login = () => {
                     </button>
                   </div>
                 )}
+
+                {/* Separate Login Page Switcher Link */}
+                <div className="mt-6 pt-4 border-t border-slate-100 text-center text-xs font-bold">
+                  {isAdminPage ? (
+                    <Link to="/login" className="text-slate-500 hover:text-blue-600 transition inline-flex items-center space-x-1">
+                      <span>Not an Administrator? Switch to Passenger Sign In</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  ) : (
+                    <Link to="/admin/login" className="text-slate-500 hover:text-blue-600 transition inline-flex items-center space-x-1">
+                      <span>System Administrator? Switch to Admin Portal Sign In</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  )}
+                </div>
               </>
             )}
 

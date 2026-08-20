@@ -246,8 +246,9 @@ function App() {
               <div className="min-h-screen bg-slate-50">
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
-                    {/* Login & Register Pages */}
-                    <Route path="/login" element={<Login />} />
+                    {/* Dedicated Separate Login Pages */}
+                    <Route path="/login" element={<Login mode="passenger" />} />
+                    <Route path="/admin/login" element={<Login mode="admin" />} />
                     <Route path="/register" element={<Register />} />
 
                     {/* Passenger Dashboard Flow */}
