@@ -64,6 +64,7 @@ const AdminStaff = lazyWithRetry(() => import('./pages/AdminStaff'));
 const AdminPayments = lazyWithRetry(() => import('./pages/AdminPayments'));
 const AdminPolicies = lazyWithRetry(() => import('./pages/AdminPolicies'));
 const AdminCatering = lazyWithRetry(() => import('./pages/AdminCatering'));
+const StaffBookings = lazyWithRetry(() => import('./pages/StaffBookings'));
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -472,7 +473,7 @@ function App() {
                     <Route path="/admin/bookings" element={
                       <ProtectedRoute allowedRoles={['admin']}>
                         <AdminLayout>
-                          <AdminSchedules />
+                          <StaffBookings />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
