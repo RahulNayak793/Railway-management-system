@@ -240,10 +240,10 @@ const RootRedirect = () => {
 function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <CurrencyProvider>
-          <ToastProvider>
-            <Router>
+      <Router>
+        <AuthProvider>
+          <CurrencyProvider>
+            <ToastProvider>
               <div className="min-h-screen bg-slate-50">
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
@@ -555,10 +555,10 @@ function App() {
                   </Routes>
                 </Suspense>
               </div>
-            </Router>
-          </ToastProvider>
-        </CurrencyProvider>
-      </AuthProvider>
+            </ToastProvider>
+          </CurrencyProvider>
+        </AuthProvider>
+      </Router>
     </ErrorBoundary>
   );
 }

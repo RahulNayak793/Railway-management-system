@@ -25,10 +25,10 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add authorization token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const isLocalAdmin = window.location.pathname.startsWith('/admin');
+    const token = localStorage.getItem(isLocalAdmin ? 'admin_token' : 'passenger_token') || localStorage.getItem('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
