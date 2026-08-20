@@ -93,8 +93,8 @@ const SearchTrainResults = () => {
 
         storedStaffTrains.forEach(st => {
           if (!existingTrainNumbers.has(st.trainNo)) {
-            const stSrc = extractCode(st.source || 'NDLS');
-            const stDest = extractCode(st.to || 'MMCT');
+            const stSrc = extractCode(st.source || st.from || 'NDLS');
+            const stDest = extractCode(st.to || st.dest || 'MMCT');
             const matchesRoute = !srcCode || !destCode || 
               (stSrc === srcCode && stDest === destCode) ||
               (stSrc === srcCode || stDest === destCode);
@@ -104,7 +104,7 @@ const SearchTrainResults = () => {
                 id: st.id,
                 train_number: st.trainNo,
                 train_name: st.trainName,
-                status: st.status === 'On Time' ? 'on_time' : 'delayed',
+                status: st.status === 'On Time' || st.status === 'Active' ? 'on_time' : 'delayed',
                 delay_minutes: 0,
                 source: stSrc || srcCode || 'NDLS',
                 destination: stDest || destCode || 'MMCT',

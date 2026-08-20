@@ -2,76 +2,112 @@ import React, { useState } from 'react';
 import { Clock, Plus, Search, Calendar, Edit, Trash2, MapPin, Eye, X, ArrowRight } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
+const defaultSchedules = [
+  { 
+    id: 'sch-1', 
+    trainNo: '12951', 
+    trainName: 'Mumbai Rajdhani', 
+    source: 'NDLS', 
+    dest: 'MMCT', 
+    depTime: '04:55 PM', 
+    arrTime: '08:35 AM', 
+    frequency: 'Daily', 
+    status: 'Active',
+    stops: [
+      { stationCode: 'KOTA', arrTime: '09:10 PM', depTime: '09:20 PM', haltMinutes: '10' },
+      { stationCode: 'RTM', arrTime: '01:05 AM', depTime: '01:10 AM', haltMinutes: '5' },
+      { stationCode: 'BRC', arrTime: '04:40 AM', depTime: '04:48 AM', haltMinutes: '8' }
+    ]
+  },
+  { 
+    id: 'sch-2', 
+    trainNo: '12002', 
+    trainName: 'New Delhi Shatabdi', 
+    source: 'NDLS', 
+    dest: 'BPL', 
+    depTime: '06:00 AM', 
+    arrTime: '02:40 PM', 
+    frequency: 'Daily', 
+    status: 'Active',
+    stops: [
+      { stationCode: 'MTJ', arrTime: '07:20 AM', depTime: '07:22 AM', haltMinutes: '2' },
+      { stationCode: 'AGC', arrTime: '07:57 AM', depTime: '08:02 AM', haltMinutes: '5' },
+      { stationCode: 'GWL', arrTime: '09:43 AM', depTime: '09:45 AM', haltMinutes: '2' },
+      { stationCode: 'VGLJ', arrTime: '11:20 AM', depTime: '11:28 AM', haltMinutes: '8' }
+    ]
+  },
+  { 
+    id: 'sch-3', 
+    trainNo: '22436', 
+    trainName: 'Vande Bharat Exp', 
+    source: 'NDLS', 
+    dest: 'BSB', 
+    depTime: '06:00 AM', 
+    arrTime: '02:00 PM', 
+    frequency: 'Except Thu', 
+    status: 'Active',
+    stops: [
+      { stationCode: 'CNB', arrTime: '10:08 AM', depTime: '10:10 AM', haltMinutes: '2' },
+      { stationCode: 'PRYJ', arrTime: '12:08 PM', depTime: '12:10 PM', haltMinutes: '2' }
+    ]
+  },
+  { 
+    id: 'sch-4', 
+    trainNo: '12628', 
+    trainName: 'Karnataka Express', 
+    source: 'NDLS', 
+    dest: 'SBC', 
+    depTime: '08:15 PM', 
+    arrTime: '01:40 PM', 
+    frequency: 'Daily', 
+    status: 'Active',
+    stops: [
+      { stationCode: 'AGC', arrTime: '11:15 PM', depTime: '11:20 PM', haltMinutes: '5' },
+      { stationCode: 'VGLJ', arrTime: '02:50 AM', depTime: '02:58 AM', haltMinutes: '8' },
+      { stationCode: 'BPL', arrTime: '06:45 AM', depTime: '06:50 AM', haltMinutes: '5' },
+      { stationCode: 'ET', arrTime: '08:20 AM', depTime: '08:25 AM', haltMinutes: '5' },
+      { stationCode: 'NGP', arrTime: '12:45 PM', depTime: '12:50 PM', haltMinutes: '5' }
+    ]
+  }
+];
+
 const AdminSchedules = () => {
   const { showToast } = useToast();
-  const [schedules, setSchedules] = useState([
-    { 
-      id: 'sch-1', 
-      trainNo: '12951', 
-      trainName: 'Mumbai Rajdhani', 
-      source: 'NDLS', 
-      dest: 'MMCT', 
-      depTime: '04:55 PM', 
-      arrTime: '08:35 AM', 
-      frequency: 'Daily', 
-      status: 'Active',
-      stops: [
-        { stationCode: 'KOTA', arrTime: '09:10 PM', depTime: '09:20 PM', haltMinutes: '10' },
-        { stationCode: 'RTM', arrTime: '01:05 AM', depTime: '01:10 AM', haltMinutes: '5' },
-        { stationCode: 'BRC', arrTime: '04:40 AM', depTime: '04:48 AM', haltMinutes: '8' }
-      ]
-    },
-    { 
-      id: 'sch-2', 
-      trainNo: '12002', 
-      trainName: 'New Delhi Shatabdi', 
-      source: 'NDLS', 
-      dest: 'BPL', 
-      depTime: '06:00 AM', 
-      arrTime: '02:40 PM', 
-      frequency: 'Daily', 
-      status: 'Active',
-      stops: [
-        { stationCode: 'MTJ', arrTime: '07:20 AM', depTime: '07:22 AM', haltMinutes: '2' },
-        { stationCode: 'AGC', arrTime: '07:57 AM', depTime: '08:02 AM', haltMinutes: '5' },
-        { stationCode: 'GWL', arrTime: '09:43 AM', depTime: '09:45 AM', haltMinutes: '2' },
-        { stationCode: 'VGLJ', arrTime: '11:20 AM', depTime: '11:28 AM', haltMinutes: '8' }
-      ]
-    },
-    { 
-      id: 'sch-3', 
-      trainNo: '22436', 
-      trainName: 'Vande Bharat Exp', 
-      source: 'NDLS', 
-      dest: 'BSB', 
-      depTime: '06:00 AM', 
-      arrTime: '02:00 PM', 
-      frequency: 'Except Thu', 
-      status: 'Active',
-      stops: [
-        { stationCode: 'CNB', arrTime: '10:08 AM', depTime: '10:10 AM', haltMinutes: '2' },
-        { stationCode: 'PRYJ', arrTime: '12:08 PM', depTime: '12:10 PM', haltMinutes: '2' }
-      ]
-    },
-    { 
-      id: 'sch-4', 
-      trainNo: '12628', 
-      trainName: 'Karnataka Express', 
-      source: 'NDLS', 
-      dest: 'SBC', 
-      depTime: '08:15 PM', 
-      arrTime: '01:40 PM', 
-      frequency: 'Daily', 
-      status: 'Active',
-      stops: [
-        { stationCode: 'AGC', arrTime: '11:15 PM', depTime: '11:20 PM', haltMinutes: '5' },
-        { stationCode: 'VGLJ', arrTime: '02:50 AM', depTime: '02:58 AM', haltMinutes: '8' },
-        { stationCode: 'BPL', arrTime: '06:45 AM', depTime: '06:50 AM', haltMinutes: '5' },
-        { stationCode: 'ET', arrTime: '08:20 AM', depTime: '08:25 AM', haltMinutes: '5' },
-        { stationCode: 'NGP', arrTime: '12:45 PM', depTime: '12:50 PM', haltMinutes: '5' }
-      ]
+
+  const [schedules, setSchedules] = useState(() => {
+    try {
+      const stored = localStorage.getItem('added_staff_trains');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const mapped = parsed.map(t => ({
+          id: t.id,
+          trainNo: t.trainNo,
+          trainName: t.trainName,
+          source: t.source || t.from,
+          dest: t.dest || t.to,
+          depDate: t.depDate || '',
+          depTime: t.depTime,
+          arrDate: t.arrDate || '',
+          arrTime: t.arrTime,
+          frequency: t.frequency || 'Daily',
+          status: t.status === 'on_time' || t.status === 'Active' || t.status === 'On Time' ? 'Active' : 'Delayed',
+          stops: t.stops || []
+        }));
+
+        const all = [...mapped];
+        const seen = new Set(all.map(s => s.trainNo));
+        defaultSchedules.forEach(d => {
+          if (!seen.has(d.trainNo)) {
+            all.push(d);
+          }
+        });
+        return all;
+      }
+    } catch (e) {
+      console.error(e);
     }
-  ]);
+    return defaultSchedules;
+  });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -93,6 +129,30 @@ const AdminSchedules = () => {
   const [stopsInput, setStopsInput] = useState([]);
 
   const isDateRequired = frequency === 'Weekly' || frequency === 'Bi-Weekly';
+
+  const saveSchedulesToStorage = (newSchedules) => {
+    try {
+      const formatted = newSchedules.map(s => ({
+        id: s.id,
+        trainNo: s.trainNo,
+        trainName: s.trainName,
+        source: s.source,
+        from: s.source,
+        dest: s.dest,
+        to: s.dest,
+        depDate: s.depDate,
+        depTime: s.depTime,
+        arrDate: s.arrDate,
+        arrTime: s.arrTime,
+        frequency: s.frequency,
+        status: s.status,
+        stops: s.stops
+      }));
+      localStorage.setItem('added_staff_trains', JSON.stringify(formatted));
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const openAddModal = () => {
     setTrainNo('');
@@ -148,20 +208,22 @@ const AdminSchedules = () => {
     
     const newSch = {
       id: `sch-${Date.now()}`,
-      trainNo,
-      trainName,
-      source: source.toUpperCase(),
-      dest: dest.toUpperCase(),
+      trainNo: trainNo.trim(),
+      trainName: trainName.trim(),
+      source: source.toUpperCase().trim(),
+      dest: dest.toUpperCase().trim(),
       depDate: isDateRequired ? depDate : '',
-      depTime,
+      depTime: depTime.trim(),
       arrDate: isDateRequired ? arrDate : '',
-      arrTime,
+      arrTime: arrTime.trim(),
       frequency,
       status: 'Active',
       stops: stopsInput.filter(s => s.stationCode)
     };
 
-    setSchedules([...schedules, newSch]);
+    const updated = [...schedules, newSch];
+    setSchedules(updated);
+    saveSchedulesToStorage(updated);
     setShowAddModal(false);
     showToast(`Train schedule ${newSch.trainName} (${newSch.trainNo}) created successfully!`, 'success');
   };
@@ -170,31 +232,35 @@ const AdminSchedules = () => {
     e.preventDefault();
     if (!trainNo || !trainName || !source || !dest) return;
 
-    setSchedules(schedules.map(s => {
+    const updated = schedules.map(s => {
       if (s.id === selectedSch.id) {
         return {
           ...s,
-          trainNo,
-          trainName,
-          source: source.toUpperCase(),
-          dest: dest.toUpperCase(),
+          trainNo: trainNo.trim(),
+          trainName: trainName.trim(),
+          source: source.toUpperCase().trim(),
+          dest: dest.toUpperCase().trim(),
           depDate: isDateRequired ? depDate : '',
-          depTime,
+          depTime: depTime.trim(),
           arrDate: isDateRequired ? arrDate : '',
-          arrTime,
+          arrTime: arrTime.trim(),
           frequency,
           stops: stopsInput.filter(st => st.stationCode)
         };
       }
       return s;
-    }));
+    });
 
+    setSchedules(updated);
+    saveSchedulesToStorage(updated);
     setShowEditModal(false);
     showToast(`Train schedule ${trainName} updated successfully!`, 'success');
   };
 
   const handleDelete = (id) => {
-    setSchedules(schedules.filter(s => s.id !== id));
+    const updated = schedules.filter(s => s.id !== id);
+    setSchedules(updated);
+    saveSchedulesToStorage(updated);
     showToast('Train schedule record removed from database.', 'info');
   };
 
@@ -347,7 +413,7 @@ const AdminSchedules = () => {
                     placeholder="e.g. 12951"
                     value={trainNo}
                     onChange={(e) => setTrainNo(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -358,7 +424,7 @@ const AdminSchedules = () => {
                     placeholder="e.g. Rajdhani Exp"
                     value={trainName}
                     onChange={(e) => setTrainName(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -372,7 +438,7 @@ const AdminSchedules = () => {
                     placeholder="e.g. NDLS"
                     value={source}
                     onChange={(e) => setSource(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -383,7 +449,7 @@ const AdminSchedules = () => {
                     placeholder="e.g. MMCT"
                     value={dest}
                     onChange={(e) => setDest(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -394,7 +460,7 @@ const AdminSchedules = () => {
                 <select
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                 >
                   <option value="Daily">Daily</option>
                   <option value="Except Thu">Except Thu</option>
@@ -412,7 +478,7 @@ const AdminSchedules = () => {
                       type="date"
                       value={depDate}
                       onChange={(e) => setDepDate(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                       required={isDateRequired}
                     />
                   </div>
@@ -422,7 +488,7 @@ const AdminSchedules = () => {
                       type="date"
                       value={arrDate}
                       onChange={(e) => setArrDate(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                       required={isDateRequired}
                     />
                   </div>
@@ -437,7 +503,7 @@ const AdminSchedules = () => {
                     placeholder="e.g. 04:55 PM"
                     value={depTime}
                     onChange={(e) => setDepTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -448,7 +514,7 @@ const AdminSchedules = () => {
                     placeholder="e.g. 08:35 AM"
                     value={arrTime}
                     onChange={(e) => setArrTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -480,27 +546,27 @@ const AdminSchedules = () => {
                           placeholder="Code (e.g. KOTA)"
                           value={stop.stationCode}
                           onChange={(e) => handleStopChange(idx, 'stationCode', e.target.value.toUpperCase())}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-bold text-center text-slate-800 uppercase focus:outline-none focus:border-primary-500"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-bold text-center text-slate-850 uppercase focus:outline-none focus:border-primary-500"
                           required
                         />
                       </div>
                       <div className="col-span-3">
                         <input
                           type="text"
-                          placeholder="Arr (e.g. 09:10 PM)"
+                          placeholder="Arr"
                           value={stop.arrTime}
                           onChange={(e) => handleStopChange(idx, 'arrTime', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-800 focus:outline-none focus:border-primary-500"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
                           required
                         />
                       </div>
                       <div className="col-span-3">
                         <input
                           type="text"
-                          placeholder="Dep (e.g. 09:20 PM)"
+                          placeholder="Dep"
                           value={stop.depTime}
                           onChange={(e) => handleStopChange(idx, 'depTime', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-800 focus:outline-none focus:border-primary-500"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                           required
                         />
                       </div>
@@ -510,7 +576,7 @@ const AdminSchedules = () => {
                           placeholder="Halt"
                           value={stop.haltMinutes}
                           onChange={(e) => handleStopChange(idx, 'haltMinutes', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-[11px] font-bold text-center text-slate-850 focus:outline-none"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-[11px] font-bold text-center text-slate-855 focus:outline-none"
                         />
                       </div>
                       <div className="col-span-1 text-center">
@@ -568,7 +634,7 @@ const AdminSchedules = () => {
                     type="text"
                     value={trainNo}
                     onChange={(e) => setTrainNo(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -578,7 +644,7 @@ const AdminSchedules = () => {
                     type="text"
                     value={trainName}
                     onChange={(e) => setTrainName(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -591,7 +657,7 @@ const AdminSchedules = () => {
                     type="text"
                     value={source}
                     onChange={(e) => setSource(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -601,7 +667,7 @@ const AdminSchedules = () => {
                     type="text"
                     value={dest}
                     onChange={(e) => setDest(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -612,7 +678,7 @@ const AdminSchedules = () => {
                 <select
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                 >
                   <option value="Daily">Daily</option>
                   <option value="Except Thu">Except Thu</option>
@@ -630,7 +696,7 @@ const AdminSchedules = () => {
                       type="date"
                       value={depDate}
                       onChange={(e) => setDepDate(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                       required={isDateRequired}
                     />
                   </div>
@@ -640,7 +706,7 @@ const AdminSchedules = () => {
                       type="date"
                       value={arrDate}
                       onChange={(e) => setArrDate(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                       required={isDateRequired}
                     />
                   </div>
@@ -654,7 +720,7 @@ const AdminSchedules = () => {
                     type="text"
                     value={depTime}
                     onChange={(e) => setDepTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -664,7 +730,7 @@ const AdminSchedules = () => {
                     type="text"
                     value={arrTime}
                     onChange={(e) => setArrTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-855 focus:outline-none focus:border-primary-500"
                     required
                   />
                 </div>
@@ -693,30 +759,30 @@ const AdminSchedules = () => {
                       <div className="col-span-3">
                         <input
                           type="text"
-                          placeholder="Code (e.g. KOTA)"
+                          placeholder="Code"
                           value={stop.stationCode}
                           onChange={(e) => handleStopChange(idx, 'stationCode', e.target.value.toUpperCase())}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-bold text-center text-slate-800 uppercase focus:outline-none focus:border-primary-500"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-bold text-center text-slate-850 uppercase focus:outline-none focus:border-primary-500"
                           required
                         />
                       </div>
                       <div className="col-span-3">
                         <input
                           type="text"
-                          placeholder="Arr (e.g. 09:10 PM)"
+                          placeholder="Arr"
                           value={stop.arrTime}
                           onChange={(e) => handleStopChange(idx, 'arrTime', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-800 focus:outline-none focus:border-primary-500"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
                           required
                         />
                       </div>
                       <div className="col-span-3">
                         <input
                           type="text"
-                          placeholder="Dep (e.g. 09:20 PM)"
+                          placeholder="Dep"
                           value={stop.depTime}
                           onChange={(e) => handleStopChange(idx, 'depTime', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-800 focus:outline-none focus:border-primary-500"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-slate-850 focus:outline-none focus:border-primary-500"
                           required
                         />
                       </div>
@@ -726,7 +792,7 @@ const AdminSchedules = () => {
                           placeholder="Halt"
                           value={stop.haltMinutes}
                           onChange={(e) => handleStopChange(idx, 'haltMinutes', e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-[11px] font-bold text-center text-slate-850 focus:outline-none"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-1.5 py-1.5 text-[11px] font-bold text-center text-slate-855 focus:outline-none"
                         />
                       </div>
                       <div className="col-span-1 text-center">
