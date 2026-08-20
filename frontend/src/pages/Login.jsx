@@ -173,31 +173,32 @@ const Login = ({ mode }) => {
         const user = await login(cleanEmail, password, role);
         console.log('✅ Login successful. User received:', user);
         
-        const userRole = (user?.role || (cleanEmail === 'admin@railway.com' ? 'admin' : 'passenger')).toLowerCase();
+        const detectedRole = (user?.role || (cleanEmail.includes('admin') || cleanEmail.includes('staff') ? 'admin' : 'passenger')).toLowerCase();
+        const isStaffOrAdmin = detectedRole === 'admin' || detectedRole === 'staff' || cleanEmail.includes('admin') || cleanEmail.includes('staff');
 
-        // Separate Page Restriction: Admin accounts CANNOT log in through Passenger login page (/login)
-        if (!isAdminPage && userRole === 'admin') {
+        // Separate Page Restriction: Staff and Admin accounts CANNOT log in through Passenger login page (/login)
+        if (!isAdminPage && isStaffOrAdmin) {
           setError(
             lang === 'hi'
-              ? 'पहुंच अस्वीकृत: व्यवस्थापक खाते यात्री लॉगिन पृष्ठ से प्रवेश नहीं कर सकते। कृपया /admin/login पर जाएं।'
-              : 'Access Denied: Admin accounts cannot log in on the Passenger Login page. Please use the Admin Login page at /admin/login.'
+              ? 'पहुंच अस्वीकृत: कर्मचारी और व्यवस्थापक खाते यात्री लॉगिन पृष्ठ से प्रवेश नहीं कर सकते। कृपया /admin/login का उपयोग करें।'
+              : 'Access Denied: Staff and Admin accounts cannot log in on the Passenger Login page. Please use the Admin Login page at /admin/login.'
           );
           setFormLoading(false);
           return;
         }
 
         // Separate Page Restriction: Passenger accounts CANNOT log in through Admin login page (/admin/login)
-        if (isAdminPage && userRole !== 'admin') {
+        if (isAdminPage && !isStaffOrAdmin) {
           setError(
             lang === 'hi'
-              ? 'पहुंच अस्वीकृत: केवल व्यवस्थापक ही एडमिन पोर्टल में लॉगिन कर सकते हैं। कृपया /login पृष्ठ का उपयोग करें।'
+              ? 'पहुंच अस्वीकृत: केवल व्यवस्थापक और कर्मचारी ही एडमिन पोर्टल में लॉगिन कर सकते हैं। कृपया /login पृष्ठ का उपयोग करें।'
               : 'Access Denied: Passenger accounts cannot log in on the Admin Login page. Please use the Passenger Login page at /login.'
           );
           setFormLoading(false);
           return;
         }
 
-        redirectUser(userRole);
+        redirectUser(detectedRole);
       }
     } catch (err) {
       console.error('❌ Authentication error:', err);
