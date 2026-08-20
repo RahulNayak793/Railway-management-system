@@ -364,30 +364,111 @@ const AdminDashboard = () => {
 
       </div>
 
-      {/* Quick Operational Controls Bar */}
-      <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-sm space-y-4">
-        <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-          <h3 className="text-sm font-black text-slate-850">Operational Operations Center</h3>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">All-in-one Control</span>
+      {/* Staff Operations Center Hub - Integrated Staff & Operations Module */}
+      <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-sm space-y-5">
+        <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <h3 className="text-base font-black text-slate-900 tracking-tight">Staff & Operations Management Hub</h3>
+            <p className="text-xs text-slate-500 font-medium">All staff operational tools and terminal control features integrated into Admin.</p>
+          </div>
+          <span className="bg-blue-50 text-blue-700 text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border border-blue-100">
+            Unified Master Control
+          </span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {[
-            { label: 'Ticket Checking', path: '/admin/ticket-checking', icon: '🎫', color: 'hover:bg-blue-50 border-blue-100' },
-            { label: 'RAC / Waiting', path: '/admin/rac-waiting', icon: '⏱️', color: 'hover:bg-amber-50 border-amber-100' },
-            { label: 'Announcements', path: '/admin/announcements', icon: '📢', color: 'hover:bg-purple-50 border-purple-100' },
-            { label: 'Pantry & Catering', path: '/admin/catering', icon: '🍱', color: 'hover:bg-emerald-50 border-emerald-100' },
-            { label: 'Staff Roster', path: '/admin/staff', icon: '👥', color: 'hover:bg-indigo-50 border-indigo-100' },
-            { label: 'Support & Inquiries', path: '/admin/inquiries', icon: '💬', color: 'hover:bg-rose-50 border-rose-100' }
-          ].map((op, i) => (
-            <button
-              key={i}
-              onClick={() => navigate(op.path)}
-              className={`p-3.5 rounded-2xl border border-slate-200 bg-white text-left transition flex flex-col justify-between space-y-2 group shadow-2xs ${op.color}`}
-            >
-              <span className="text-xl">{op.icon}</span>
-              <span className="text-xs font-extrabold text-slate-800 group-hover:text-primary-700 block">{op.label}</span>
-            </button>
-          ))}
+            { 
+              title: 'Ticket Checking (TTE)', 
+              desc: 'Verify passenger tickets, manage fines & berth check-in', 
+              path: '/admin/ticket-checking', 
+              icon: Ticket, 
+              color: 'text-blue-600 bg-blue-50 border-blue-100 hover:border-blue-300' 
+            },
+            { 
+              title: 'RAC & Waitlist Queue', 
+              desc: 'Auto-seat promotion engine & RAC allocations', 
+              path: '/admin/rac-waiting', 
+              icon: Clock, 
+              color: 'text-amber-600 bg-amber-50 border-amber-100 hover:border-amber-300' 
+            },
+            { 
+              title: 'Live Announcements', 
+              desc: 'Broadcast station bulletins & emergency alerts', 
+              path: '/admin/announcements', 
+              icon: AlertCircle, 
+              color: 'text-purple-600 bg-purple-50 border-purple-100 hover:border-purple-300' 
+            },
+            { 
+              title: 'Pantry & Meals', 
+              desc: 'e-Catering orders & food quality logs', 
+              path: '/admin/catering', 
+              icon: Building2, 
+              color: 'text-emerald-600 bg-emerald-50 border-emerald-100 hover:border-emerald-300' 
+            },
+            { 
+              title: 'Staff Roster & Access', 
+              desc: 'Manage staff accounts & terminal shifts', 
+              path: '/admin/staff', 
+              icon: UserCheck, 
+              color: 'text-indigo-600 bg-indigo-50 border-indigo-100 hover:border-indigo-300' 
+            },
+            { 
+              title: 'Inquiry & Support', 
+              desc: 'Passenger tickets & live helpdesk responses', 
+              path: '/admin/inquiries', 
+              icon: Users, 
+              color: 'text-rose-600 bg-rose-50 border-rose-100 hover:border-rose-300' 
+            },
+            { 
+              title: 'Refund Disputes', 
+              desc: 'Cancellation processing & refund approvals', 
+              path: '/admin/refunds', 
+              icon: CreditCard, 
+              color: 'text-teal-600 bg-teal-50 border-teal-100 hover:border-teal-300' 
+            },
+            { 
+              title: 'Reports & Analytics', 
+              desc: 'Daily occupancy, revenue & performance logs', 
+              path: '/admin/reports', 
+              icon: TrendingUp, 
+              color: 'text-cyan-600 bg-cyan-50 border-cyan-100 hover:border-cyan-300' 
+            },
+            { 
+              title: 'Train Operations', 
+              desc: 'Real-time delay minutes & schedule status', 
+              path: '/admin/schedules', 
+              icon: Train, 
+              color: 'text-sky-600 bg-sky-50 border-sky-100 hover:border-sky-300' 
+            },
+            { 
+              title: 'Passenger Directory', 
+              desc: 'Complete passenger profiles & ticket manifests', 
+              path: '/admin/passengers', 
+              icon: Compass, 
+              color: 'text-slate-600 bg-slate-100 border-slate-200 hover:border-slate-300' 
+            }
+          ].map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <div 
+                key={idx} 
+                onClick={() => navigate(card.path)}
+                className={`rounded-2xl border p-4 cursor-pointer transition-all duration-200 hover:shadow-md flex flex-col justify-between space-y-3 ${card.color}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-white shadow-xs font-bold">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-slate-400 group-hover:translate-x-1 transition" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-slate-800">{card.title}</h4>
+                  <p className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">{card.desc}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
