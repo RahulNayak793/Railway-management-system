@@ -1,670 +1,639 @@
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import {
-  Utensils, Plus, Edit3, Trash2, DollarSign,
-  ShoppingBag, Star, MapPin, X, Search,
-  BarChart2, TrendingUp, Award, Building2, Download, MessageSquare
+import { 
+  Building2, ShieldCheck, CheckCircle2, XCircle, AlertTriangle, Clock, 
+  Plus, Edit, Eye, Search, Filter, RefreshCw, MapPin, Phone, Mail, FileText,
+  TrendingUp, Award, Check, Download, Power, Calendar, ExternalLink
 } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
 
-// ------- CSV export helper -------
-const exportOrdersCSV = (orders) => {
-  const headers = ['Order ID', 'PNR', 'Train', 'Passenger', 'Coach', 'Seat', 'Station', 'Items', 'Amount', 'Payment', 'Status', 'Date'];
-  const rows = orders.map(o => [
-    o.order_id,
-    o.pnr_number,
-    `${o.train_name} (${o.train_number})`,
-    o.passenger_name,
-    o.coach_number,
-    o.seat_number,
-    o.station_name,
-    (o.items || []).map(i => `${i.name} x${i.qty}`).join(' | '),
-    `\u20B9${o.total_amount}`,
-    o.payment_status,
-    o.delivery_status,
-    new Date(o.created_at).toLocaleString('en-IN'),
-  ]);
-  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = `catering_orders_${new Date().toISOString().split('T')[0]}.csv`; a.click();
-  URL.revokeObjectURL(url);
-};
-
-// ------- Dish Ratings / Reviews (static demo data) -------
-const DISH_REVIEWS = [
-  { id: 1, dish: 'Hyderabadi Chicken Dum Biryani', passenger: 'Rahul S.', train: '12952 Rajdhani', rating: 5, comment: 'Absolutely delicious! Perfectly cooked rice and the chicken was tender.', date: '18 Aug 2026' },
-  { id: 2, dish: 'Deluxe North Indian Thali',      passenger: 'Priya M.',  train: '12002 Shatabdi', rating: 4, comment: 'Good quantity and taste. Naan could be softer. Overall good experience.', date: '18 Aug 2026' },
-  { id: 3, dish: 'Jain Special Satvik Thali',      passenger: 'Suresh P.', train: '22436 Vande Bharat', rating: 5, comment: 'Very happy — strict Jain menu, no onion/garlic. Delivered on time!', date: '17 Aug 2026' },
-  { id: 4, dish: 'South Indian Tiffin Combo',      passenger: 'Anita V.',  train: '12626 Kerala Exp', rating: 4, comment: 'Fresh idlis and crispy dosa! Sambar was piping hot. Will order again.', date: '17 Aug 2026' },
-  { id: 5, dish: 'Fresh Mango Lassi Bottle',       passenger: 'Ravi K.',   train: '12910 Garib Rath', rating: 5, comment: 'Best Mango Lassi I have had on a train. Super thick and chilled!', date: '16 Aug 2026' },
-  { id: 6, dish: 'Chole Bhature Special',          passenger: 'Meena R.',  train: '12032 Amritsar Shatabdi', rating: 3, comment: 'Bhature were a bit oily and cold when delivered. Chole was tasty.', date: '16 Aug 2026' },
-  { id: 7, dish: 'Rajasthani Dal Baati Churma',    passenger: 'Amit T.',   train: '12956 JPJ Express', rating: 5, comment: 'Authentic Rajasthani taste. The ghee in baati was just right!', date: '15 Aug 2026' },
-];
-
-// ------- Static analytics data -------
-const WEEKLY_REVENUE = [
-  { day: 'Mon', revenue: 5820, orders: 24 },
-  { day: 'Tue', revenue: 7140, orders: 31 },
-  { day: 'Wed', revenue: 6380, orders: 28 },
-  { day: 'Thu', revenue: 8920, orders: 40 },
-  { day: 'Fri', revenue: 9740, orders: 43 },
-  { day: 'Sat', revenue: 11200, orders: 51 },
-  { day: 'Sun', revenue: 10480, orders: 47 },
-];
-
-const TOP_DISHES = [
-  { name: 'Hyderabadi Chicken Dum Biryani', orders: 312, revenue: 87360, type: 'non-veg', rating: 4.9 },
-  { name: 'Deluxe North Indian Thali',      orders: 284, revenue: 68160, type: 'veg',     rating: 4.8 },
-  { name: 'Rajasthani Dal Baati Churma',    orders: 198, revenue: 51480, type: 'veg',     rating: 4.9 },
-  { name: 'South Indian Tiffin Combo',      orders: 176, revenue: 28160, type: 'veg',     rating: 4.8 },
-  { name: 'Fresh Mango Lassi Bottle',       orders: 162, revenue: 14580, type: 'veg',     rating: 4.9 },
-];
-
-const INIT_VENDORS = [
-  { id: 'v1', station: 'New Delhi (NDLS)',       vendor: 'IRCTC Rajdhani Kitchen',         fssai: 'FSSAI-110001', status: 'Active',    meals_today: 148 },
-  { id: 'v2', station: 'Mumbai Central (MMCT)',   vendor: 'Maharashtra Rail Caterers Pvt',  fssai: 'FSSAI-400008', status: 'Active',    meals_today: 124 },
-  { id: 'v3', station: 'Chennai Central (MAS)',   vendor: 'South Express Cuisines Ltd',     fssai: 'FSSAI-600001', status: 'Active',    meals_today: 96  },
-  { id: 'v4', station: 'Howrah Junction (HWH)',   vendor: 'Bengal Rail Foods Co.',          fssai: 'FSSAI-700001', status: 'Active',    meals_today: 88  },
-  { id: 'v5', station: 'Bhopal Junction (BPL)',   vendor: 'MP Rail Catering Services',      fssai: 'FSSAI-462001', status: 'Active',    meals_today: 72  },
-  { id: 'v6', station: 'Lucknow (LKO)',           vendor: 'Awadhi Cuisine Express',          fssai: 'FSSAI-226001', status: 'Suspended', meals_today: 0   },
-  { id: 'v7', station: 'Ahmedabad (ADI)',         vendor: 'Gujarat Rail Food Plaza',         fssai: 'FSSAI-380001', status: 'Active',    meals_today: 61  },
-];
-
-// ------- Revenue Bar Chart (pure SVG) -------
-const RevenueBarChart = ({ data }) => {
-  const maxRev = Math.max(...data.map(d => d.revenue));
-  const chartH = 130;
-  return (
-    <div className="w-full overflow-x-auto">
-      <svg viewBox={`0 0 ${data.length * 64} ${chartH + 36}`} className="w-full min-w-[400px]" style={{ fontFamily: 'inherit' }}>
-        <defs>
-          {data.map((_, i) => (
-            <linearGradient key={i} id={`bg${i}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.95" />
-              <stop offset="100%" stopColor="#d97706" stopOpacity="0.6" />
-            </linearGradient>
-          ))}
-        </defs>
-        {data.map((d, i) => {
-          const barH = Math.max(6, Math.round((d.revenue / maxRev) * chartH));
-          const x = i * 64 + 12;
-          const y = chartH - barH;
-          return (
-            <g key={d.day}>
-              <rect x={x} y={y} width={40} height={barH} rx={8} fill={`url(#bg${i})`} />
-              <text x={x + 20} y={y - 5} textAnchor="middle" fontSize="9" fontWeight="700" fill="#92400e">
-                {'\u20B9'}{Math.round(d.revenue / 1000)}k
-              </text>
-              <text x={x + 20} y={chartH + 17} textAnchor="middle" fontSize="10" fontWeight="800" fill="#64748b">{d.day}</text>
-              <text x={x + 20} y={chartH + 30} textAnchor="middle" fontSize="9" fill="#94a3b8">{d.orders} meals</text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-};
-
-// ------- Main Component -------
 const AdminCatering = () => {
   const { showToast } = useToast();
-  const [stats] = useState({ totalOrders: 1482, totalRevenue: 59680, avgRating: 4.8 });
-  const [menuList, setMenuList] = useState([]);
+
+  const [companies, setCompanies] = useState([]);
+  const [stats, setStats] = useState({ totalCompanies: 5, authorizedCompanies: 5, totalOrders: 1482, totalRevenue: 59680 });
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [activeTab, setActiveTab] = useState('analytics');
-  const [vendors, setVendors] = useState(INIT_VENDORS);
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  // Dish modal
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingItem, setEditingItem]   = useState(null);
-  const [dishName, setDishName]         = useState('');
-  const [dishPrice, setDishPrice]       = useState('');
-  const [dishCategory, setDishCategory] = useState('Thali');
-  const [dishType, setDishType]         = useState('veg');
-  const [dishDesc, setDishDesc]         = useState('');
-  const [submitting, setSubmitting]     = useState(false);
+  // Modal States for Company Add/Edit
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
+  const [editingCompany, setEditingCompany] = useState(null);
+  const [compName, setCompName] = useState('');
+  const [compLegalName, setCompLegalName] = useState('');
+  const [compContact, setCompContact] = useState('');
+  const [compPhone, setCompPhone] = useState('');
+  const [compEmail, setCompEmail] = useState('');
+  const [compFssai, setCompFssai] = useState('');
+  const [compAddress, setCompAddress] = useState('');
+  const [compStations, setCompStations] = useState('NDLS, BPL, BSB');
+  const [compStartDate, setCompStartDate] = useState('2025-01-01');
+  const [compEndDate, setCompEndDate] = useState('2027-12-31');
+  const [submitting, setSubmitting] = useState(false);
 
-  // Vendor modal
-  const [showVendorModal, setShowVendorModal] = useState(false);
-  const [editingVendor, setEditingVendor]     = useState(null);
-  const [vendorStation, setVendorStation]     = useState('');
-  const [vendorName, setVendorName]           = useState('');
-  const [vendorFssai, setVendorFssai]         = useState('');
+  // Modal State for Read-Only Company Menu Inspection
+  const [showMenuInspectModal, setShowMenuInspectModal] = useState(false);
+  const [inspectCompany, setInspectCompany] = useState(null);
+  const [inspectMenu, setInspectMenu] = useState([]);
+  const [loadingMenu, setLoadingMenu] = useState(false);
 
-  const fetchMenu = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/catering/menu?filter=all');
-      if (res.data?.menu) setMenuList(res.data.menu.map(m => ({ ...m, in_stock: m.in_stock !== false })));
-    } catch {
-      setMenuList([
-        { id: 'm1', name: 'Deluxe North Indian Thali',       price: 240, category: 'Thali',       type: 'veg',     rating: 4.8, description: 'Paneer Butter Masala, Dal Makhani, Jeera Rice, 2 Naan & Gulab Jamun', in_stock: true },
-        { id: 'm2', name: 'Super Executive Non-Veg Thali',    price: 310, category: 'Thali',       type: 'non-veg', rating: 4.9, description: 'Butter Chicken, Egg Curry, Basmati Rice, 3 Chapatis & Raita', in_stock: true },
-        { id: 'm3', name: 'Jain Special Satvik Thali',        price: 220, category: 'Thali',       type: 'jain',    rating: 4.9, description: 'No Onion No Garlic Paneer, Yellow Dal, Chapati & Rice Kheer', in_stock: true },
-        { id: 'm6', name: 'Hyderabadi Chicken Dum Biryani',   price: 280, category: 'Main Course', type: 'non-veg', rating: 4.9, description: 'Aromatic Basmati Rice, Tender Chicken, Mirchi Ka Salan & Raita', in_stock: true },
-        { id: 'm9', name: 'South Indian Tiffin Combo',        price: 160, category: 'South Indian',type: 'veg',     rating: 4.8, description: '2 Ghee Idlis, 1 Vada, 1 Masala Dosa, Sambar & Chutney', in_stock: true },
-        { id: 'm11',name: 'Chole Bhature Special',            price: 160, category: 'Snacks',      type: 'veg',     rating: 4.8, description: '2 Fluffy Bhature with Spiced Chickpeas & Pickle', in_stock: true },
-        { id: 'm18',name: 'Fresh Mango Lassi Bottle',         price: 90,  category: 'Beverages',   type: 'veg',     rating: 4.9, description: 'Thick Creamy Alphonso Mango Yogurt Drink (300ml)', in_stock: true },
-      ]);
-    } finally { setLoading(false); }
-  };
-
-  useEffect(() => { fetchMenu(); }, []);
-
-  // Dish handlers
-  const openAddModal = () => { setEditingItem(null); setDishName(''); setDishPrice(''); setDishCategory('Thali'); setDishType('veg'); setDishDesc(''); setShowAddModal(true); };
-  const openEditModal = (item) => { setEditingItem(item); setDishName(item.name); setDishPrice(item.price); setDishCategory(item.category); setDishType(item.type); setDishDesc(item.description); setShowAddModal(true); };
-
-  const handleSaveDish = async (e) => {
-    e.preventDefault(); setSubmitting(true);
-    const payload = { name: dishName, price: parseFloat(dishPrice), category: dishCategory, type: dishType, description: dishDesc };
-    try {
-      if (editingItem) { await api.put(`/catering/admin/menu/${editingItem.id}`, payload); }
-      else { await api.post('/catering/admin/menu', payload); }
-      showToast(editingItem ? `'${dishName}' updated!` : `'${dishName}' added!`, 'success');
-      setShowAddModal(false); fetchMenu();
-    } catch {
-      if (editingItem) setMenuList(prev => prev.map(m => m.id === editingItem.id ? { ...m, ...payload } : m));
-      else setMenuList(prev => [{ id: `m-${Date.now()}`, ...payload, rating: 4.8, in_stock: true }, ...prev]);
-      showToast(editingItem ? `'${dishName}' updated!` : `'${dishName}' added!`, 'success');
-      setShowAddModal(false);
-    } finally { setSubmitting(false); }
-  };
-
-  const handleToggleStock = async (item) => {
-    const ns = !item.in_stock;
-    try { await api.put(`/catering/admin/menu/${item.id}`, { in_stock: ns }); } catch {}
-    setMenuList(prev => prev.map(m => m.id === item.id ? { ...m, in_stock: ns } : m));
-    showToast(`'${item.name}' stock ${ns ? 'enabled' : 'disabled'}.`, 'info');
-  };
-
-  const handleDeleteDish = async (item) => {
-    if (!window.confirm(`Remove '${item.name}' from the menu?`)) return;
-    try { await api.delete(`/catering/admin/menu/${item.id}`); } catch {}
-    setMenuList(prev => prev.filter(m => m.id !== item.id));
-    showToast(`'${item.name}' removed.`, 'success');
-  };
-
-  // Vendor handlers
-  const openVendorModal = (v = null) => { setEditingVendor(v); setVendorStation(v?.station || ''); setVendorName(v?.vendor || ''); setVendorFssai(v?.fssai || ''); setShowVendorModal(true); };
-  const handleSaveVendor = (e) => {
-    e.preventDefault();
-    if (editingVendor) setVendors(prev => prev.map(v => v.id === editingVendor.id ? { ...v, station: vendorStation, vendor: vendorName, fssai: vendorFssai } : v));
-    else setVendors(prev => [...prev, { id: `v${Date.now()}`, station: vendorStation, vendor: vendorName, fssai: vendorFssai, status: 'Active', meals_today: 0 }]);
-    showToast(editingVendor ? 'Vendor updated.' : 'New vendor added.', 'success');
-    setShowVendorModal(false);
-  };
-  const handleToggleVendor = (id) => { setVendors(prev => prev.map(v => v.id === id ? { ...v, status: v.status === 'Active' ? 'Suspended' : 'Active', meals_today: v.status === 'Active' ? 0 : v.meals_today } : v)); showToast('Vendor status updated.', 'info'); };
-  const handleDeleteVendor = (id) => { if (!window.confirm('Remove this vendor?')) return; setVendors(prev => prev.filter(v => v.id !== id)); showToast('Vendor removed.', 'success'); };
-
-  const filteredMenu = menuList.filter(item =>
-    (categoryFilter === 'all' || item.category === categoryFilter) &&
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const TABS = [
-    { key: 'analytics', label: 'Analytics & Revenue', icon: BarChart2    },
-    { key: 'menu',      label: 'Menu Management',     icon: Utensils      },
-    { key: 'vendors',   label: 'Station Vendors',      icon: Building2     },
-    { key: 'ratings',   label: 'Dish Ratings',         icon: MessageSquare },
+  // Available station options
+  const STATION_LIST = [
+    { code: 'NDLS', name: 'New Delhi' },
+    { code: 'MMCT', name: 'Mumbai Central' },
+    { code: 'BPL', name: 'Bhopal Junction' },
+    { code: 'BSB', name: 'Varanasi Junction' },
+    { code: 'MAQ', name: 'Mangaluru Central' },
+    { code: 'UD', name: 'Udupi' },
+    { code: 'PUNE', name: 'Pune Junction' },
+    { code: 'KOTA', name: 'Kota Junction' },
+    { code: 'AGC', name: 'Agra Cantt' },
+    { code: 'PRYJ', name: 'Prayagraj Junction' },
+    { code: 'LKO', name: 'Lucknow NR' },
+    { code: 'SBC', name: 'KSR Bengaluru' }
   ];
 
-  // --- CSV export handler ---
-  const handleExportCSV = async () => {
+  const fetchCompaniesAndStats = async () => {
+    setLoading(true);
     try {
-      const res = await api.get('/catering/all-orders');
-      const orders = res.data?.orders || [];
-      if (orders.length === 0) { showToast('No orders to export.', 'info'); return; }
-      exportOrdersCSV(orders);
-      showToast(`Exported ${orders.length} catering orders to CSV.`, 'success');
-    } catch {
-      // Fallback demo export
-      exportOrdersCSV([
-        { order_id: 'ORD-98421', pnr_number: '2345678901', train_name: 'Rajdhani Express', train_number: '12952', passenger_name: 'Rahul Sharma', coach_number: 'B1', seat_number: '24', station_name: 'New Delhi (NDLS)', items: [{ name: 'Deluxe North Indian Thali', qty: 2 }], total_amount: 480, payment_status: 'Paid', delivery_status: 'Delivered at Berth', created_at: new Date().toISOString() },
+      const [compRes, statsRes] = await Promise.all([
+        api.get('/catering/companies'),
+        api.get('/catering/admin/stats').catch(() => ({ data: { totalCompanies: 5, authorizedCompanies: 5, totalOrders: 1482, totalRevenue: 59680 } }))
       ]);
-      showToast('Exported demo catering orders to CSV.', 'success');
+
+      if (compRes.data && compRes.data.companies) {
+        setCompanies(compRes.data.companies);
+      }
+      if (statsRes.data) {
+        setStats(statsRes.data);
+      }
+    } catch (err) {
+      console.warn('Fallback mock companies data');
+      setCompanies([
+        { id: 'comp-1', company_name: 'IRCTC Executive Pantry', legal_name: 'Indian Railway Catering and Tourism Corp. Ltd.', contact_name: 'Rajesh Sharma', phone: '+91 9811002233', email: 'pantry@irctc.co.in', fssai_number: '10019011000234', address: 'IRCTC Office, Delhi', status: 'AUTHORIZED', authorization_start: '2025-01-01', authorization_end: '2027-12-31', stations: ['NDLS', 'DLI', 'NZM', 'CNB', 'AGC', 'JP'], total_orders: 412, total_revenue: 28400, total_dishes: 4 },
+        { id: 'comp-2', company_name: 'MP Rail Catering Services', legal_name: 'MP Gourmet Rail Foods Pvt Ltd', contact_name: 'Vikram Chouhan', phone: '+91 9425012345', email: 'support@mprailcatering.com', fssai_number: '11521004000891', address: 'Bhopal MP', status: 'AUTHORIZED', authorization_start: '2025-01-01', authorization_end: '2027-12-31', stations: ['BPL', 'GWL', 'VGLJ', 'ET', 'RTM'], total_orders: 310, total_revenue: 19800, total_dishes: 4 },
+        { id: 'comp-3', company_name: 'Varanasi Satvik Kitchen', legal_name: 'Kashi Satvik Foods', contact_name: 'Pt. Rameshwar Mishra', phone: '+91 9935098765', email: 'orders@satvikkitchen.in', fssai_number: '12720002000512', address: 'Varanasi UP', status: 'AUTHORIZED', authorization_start: '2025-01-01', authorization_end: '2027-12-31', stations: ['BSB', 'PRYJ', 'DDU', 'LKO'], total_orders: 245, total_revenue: 14200, total_dishes: 4 },
+        { id: 'comp-4', company_name: 'Coastal Rail Foods', legal_name: 'Malabar Express Catering', contact_name: 'K. V. Shetty', phone: '+91 9845033445', email: 'contact@coastalrailfoods.com', fssai_number: '11222005000109', address: 'Mangaluru KA', status: 'AUTHORIZED', authorization_start: '2025-01-01', authorization_end: '2027-12-31', stations: ['MAQ', 'UD', 'MAO', 'ERS', 'SBC'], total_orders: 198, total_revenue: 11500, total_dishes: 2 },
+        { id: 'comp-5', company_name: 'Western Gourmet Express', legal_name: 'Gujarat Feasts LLP', contact_name: 'Anil Patel', phone: '+91 9825088776', email: 'info@westerngourmet.in', fssai_number: '10821009000341', address: 'Vadodara GJ', status: 'AUTHORIZED', authorization_start: '2025-01-01', authorization_end: '2027-12-31', stations: ['MMCT', 'BDTS', 'ST', 'BRC', 'ADI', 'PUNE'], total_orders: 317, total_revenue: 17900, total_dishes: 4 }
+      ]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 font-sans space-y-6 animate-slide-in">
+  useEffect(() => {
+    fetchCompaniesAndStats();
+  }, []);
 
-      {/* HEADER BANNER */}
-      <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl border border-white/10">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <div className="h-12 w-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-              <Utensils className="h-6 w-6" />
-            </div>
-            <div>
-              <span className="px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Admin Control • Food & Catering Operations
-              </span>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-1">RailControl Catering Operations Hub</h1>
-              <p className="text-xs text-slate-300 font-medium mt-0.5">Revenue analytics, menu administration, and station kitchen vendor management.</p>
-            </div>
+  // Open modal for Adding a new company
+  const handleOpenAdd = () => {
+    setEditingCompany(null);
+    setCompName('');
+    setCompLegalName('');
+    setCompContact('');
+    setCompPhone('');
+    setCompEmail('');
+    setCompFssai('');
+    setCompAddress('');
+    setCompStations('NDLS, BPL, BSB');
+    setCompStartDate('2025-01-01');
+    setCompEndDate('2027-12-31');
+    setShowCompanyModal(true);
+  };
+
+  // Open modal for Editing company authorization details
+  const handleOpenEdit = (comp) => {
+    setEditingCompany(comp);
+    setCompName(comp.company_name);
+    setCompLegalName(comp.legal_name);
+    setCompContact(comp.contact_name || '');
+    setCompPhone(comp.phone || '');
+    setCompEmail(comp.email || '');
+    setCompFssai(comp.fssai_number);
+    setCompAddress(comp.address || '');
+    setCompStations(Array.isArray(comp.stations) ? comp.stations.join(', ') : comp.stations || '');
+    setCompStartDate(comp.authorization_start ? comp.authorization_start.split('T')[0] : '2025-01-01');
+    setCompEndDate(comp.authorization_end ? comp.authorization_end.split('T')[0] : '2027-12-31');
+    setShowCompanyModal(true);
+  };
+
+  // Submit Company Form
+  const handleSubmitCompany = async (e) => {
+    e.preventDefault();
+    if (!compName || !compLegalName || !compFssai || !compEmail) {
+      showToast('Company Name, Legal Name, FSSAI Number, and Email are required.', 'error');
+      return;
+    }
+
+    setSubmitting(true);
+    const stationArray = compStations.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+
+    const payload = {
+      company_name: compName,
+      legal_name: compLegalName,
+      contact_name: compContact,
+      phone: compPhone,
+      email: compEmail,
+      fssai_number: compFssai,
+      address: compAddress,
+      stations: stationArray,
+      authorization_start: compStartDate,
+      authorization_end: compEndDate
+    };
+
+    try {
+      if (editingCompany) {
+        await api.put(`/catering/admin/companies/${editingCompany.id}`, payload);
+        showToast(`Authorization details updated for ${compName}`, 'success');
+      } else {
+        await api.post('/catering/admin/companies', payload);
+        showToast(`New catering company ${compName} added & authorized successfully.`, 'success');
+      }
+      setShowCompanyModal(false);
+      fetchCompaniesAndStats();
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to save catering company.', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Status Action Handlers: Authorize, Suspend, Revoke
+  const handleUpdateStatus = async (comp, newStatus) => {
+    try {
+      if (newStatus === 'AUTHORIZED') {
+        await api.post(`/catering/admin/companies/${comp.id}/authorize`);
+        showToast(`Authorized catering company ${comp.company_name}.`, 'success');
+      } else if (newStatus === 'SUSPENDED') {
+        await api.post(`/catering/admin/companies/${comp.id}/suspend`);
+        showToast(`Suspended authorization for ${comp.company_name}.`, 'warning');
+      } else if (newStatus === 'REVOKED') {
+        await api.post(`/catering/admin/companies/${comp.id}/revoke`);
+        showToast(`Revoked authorization for ${comp.company_name}.`, 'error');
+      }
+      fetchCompaniesAndStats();
+    } catch (err) {
+      showToast('Failed to update company status.', 'error');
+    }
+  };
+
+  // Inspect Read-Only Company Menu
+  const handleInspectMenu = async (comp) => {
+    setInspectCompany(comp);
+    setShowMenuInspectModal(true);
+    setLoadingMenu(true);
+    try {
+      const res = await api.get(`/catering/company/menu?vendor_id=${comp.id}`);
+      if (res.data && res.data.menu) {
+        setInspectMenu(res.data.menu);
+      } else {
+        setInspectMenu([]);
+      }
+    } catch (err) {
+      setInspectMenu([]);
+    } finally {
+      setLoadingMenu(false);
+    }
+  };
+
+  // Filtered Companies list
+  const filteredCompanies = companies.filter(c => {
+    const matchesSearch = c.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          c.fssai_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (c.stations && c.stations.join(', ').toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 p-4 sm:p-6 lg:p-8">
+      {/* Top Banner Header */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-800/80 border border-slate-700/80 p-6 rounded-2xl backdrop-blur-md shadow-xl">
+        <div>
+          <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-widest mb-1">
+            <ShieldCheck className="h-4 w-4" /> Admin Control • Catering Company Authorization Authority
           </div>
-          {activeTab === 'menu' && (
-            <button onClick={openAddModal} className="px-5 py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-lg shadow-amber-600/30 transition active:scale-95 flex items-center space-x-2 shrink-0">
-              <Plus className="h-4 w-4" /><span>Add New Dish</span>
-            </button>
-          )}
-          {activeTab === 'vendors' && (
-            <button onClick={() => openVendorModal()} className="px-5 py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-lg shadow-amber-600/30 transition active:scale-95 flex items-center space-x-2 shrink-0">
-              <Plus className="h-4 w-4" /><span>Add Station Vendor</span>
-            </button>
-          )}
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">RailControl Catering Authorization Hub</h1>
+          <p className="text-slate-400 text-sm mt-1 max-w-2xl">
+            Authorize external catering vendors, assign station coverage, set validity windows, and enforce compliance across Indian Railways.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
           <button
-            onClick={handleExportCSV}
-            className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs transition flex items-center space-x-1.5 shrink-0"
+            onClick={fetchCompaniesAndStats}
+            className="p-2.5 bg-slate-700/60 hover:bg-slate-700 text-slate-300 rounded-xl transition border border-slate-600/50"
+            title="Refresh Data"
           >
-            <Download className="h-3.5 w-3.5" />
-            <span>Export CSV</span>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={handleOpenAdd}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-amber-500/20 transition transform active:scale-95"
+          >
+            <Plus className="h-4 w-4" /> Authorize New Catering Company
           </button>
         </div>
       </div>
 
-      {/* STAT CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Catering Revenue', value: `\u20B9${stats.totalRevenue.toLocaleString()}`, color: 'text-amber-700', border: 'border-amber-200 bg-amber-50/50', icon: DollarSign },
-          { label: 'Total Meals Served',      value: stats.totalOrders,                              color: 'text-slate-900',  border: 'border-slate-200 bg-white',      icon: ShoppingBag },
-          { label: 'Active Station Kitchens', value: `${vendors.filter(v => v.status === 'Active').length} Kitchens`, color: 'text-slate-900', border: 'border-slate-200 bg-white', icon: Building2 },
-          { label: 'Avg Passenger Rating',    value: `\u2605 ${stats.avgRating}`,                    color: 'text-emerald-700',border: 'border-emerald-200 bg-emerald-50/50', icon: Star },
-        ].map(({ label, value, color, border, icon: Icon }) => (
-          <div key={label} className={`rounded-2xl border ${border} p-5 shadow-sm space-y-1`}>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{label}</span>
-              <Icon className="h-4 w-4 text-slate-300" />
-            </div>
-            <p className={`text-2xl font-black ${color}`}>{value}</p>
+      {/* Metrics Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
+          <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold mb-1">
+            <Building2 className="h-4 w-4 text-amber-400" /> Authorized Companies
           </div>
-        ))}
+          <p className="text-2xl font-black text-white">
+            {companies.filter(c => c.status === 'AUTHORIZED').length} <span className="text-xs text-slate-400 font-normal">/ {companies.length} total</span>
+          </p>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
+          <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold mb-1">
+            <MapPin className="h-4 w-4 text-emerald-400" /> Authorized Station Hubs
+          </div>
+          <p className="text-2xl font-black text-white">
+            {Array.from(new Set(companies.flatMap(c => c.stations || []))).length} Stations
+          </p>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
+          <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold mb-1">
+            <TrendingUp className="h-4 w-4 text-blue-400" /> Total Platform Orders
+          </div>
+          <p className="text-2xl font-black text-white">{stats.totalOrders || 1482}</p>
+        </div>
+        <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
+          <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold mb-1">
+            <Award className="h-4 w-4 text-orange-400" /> Total Catering Revenue
+          </div>
+          <p className="text-2xl font-black text-white">₹{(stats.totalRevenue || 59680).toLocaleString()}</p>
+        </div>
       </div>
 
-      {/* TABS */}
-      <div className="flex gap-2 bg-slate-100 p-1.5 rounded-2xl w-fit flex-wrap">
-        {TABS.map(tab => {
-          const Icon = tab.icon;
-          return (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-black transition ${activeTab === tab.key ? 'bg-white text-amber-800 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800'}`}>
-              <Icon className="h-4 w-4" /><span>{tab.label}</span>
-            </button>
-          );
-        })}
+      {/* Admin Disclaimer Notice */}
+      <div className="bg-amber-950/40 border border-amber-800/50 p-4 rounded-xl mb-6 flex items-start gap-3 text-xs text-amber-200">
+        <ShieldCheck className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+        <div>
+          <span className="font-bold block uppercase tracking-wider text-amber-400 mb-0.5">Authorization Governance Rule</span>
+          RailControl Admin strictly authorizes catering vendors and station coverage. Catering companies manage their own menu items, prices, preparation, and order delivery statuses independently through their Vendor Dashboard.
+        </div>
       </div>
 
-      {/* ===== ANALYTICS TAB ===== */}
-      {activeTab === 'analytics' && (
-        <div className="space-y-6">
-          {/* Revenue Chart */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div>
-                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-amber-600" /> Weekly Catering Revenue
-                </h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">Revenue & meals served — last 7 days across all station kitchens</p>
-              </div>
-              <span className="text-xs bg-amber-100 text-amber-800 font-black px-3 py-1.5 rounded-xl border border-amber-200">
-                {'\u20B9'}{WEEKLY_REVENUE.reduce((s, d) => s + d.revenue, 0).toLocaleString()} this week
-              </span>
-            </div>
-            <RevenueBarChart data={WEEKLY_REVENUE} />
-          </div>
+      {/* Search & Filter Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by company name, FSSAI number, or station code..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500 transition"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-slate-400" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500"
+          >
+            <option value="all">All Authorization Statuses</option>
+            <option value="AUTHORIZED">AUTHORIZED</option>
+            <option value="PENDING">PENDING</option>
+            <option value="SUSPENDED">SUSPENDED</option>
+            <option value="REVOKED">REVOKED</option>
+          </select>
+        </div>
+      </div>
 
-          {/* Top Selling Dishes */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <div className="border-b border-slate-100 pb-4">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <Award className="h-5 w-5 text-amber-600" /> Top 5 Bestselling Dishes
-              </h3>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Sorted by orders placed across all train routes & station kitchens</p>
-            </div>
-            <div className="space-y-3">
-              {TOP_DISHES.map((dish, i) => {
-                const barW = Math.round((dish.orders / TOP_DISHES[0].orders) * 100);
-                return (
-                  <div key={dish.name} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${i === 0 ? 'bg-amber-500 text-white' : i === 1 ? 'bg-slate-400 text-white' : i === 2 ? 'bg-amber-700 text-white' : 'bg-slate-100 text-slate-600'}`}>{i + 1}</span>
-                        <span className="font-bold text-slate-800 truncate">{dish.name}</span>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black uppercase shrink-0 ${dish.type === 'veg' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-rose-100 text-rose-700 border border-rose-200'}`}>
-                          {'\u25CF'} {dish.type}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0 ml-2">
-                        <span className="text-slate-500">{dish.orders} orders</span>
-                        <span className="font-black text-amber-700">{'\u20B9'}{dish.revenue.toLocaleString()}</span>
-                        <span className="text-amber-600 font-bold">{'\u2605'} {dish.rating}</span>
-                      </div>
+      {/* Companies List Table / Grid */}
+      {loading ? (
+        <div className="text-center py-16 bg-slate-800/40 rounded-2xl border border-slate-700/60">
+          <RefreshCw className="h-8 w-8 text-amber-400 animate-spin mx-auto mb-3" />
+          <p className="text-slate-400 font-medium">Loading catering company authorizations...</p>
+        </div>
+      ) : filteredCompanies.length === 0 ? (
+        <div className="text-center py-16 bg-slate-800/40 rounded-2xl border border-slate-700/60">
+          <Building2 className="h-12 w-12 text-slate-600 mx-auto mb-3" />
+          <h3 className="text-lg font-bold text-slate-300">No Catering Companies Found</h3>
+          <p className="text-slate-500 text-sm mt-1">Try clearing filters or click "Authorize New Catering Company".</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6">
+          {filteredCompanies.map((comp) => {
+            const isAuthorized = comp.status === 'AUTHORIZED';
+            const isSuspended = comp.status === 'SUSPENDED';
+            const isRevoked = comp.status === 'REVOKED';
+
+            return (
+              <div 
+                key={comp.id}
+                className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-6 hover:border-slate-600 transition shadow-lg flex flex-col lg:flex-row justify-between gap-6"
+              >
+                {/* Left Info Column */}
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-3 mb-2">
+                    <h3 className="text-xl font-black text-white">{comp.company_name}</h3>
+                    {isAuthorized && (
+                      <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-black rounded-full flex items-center gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> AUTHORIZED
+                      </span>
+                    )}
+                    {isSuspended && (
+                      <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-black rounded-full flex items-center gap-1">
+                        <AlertTriangle className="h-3.5 w-3.5" /> SUSPENDED
+                      </span>
+                    )}
+                    {isRevoked && (
+                      <span className="px-2.5 py-0.5 bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-black rounded-full flex items-center gap-1">
+                        <XCircle className="h-3.5 w-3.5" /> REVOKED
+                      </span>
+                    )}
+                    <span className="text-xs text-slate-400 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
+                      FSSAI: {comp.fssai_number}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-400 font-medium mb-4">{comp.legal_name}</p>
+
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs text-slate-300 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                      <span>{comp.phone || '+91 9811002233'}</span>
                     </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600" style={{ width: `${barW}%` }} />
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                      <span className="truncate">{comp.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                      <span>Valid: {comp.authorization_start?.split('T')[0]} to {comp.authorization_end?.split('T')[0]}</span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Diet Breakdown */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { label: 'Veg Orders',          pct: 68, color: 'bg-emerald-500' },
-              { label: 'Non-Veg Orders',       pct: 25, color: 'bg-rose-500' },
-              { label: 'Jain / Special Orders',pct: 7,  color: 'bg-amber-400' },
-            ].map(item => (
-              <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-black text-slate-700">{item.label}</span>
-                  <span className="font-black text-slate-900 text-base">{item.pct}%</span>
-                </div>
-                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${item.color}`} style={{ width: `${item.pct}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ===== MENU TAB ===== */}
-      {activeTab === 'menu' && (
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <div>
-              <h3 className="text-lg font-black text-slate-900">Master Food Menu ({filteredMenu.length} dishes)</h3>
-              <p className="text-xs text-slate-500 font-medium">Update prices, categories, diet tags, and stock availability per dish.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <input type="text" placeholder="Search dish…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-slate-50 pl-8 pr-3 py-2 text-xs font-bold text-slate-800 focus:bg-white focus:border-amber-500 focus:outline-none" />
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
-              </div>
-              <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}
-                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 focus:bg-white focus:border-amber-500 focus:outline-none">
-                <option value="all">All Categories</option>
-                <option value="Thali">Thalis</option>
-                <option value="Main Course">Main Course & Biryani</option>
-                <option value="South Indian">South Indian</option>
-                <option value="Snacks">Snacks & Rolls</option>
-                <option value="Desserts">Desserts</option>
-                <option value="Beverages">Beverages</option>
-              </select>
-            </div>
-          </div>
-          {loading ? (
-            <div className="p-12 text-center text-slate-400 font-bold text-xs">Loading menu…</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-medium border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-400 font-black uppercase text-[10px] tracking-wider">
-                    <th className="py-3 px-3">Dish</th><th className="py-3 px-3">Category</th>
-                    <th className="py-3 px-3">Diet</th><th className="py-3 px-3">Price</th>
-                    <th className="py-3 px-3">Rating</th><th className="py-3 px-3">Stock</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredMenu.map(item => (
-                    <tr key={item.id} className="hover:bg-slate-50/60 transition">
-                      <td className="py-3.5 px-3">
-                        <span className="font-extrabold text-slate-900 block text-sm">{item.name}</span>
-                        <span className="text-[11px] text-slate-400 line-clamp-1 max-w-xs">{item.description}</span>
-                      </td>
-                      <td className="py-3.5 px-3"><span className="font-bold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">{item.category}</span></td>
-                      <td className="py-3.5 px-3">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${item.type === 'veg' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : item.type === 'jain' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-rose-100 text-rose-800 border-rose-200'}`}>
-                          {'\u25CF'} {item.type}
+                  {/* Authorized Stations Badges */}
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                      Authorized Railway Stations ({comp.stations?.length || 0}):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(comp.stations || []).map((stCode) => (
+                        <span 
+                          key={stCode}
+                          className="px-2 py-0.5 bg-slate-900 text-amber-300 border border-amber-500/30 text-[11px] font-bold rounded-md"
+                        >
+                          📍 {stCode}
                         </span>
-                      </td>
-                      <td className="py-3.5 px-3"><span className="font-black text-slate-900 text-sm">{'\u20B9'}{item.price}</span></td>
-                      <td className="py-3.5 px-3"><span className="font-black text-amber-700">{'\u2605'} {item.rating || 4.8}</span></td>
-                      <td className="py-3.5 px-3">
-                        <button onClick={() => handleToggleStock(item)}
-                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition border ${item.in_stock ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}`}>
-                          {item.in_stock ? 'In Stock \u2713' : 'Out of Stock'}
-                        </button>
-                      </td>
-                      <td className="py-3.5 px-3 text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button onClick={() => openEditModal(item)} title="Edit" className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition"><Edit3 className="h-3.5 w-3.5" /></button>
-                          <button onClick={() => handleDeleteDish(item)} title="Delete" className="h-8 w-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition border border-rose-200"><Trash2 className="h-3.5 w-3.5" /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ===== VENDORS TAB ===== */}
-      {activeTab === 'vendors' && (
-        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
-          <div className="border-b border-slate-100 pb-4">
-            <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-amber-600" /> FSSAI Station Kitchen Vendors ({vendors.length})
-            </h3>
-            <p className="text-xs text-slate-500 font-medium">Manage approved catering vendors at each major railway station.</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-medium border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-400 font-black uppercase text-[10px] tracking-wider">
-                  <th className="py-3 px-3">Station</th><th className="py-3 px-3">Vendor / Kitchen</th>
-                  <th className="py-3 px-3">FSSAI License</th><th className="py-3 px-3">Meals Today</th>
-                  <th className="py-3 px-3">Status</th><th className="py-3 px-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {vendors.map(v => (
-                  <tr key={v.id} className="hover:bg-slate-50/60 transition">
-                    <td className="py-3.5 px-3"><span className="font-bold text-slate-800 flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />{v.station}</span></td>
-                    <td className="py-3.5 px-3"><span className="font-extrabold text-slate-900">{v.vendor}</span></td>
-                    <td className="py-3.5 px-3"><span className="font-mono text-[11px] text-slate-600">{v.fssai}</span></td>
-                    <td className="py-3.5 px-3"><span className="font-black text-slate-900">{v.meals_today}</span><span className="text-slate-400 ml-1">meals</span></td>
-                    <td className="py-3.5 px-3">
-                      <button onClick={() => handleToggleVendor(v.id)}
-                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition border ${v.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'}`}>
-                        {v.status}
-                      </button>
-                    </td>
-                    <td className="py-3.5 px-3 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button onClick={() => openVendorModal(v)} title="Edit" className="h-8 w-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition"><Edit3 className="h-3.5 w-3.5" /></button>
-                        <button onClick={() => handleDeleteVendor(v.id)} title="Remove" className="h-8 w-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition border border-rose-200"><Trash2 className="h-3.5 w-3.5" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ===== RATINGS TAB ===== */}
-      {activeTab === 'ratings' && (
-        <div className="space-y-5">
-          {/* Summary row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { label: 'Total Reviews',   value: DISH_REVIEWS.length,                                                           color: 'text-slate-900' },
-              { label: 'Average Rating',  value: `★ ${(DISH_REVIEWS.reduce((s,r)=>s+r.rating,0)/DISH_REVIEWS.length).toFixed(1)}`, color: 'text-amber-700' },
-              { label: '5-Star Reviews',  value: DISH_REVIEWS.filter(r=>r.rating===5).length,                                     color: 'text-emerald-700' },
-              { label: 'Under 4-Star',    value: DISH_REVIEWS.filter(r=>r.rating<4).length,                                       color: 'text-rose-700' },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">{label}</span>
-                <p className={`text-2xl font-black mt-1 ${color}`}>{value}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Review Cards */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <div className="border-b border-slate-100 pb-4">
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-amber-600" /> Passenger Food Reviews & Ratings
-              </h3>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">Real-time passenger feedback on catering quality. Address low-rated reviews promptly.</p>
-            </div>
-            <div className="space-y-4">
-              {DISH_REVIEWS.map(review => (
-                <div key={review.id} className={`rounded-2xl p-4 border space-y-2 ${
-                  review.rating >= 5 ? 'bg-emerald-50/50 border-emerald-200'
-                  : review.rating >= 4 ? 'bg-slate-50 border-slate-200'
-                  : 'bg-rose-50/50 border-rose-200'
-                }`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-0.5">
-                      <span className="text-xs font-extrabold text-slate-900">{review.dish}</span>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
-                        <span className="font-bold text-slate-700">{review.passenger}</span>
-                        <span>•</span>
-                        <span>{review.train}</span>
-                        <span>•</span>
-                        <span>{review.date}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-0.5 shrink-0">
-                      {[1,2,3,4,5].map(s => (
-                        <span key={s} className={`text-sm ${s <= review.rating ? 'text-amber-500' : 'text-slate-200'}`}>★</span>
                       ))}
                     </div>
                   </div>
-                  <p className="text-xs text-slate-600 font-medium leading-relaxed border-t border-black/5 pt-2">
-                    "{review.comment}"
-                  </p>
                 </div>
-              ))}
+
+                {/* Right Performance & Actions Column */}
+                <div className="flex flex-col justify-between items-end border-t lg:border-t-0 lg:border-l border-slate-700/60 pt-4 lg:pt-0 lg:pl-6 min-w-[240px]">
+                  <div className="w-full bg-slate-900/80 border border-slate-700/60 p-3 rounded-xl mb-4 text-right">
+                    <div className="text-[11px] text-slate-400 font-semibold mb-0.5">Company Performance</div>
+                    <div className="text-lg font-black text-amber-400">
+                      ₹{(comp.total_revenue || 12500).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-slate-400 font-medium">
+                      {comp.total_orders || 45} orders • {comp.total_dishes || 4} dishes published
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap justify-end gap-2 w-full">
+                    <button
+                      onClick={() => handleInspectMenu(comp)}
+                      className="px-3 py-1.5 bg-slate-700/80 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-lg transition flex items-center gap-1"
+                    >
+                      <Eye className="h-3.5 w-3.5" /> Inspect Menu
+                    </button>
+                    <button
+                      onClick={() => handleOpenEdit(comp)}
+                      className="px-3 py-1.5 bg-blue-600/80 hover:bg-blue-600 text-white font-semibold text-xs rounded-lg transition flex items-center gap-1"
+                    >
+                      <Edit className="h-3.5 w-3.5" /> Edit Auth
+                    </button>
+
+                    {comp.status !== 'AUTHORIZED' && (
+                      <button
+                        onClick={() => handleUpdateStatus(comp, 'AUTHORIZED')}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition flex items-center gap-1"
+                      >
+                        <Check className="h-3.5 w-3.5" /> Authorize
+                      </button>
+                    )}
+
+                    {comp.status === 'AUTHORIZED' && (
+                      <button
+                        onClick={() => handleUpdateStatus(comp, 'SUSPENDED')}
+                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition flex items-center gap-1"
+                      >
+                        <Power className="h-3.5 w-3.5" /> Suspend
+                      </button>
+                    )}
+
+                    {comp.status !== 'REVOKED' && (
+                      <button
+                        onClick={() => handleUpdateStatus(comp, 'REVOKED')}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg transition flex items-center gap-1"
+                      >
+                        <XCircle className="h-3.5 w-3.5" /> Revoke
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* MODAL: Authorize / Edit Catering Company */}
+      {showCompanyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl p-6 shadow-2xl my-8">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-700">
+              <h3 className="text-xl font-black text-white flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-amber-400" />
+                {editingCompany ? 'Edit Catering Company Authorization' : 'Authorize New Catering Company'}
+              </h3>
+              <button onClick={() => setShowCompanyModal(false)} className="text-slate-400 hover:text-white">✕</button>
             </div>
+
+            <form onSubmit={handleSubmitCompany} className="mt-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Company Display Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. IRCTC Executive Pantry"
+                    value={compName}
+                    onChange={(e) => setCompName(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Legal Registered Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Indian Railway Catering Corp Ltd"
+                    value={compLegalName}
+                    onChange={(e) => setCompLegalName(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">FSSAI License Number *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="14-digit FSSAI No."
+                    value={compFssai}
+                    onChange={(e) => setCompFssai(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm font-mono focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Official Email *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="vendor@catering.com"
+                    value={compEmail}
+                    onChange={(e) => setCompEmail(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Contact Phone</label>
+                  <input
+                    type="text"
+                    placeholder="+91 9811002233"
+                    value={compPhone}
+                    onChange={(e) => setCompPhone(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Authorized Station Codes (Comma Separated) *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="NDLS, BPL, BSB, MAQ, MMCT"
+                  value={compStations}
+                  onChange={(e) => setCompStations(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-amber-300 text-sm font-mono focus:border-amber-500"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">Available station codes: NDLS, MMCT, BPL, BSB, MAQ, UD, PUNE, KOTA, AGC, PRYJ, LKO, SBC.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Authorization Start Date</label>
+                  <input
+                    type="date"
+                    value={compStartDate}
+                    onChange={(e) => setCompStartDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1">Authorization End Date</label>
+                  <input
+                    type="date"
+                    value={compEndDate}
+                    onChange={(e) => setCompEndDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setShowCompanyModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-amber-500/20"
+                >
+                  {submitting ? 'Saving...' : editingCompany ? 'Update Authorization' : 'Authorize Company'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* DISH MODAL */}
-      {showAddModal && createPortal(
-        <div onClick={e => { if (e.target === e.currentTarget) setShowAddModal(false); }}
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto font-sans">
-          <div className="bg-white border border-slate-200 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden my-auto">
-            <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 p-6 text-white relative">
-              <button onClick={() => setShowAddModal(false)} className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition"><X className="h-5 w-5" /></button>
-              <div className="flex items-center space-x-3">
-                <div className="h-12 w-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400"><Utensils className="h-6 w-6" /></div>
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">Master Menu Administration</span>
-                  <h2 className="text-xl font-black tracking-tight mt-0.5">{editingItem ? 'Edit Dish Details' : 'Add New Dish to Menu'}</h2>
-                </div>
+      {/* MODAL: Read-Only Menu Inspection */}
+      {showMenuInspectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl p-6 shadow-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-700">
+              <div>
+                <h3 className="text-xl font-black text-white">{inspectCompany?.company_name} — Menu Preview</h3>
+                <p className="text-xs text-slate-400">Read-Only view of vendor menu offerings (FSSAI: {inspectCompany?.fssai_number})</p>
               </div>
+              <button onClick={() => setShowMenuInspectModal(false)} className="text-slate-400 hover:text-white">✕</button>
             </div>
-            <form onSubmit={handleSaveDish} className="p-6 space-y-4 text-xs font-medium text-slate-700">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Dish Name</label>
-                <input type="text" placeholder="e.g. Paneer Butter Masala Thali" value={dishName} onChange={e => setDishName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none" required />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Price ({'\u20B9'})</label>
-                  <input type="number" placeholder="240" value={dishPrice} onChange={e => setDishPrice(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none" required />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Diet Type</label>
-                  <select value={dishType} onChange={e => setDishType(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none">
-                    <option value="veg">🟢 Pure Veg</option>
-                    <option value="non-veg">🔴 Non-Veg</option>
-                    <option value="jain">🟡 Jain Special</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Category</label>
-                <select value={dishCategory} onChange={e => setDishCategory(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none">
-                  <option value="Thali">Thalis & Combos</option>
-                  <option value="Main Course">Main Course & Biryani</option>
-                  <option value="South Indian">South Indian</option>
-                  <option value="Snacks">Snacks & Kathi Rolls</option>
-                  <option value="Desserts">Desserts</option>
-                  <option value="Beverages">Beverages & Tea</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Ingredients / Description</label>
-                <textarea rows={3} placeholder="e.g. Paneer Butter Masala, Dal Makhani, Jeera Rice, 2 Naan & Salad" value={dishDesc} onChange={e => setDishDesc(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none" />
-              </div>
-              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition">Cancel</button>
-                <button type="submit" disabled={submitting} className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-lg shadow-amber-600/30 transition active:scale-95 disabled:opacity-50">
-                  {submitting ? 'Saving…' : editingItem ? 'Update Dish' : 'Add Dish'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
 
-      {/* VENDOR MODAL */}
-      {showVendorModal && createPortal(
-        <div onClick={e => { if (e.target === e.currentTarget) setShowVendorModal(false); }}
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto font-sans">
-          <div className="bg-white border border-slate-200 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden my-auto">
-            <div className="bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 p-6 text-white relative">
-              <button onClick={() => setShowVendorModal(false)} className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition"><X className="h-5 w-5" /></button>
-              <div className="flex items-center space-x-3">
-                <div className="h-12 w-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400"><Building2 className="h-6 w-6" /></div>
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">Station Kitchen Vendors</span>
-                  <h2 className="text-xl font-black tracking-tight mt-0.5">{editingVendor ? 'Edit Vendor Details' : 'Add Station Vendor'}</h2>
+            <div className="flex-1 overflow-y-auto my-4 space-y-3">
+              {loadingMenu ? (
+                <div className="text-center py-10">
+                  <RefreshCw className="h-6 w-6 text-amber-400 animate-spin mx-auto mb-2" />
+                  <p className="text-xs text-slate-400">Fetching company menu items...</p>
                 </div>
-              </div>
+              ) : inspectMenu.length === 0 ? (
+                <div className="text-center py-10 text-slate-400 text-sm">
+                  No menu items published yet by this company.
+                </div>
+              ) : (
+                inspectMenu.map(dish => (
+                  <div key={dish.id} className="p-4 bg-slate-800/80 border border-slate-700 rounded-xl flex justify-between items-center">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${dish.type === 'veg' ? 'bg-emerald-500/20 text-emerald-400' : dish.type === 'non-veg' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                          {dish.type.toUpperCase()}
+                        </span>
+                        <span className="font-bold text-white text-sm">{dish.name}</span>
+                        <span className="text-xs text-slate-400">({dish.category})</span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">{dish.description}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono font-black text-amber-400 text-sm">₹{dish.price}</div>
+                      <span className={`text-[10px] font-bold ${dish.in_stock ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {dish.in_stock ? 'In Stock' : 'Out of Stock'}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-            <form onSubmit={handleSaveVendor} className="p-6 space-y-4 text-xs">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Station Name</label>
-                <input type="text" placeholder="e.g. New Delhi (NDLS)" value={vendorStation} onChange={e => setVendorStation(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none" required />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Vendor / Kitchen Name</label>
-                <input type="text" placeholder="e.g. IRCTC Rajdhani Kitchen" value={vendorName} onChange={e => setVendorName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none" required />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">FSSAI License No.</label>
-                <input type="text" placeholder="e.g. FSSAI-110001" value={vendorFssai} onChange={e => setVendorFssai(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none" required />
-              </div>
-              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
-                <button type="button" onClick={() => setShowVendorModal(false)} className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition">Cancel</button>
-                <button type="submit" className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-black shadow-lg shadow-amber-600/30 transition active:scale-95">
-                  {editingVendor ? 'Update Vendor' : 'Add Vendor'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
 
+            <div className="pt-3 border-t border-slate-700 text-right">
+              <button
+                onClick={() => setShowMenuInspectModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold rounded-xl"
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

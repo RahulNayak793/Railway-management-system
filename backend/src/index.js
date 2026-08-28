@@ -14,7 +14,11 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // Middleware to ensure req.body is parsed as object in Vercel Serverless environment
@@ -47,6 +51,7 @@ const aiRoutes = require('./routes/ai');
 const notificationsRoutes = require('./routes/notifications');
 const cateringRoutes = require('./routes/catering');
 const sosRoutes = require('./routes/sos');
+const { router: trackingRoutes } = require('./routes/tracking');
 
 // Mount Routes for both /api/* and /* Vercel serverless pathing
 app.use('/api/auth', authRoutes);
@@ -54,6 +59,9 @@ app.use('/auth', authRoutes);
 
 app.use('/api/trains', trainRoutes);
 app.use('/trains', trainRoutes);
+
+app.use('/api/tracking', trackingRoutes);
+app.use('/tracking', trackingRoutes);
 
 app.use('/api/bookings', bookingRoutes);
 app.use('/bookings', bookingRoutes);
@@ -87,6 +95,7 @@ const path = require('path');
 // Serve compiled frontend production build files if dist folder exists
 const frontendDistPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendDistPath));
+app.use('/uploads', express.static(path.join(__dirname, '../data/uploads')));
 
 // Base API Status Route
 app.get('/api', (req, res) => {
@@ -183,6 +192,12 @@ app.get('*', (req, res, next) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'File size must be less than 5 MB.' });
+  }
+  if (err.name === 'MulterError') {
+    return res.status(400).json({ error: 'Multipart form upload error: ' + err.message });
+  }
   console.error('Unhandled Server Error:', err.stack);
   res.status(500).json({ error: 'Internal Server Error', details: err.message });
 });

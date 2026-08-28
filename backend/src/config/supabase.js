@@ -8,11 +8,36 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
 
-const isMockMode = !supabaseUrl || !supabaseServiceKey || supabaseUrl.includes('mockproject.supabase.co');
+const isMockMode = process.env.MOCK_MODE === 'true';
 
-let supabase;
+// Startup validation for production hardening
+if (process.env.NODE_ENV === 'production') {
+  if (isMockMode) {
+    console.error('❌ FATAL CONFIGURATION ERROR: Mock Mode is explicitly forbidden in production!');
+    process.exit(1);
+  }
+  const isInvalidCreds = !supabaseUrl || !supabaseServiceKey || 
+                         supabaseUrl.includes('mockproject.supabase.co') || 
+                         supabaseUrl.includes('your-supabase-project') ||
+                         supabaseServiceKey.includes('your-supabase') ||
+                         supabaseServiceKey.includes('your_supabase') ||
+                         supabaseServiceKey.startsWith('sb_publishable_');
+  if (isInvalidCreds) {
+    console.error('❌ FATAL CONFIGURATION ERROR: Supabase environment credentials are missing, invalid, or using public publishable/anon keys in PRODUCTION mode!');
+    console.error('Please configure a valid SUPABASE_URL and a secret SUPABASE_SERVICE_ROLE_KEY.');
+    process.exit(1);
+  }
+}
 
-const DB_FILE_PATH = path.join(__dirname, '../../data/db.json');
+let supabase = null;
+
+function getDbFilePath() {
+  if (process.env.DB_FILE_PATH) return process.env.DB_FILE_PATH;
+  if (process.env.NODE_ENV === 'test') {
+    return path.join(__dirname, '../../data/test-db.json');
+  }
+  return path.join(__dirname, '../../data/db.json');
+}
 
 // Set up mock DB collections if in Mock Mode
 const mockDb = {
@@ -28,10 +53,48 @@ const mockDb = {
   support_tickets: new Map(),
   support_messages: new Map(),
   feedback: new Map(),
-  notifications: new Map()
+  notifications: new Map(),
+  cancellation_requests: new Map(),
+  cancellation_records: new Map(),
+  train_telemetry: new Map(),
+  catering_companies: new Map(),
+  company_stations: new Map(),
+  catering_menu: new Map(),
+  catering_orders: new Map(),
+  train_status_history: new Map(),
+  audit_logs: new Map()
 };
 
+let isSavingFile = false;
+let pendingSaveRequest = false;
+
+function safeAtomicRenameSync(tmpPath, destPath, retries = 15) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      fs.renameSync(tmpPath, destPath);
+      return;
+    } catch (err) {
+      if ((err.code === 'EPERM' || err.code === 'EBUSY') && i < retries - 1) {
+        const start = Date.now();
+        while (Date.now() - start < 30) {}
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
 function saveMockDbToFile() {
+  const targetFilePath = getDbFilePath();
+  if (process.env.NODE_ENV === 'test' && !process.env.DB_FILE_PATH && process.env.PERSISTENCE_TEST !== 'true') {
+    return;
+  }
+  if (isSavingFile) {
+    pendingSaveRequest = true;
+    return;
+  }
+  isSavingFile = true;
+
   try {
     const dataToSave = {};
     for (const [key, val] of Object.entries(mockDb)) {
@@ -41,13 +104,21 @@ function saveMockDbToFile() {
         dataToSave[key] = val;
       }
     }
-    const dir = path.dirname(DB_FILE_PATH);
+    const dir = path.dirname(targetFilePath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(dataToSave, null, 2), 'utf-8');
+    const tmpFilePath = `${targetFilePath}.tmp.${process.pid}.${Date.now()}`;
+    fs.writeFileSync(tmpFilePath, JSON.stringify(dataToSave, null, 2), 'utf-8');
+    safeAtomicRenameSync(tmpFilePath, targetFilePath);
   } catch (err) {
-    console.error('Error saving database to file:', err.message);
+    console.error('Error saving database atomically to file:', err.message);
+  } finally {
+    isSavingFile = false;
+    if (pendingSaveRequest) {
+      pendingSaveRequest = false;
+      saveMockDbToFile();
+    }
   }
 }
 
@@ -79,6 +150,7 @@ function enableAutoSave(db) {
 
 // Function to seed initial default mock data
 function seedInitialMockData() {
+
 
   const stationsData = [
     { id: 's1', station_code: 'NDLS', station_name: 'New Delhi', state: 'Delhi' },
@@ -235,27 +307,26 @@ function seedInitialMockData() {
     { id: 's152', station_code: 'UDZ', station_name: 'Udaipur City', state: 'Rajasthan' },
     { id: 's153', station_code: 'AII', station_name: 'Ajmer', state: 'Rajasthan' },
     { id: 's154', station_code: 'BKN', station_name: 'Bikaner', state: 'Rajasthan' },
-    { id: 's155', station_code: 'TEN', station_name: 'Tirunelveli', state: 'Tamil Nadu' },
-    { id: 's156', station_code: 'KCG', station_name: 'Kacheguda', state: 'Telangana' },
-    { id: 's157', station_code: 'AGTL', station_name: 'Agartala', state: 'Tripura' },
-    { id: 's158', station_code: 'DMR', station_name: 'Dharmanagar', state: 'Tripura' },
-    { id: 's159', station_code: 'UDPT', station_name: 'Udaipur Tripura', state: 'Tripura' },
-    { id: 's160', station_code: 'PRYJ', station_name: 'Prayagraj Junction', state: 'Uttar Pradesh' },
-    { id: 's161', station_code: 'MTJ', station_name: 'Mathura Junction', state: 'Uttar Pradesh' },
-    { id: 's162', station_code: 'DDN', station_name: 'Dehradun', state: 'Uttarakhand' },
-    { id: 's163', station_code: 'HW', station_name: 'Haridwar', state: 'Uttarakhand' },
-    { id: 's164', station_code: 'KGM', station_name: 'Kathgodam', state: 'Uttarakhand' },
-    { id: 's165', station_code: 'RKSH', station_name: 'Rishikesh', state: 'Uttarakhand' },
-    { id: 's166', station_code: 'NJP', station_name: 'New Jalpaiguri', state: 'West Bengal' },
+    { id: 's3', station_code: 'CNB', station_name: 'Kanpur Central', state: 'Uttar Pradesh' },
+    { id: 's4', station_code: 'PRYJ', station_name: 'Prayagraj Junction', state: 'Uttar Pradesh' },
+    { id: 's5', station_code: 'BSB', station_name: 'Varanasi Junction', state: 'Uttar Pradesh' },
+    { id: 's6', station_code: 'HWH', station_name: 'Howrah Junction', state: 'West Bengal' },
+    { id: 's7', station_code: 'KOTA', station_name: 'Kota Junction', state: 'Rajasthan' },
+    { id: 's8', station_code: 'RTM', station_name: 'Ratlam Junction', state: 'Madhya Pradesh' },
+    { id: 's9', station_code: 'BRC', station_name: 'Vadodara Junction', state: 'Gujarat' },
+    { id: 's10', station_code: 'BPL', station_name: 'Bhopal Junction', state: 'Madhya Pradesh' },
+    { id: 's11', station_code: 'AGC', station_name: 'Agra Cantt', state: 'Uttar Pradesh' },
+    { id: 's12', station_code: 'GWL', station_name: 'Gwalior Junction', state: 'Madhya Pradesh' },
+    { id: 's13', station_code: 'VGLJ', station_name: 'VGL Jhansi Junction', state: 'Uttar Pradesh' },
+    { id: 's14', station_code: 'NZM', station_name: 'Hazrat Nizamuddin', state: 'Delhi' },
+    { id: 's165', station_code: 'MAS', station_name: 'MGR Chennai Central', state: 'Tamil Nadu' },
+    { id: 's166', station_code: 'SBC', station_name: 'KSR Bengaluru City', state: 'Karnataka' },
     { id: 's167', station_code: 'DGR', station_name: 'Durgapur', state: 'West Bengal' },
     { id: 's168', station_code: 'ASN', station_name: 'Asansol', state: 'West Bengal' },
     { id: 's169', station_code: 'NZM', station_name: 'Hazrat Nizamuddin', state: 'Unknown' },
     { id: 's170', station_code: 'TBM', station_name: 'Tambaram', state: 'Unknown' },
     { id: 's171', station_code: 'BNC', station_name: 'Bengaluru Cantonment', state: 'Unknown' },
-    { id: 's172', station_code: 'UDU', station_name: 'Udupi', state: 'Unknown' },
-    { id: 's173', station_code: 'SHM', station_name: 'Santragachi Junction', state: 'Unknown' },
-    { id: 's174', station_code: 'MLDT', station_name: 'Malda Town', state: 'Unknown' },
-    { id: 's175', station_code: 'ALLP', station_name: 'Alappuzha', state: 'Unknown' }
+    { id: 's172', station_code: 'UDU', station_name: 'Udupi', state: 'Karnataka' }
   ];
   stationsData.forEach(s => mockDb.stations.set(s.id, s));
 
@@ -270,123 +341,601 @@ function seedInitialMockData() {
   ];
   seededPassengers.forEach(p => mockDb.profiles.set(p.id, p));
 
-  // Seed default bookings for mockDb
-  const defaultTrainId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
-  const sampleBookings = [
+  // Seed default Authorized Catering Companies
+  const defaultCompanies = [
     {
-      id: 'bk-seed-1',
-      pnr_number: '2345678901',
-      passenger_id: 'usr-demo-passenger',
+      id: 'comp-1',
+      company_name: 'IRCTC Executive Pantry',
+      legal_name: 'Indian Railway Catering and Tourism Corp. Ltd.',
+      contact_name: 'Rajesh Sharma',
+      phone: '+91 9811002233',
+      email: 'pantry@irctc.co.in',
+      fssai_number: '10019011000234',
+      address: 'IRCTC Corporate Office, Connaught Place, New Delhi',
+      status: 'AUTHORIZED',
+      authorization_start: '2025-01-01T00:00:00.000Z',
+      authorization_end: '2027-12-31T23:59:59.000Z',
+      created_at: '2025-01-01T00:00:00.000Z',
+      stations: ['NDLS', 'DLI', 'NZM', 'CNB', 'AGC', 'JP']
+    },
+    {
+      id: 'comp-2',
+      company_name: 'MP Rail Catering Services',
+      legal_name: 'Madhya Pradesh Gourmet Rail Foods Pvt Ltd',
+      contact_name: 'Vikram Chouhan',
+      phone: '+91 9425012345',
+      email: 'support@mprailcatering.com',
+      fssai_number: '11521004000891',
+      address: 'Zone-1, MP Nagar, Bhopal, MP',
+      status: 'AUTHORIZED',
+      authorization_start: '2025-01-01T00:00:00.000Z',
+      authorization_end: '2027-12-31T23:59:59.000Z',
+      created_at: '2025-01-01T00:00:00.000Z',
+      stations: ['BPL', 'GWL', 'VGLJ', 'ET', 'RTM', 'UJN', 'INDB']
+    },
+    {
+      id: 'comp-3',
+      company_name: 'Varanasi Satvik Kitchen',
+      legal_name: 'Kashi Satvik Foods & Hospitality',
+      contact_name: 'Pt. Rameshwar Mishra',
+      phone: '+91 9935098765',
+      email: 'orders@satvikkitchen.in',
+      fssai_number: '12720002000512',
+      address: 'Lanka Crossing, Varanasi, UP',
+      status: 'AUTHORIZED',
+      authorization_start: '2025-01-01T00:00:00.000Z',
+      authorization_end: '2027-12-31T23:59:59.000Z',
+      created_at: '2025-01-01T00:00:00.000Z',
+      stations: ['BSB', 'PRYJ', 'DDU', 'LKO', 'GKP']
+    },
+    {
+      id: 'comp-4',
+      company_name: 'Coastal Rail Foods',
+      legal_name: 'Malabar & Karavali Express Catering Pvt Ltd',
+      contact_name: 'K. V. Shetty',
+      phone: '+91 9845033445',
+      email: 'contact@coastalrailfoods.com',
+      fssai_number: '11222005000109',
+      address: 'Kodialbail, Mangaluru, Karnataka',
+      status: 'AUTHORIZED',
+      authorization_start: '2025-01-01T00:00:00.000Z',
+      authorization_end: '2027-12-31T23:59:59.000Z',
+      created_at: '2025-01-01T00:00:00.000Z',
+      stations: ['MAQ', 'UD', 'MAO', 'ERS', 'SBC', 'CLT', 'CAN']
+    },
+    {
+      id: 'comp-5',
+      company_name: 'Western Gourmet Express',
+      legal_name: 'Gujarat & Maharashtra Express Feasts LLP',
+      contact_name: 'Anil Patel',
+      phone: '+91 9825088776',
+      email: 'info@westerngourmet.in',
+      fssai_number: '10821009000341',
+      address: 'Alkapuri, Vadodara, Gujarat',
+      status: 'AUTHORIZED',
+      authorization_start: '2025-01-01T00:00:00.000Z',
+      authorization_end: '2027-12-31T23:59:59.000Z',
+      created_at: '2025-01-01T00:00:00.000Z',
+      stations: ['MMCT', 'BDTS', 'ST', 'BRC', 'ADI', 'PUNE', 'KOTA']
+    }
+  ];
+
+  defaultCompanies.forEach(c => {
+    mockDb.catering_companies.set(c.id, c);
+    (c.stations || []).forEach(stCode => {
+      mockDb.company_stations.set(`${c.id}_${stCode}`, { company_id: c.id, station_code: stCode });
+    });
+  });
+}
+
+function fixDummyBookingOwnership() {
+  const dedicatedDemoUserId = 'usr-demo-test-account';
+  if (!mockDb.profiles.has(dedicatedDemoUserId)) {
+    mockDb.profiles.set(dedicatedDemoUserId, {
+      id: dedicatedDemoUserId,
+      full_name: 'DEMO PASSENGER',
+      email: 'demo@railcontrol.test',
+      phone: '+91 9999999999',
+      role: 'passenger',
+      age: 34,
+      gender: 'Male',
+      created_at: '2023-01-01T00:00:00Z'
+    });
+  }
+
+  const knownDummyIds = new Set(['bk-seed-upcoming', 'bk-seed-completed', 'bk-seed-cancelled', 'bk-seed-1', 'bk-seed-2', 'bk-seed-3']);
+  const knownDummyPnrs = new Set(['8819203941', '7462573954', '9842105731', '2345678901']);
+  let updated = false;
+
+  for (const [id, booking] of mockDb.bookings.entries()) {
+    if (!booking) continue;
+    const isKnownDummy = knownDummyIds.has(id) || (booking.pnr_number && knownDummyPnrs.has(booking.pnr_number)) || String(id).startsWith('bk-seed-');
+    if (isKnownDummy) {
+      if (booking.passenger_id !== dedicatedDemoUserId) {
+        booking.passenger_id = dedicatedDemoUserId;
+        mockDb.bookings.set(id, booking);
+        updated = true;
+      }
+    }
+  }
+
+  if (updated) {
+    saveMockDbToFile();
+  }
+}
+
+function ensureDummyBookingsExist() {
+  const defaultTrainId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+  const dedicatedDemoUserId = 'usr-demo-test-account';
+
+  if (!mockDb.trains.has('train-udupi-12345')) {
+    mockDb.trains.set('train-udupi-12345', {
+      id: 'train-udupi-12345',
+      train_number: '12345',
+      train_name: 'Udupi Express',
+      source: 'UDU',
+      destination: 'NDLS',
+      source_station_code: 'UDU',
+      destination_station_code: 'NDLS',
+      status: 'on_time'
+    });
+  }
+
+  const dummyBookings = [
+    {
+      id: 'bk-seed-upcoming',
+      pnr_number: '8819203941',
+      passenger_id: dedicatedDemoUserId,
       train_id: defaultTrainId,
       coach_class: '3A',
       total_fare: 1450,
       status: 'confirmed',
-      travel_date: '2026-08-05',
-      created_at: new Date().toISOString()
+      travel_date: '2026-09-15',
+      created_at: new Date().toISOString(),
+      allocations: [
+        {
+          id: 'alloc-seed-upcoming',
+          booking_id: 'bk-seed-upcoming',
+          coach_number: 'B1',
+          seat_number: 24,
+          berth_type: 'UB',
+          passenger_name: 'DEMO PASSENGER',
+          passenger_age: 34,
+          passenger_gender: 'Male'
+        }
+      ]
     },
     {
-      id: 'bk-seed-2',
+      id: 'bk-seed-completed',
       pnr_number: '7462573954',
-      passenger_id: 'usr-demo-passenger',
+      passenger_id: dedicatedDemoUserId,
       train_id: defaultTrainId,
       coach_class: 'CC',
       total_fare: 1120,
       status: 'completed',
       travel_date: '2026-07-20',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString()
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 35).toISOString(),
+      completed_at: '2026-07-21T08:15:00.000Z',
+      allocations: [
+        {
+          id: 'alloc-seed-completed',
+          booking_id: 'bk-seed-completed',
+          coach_number: 'C1',
+          seat_number: 12,
+          berth_type: 'WINDOW',
+          passenger_name: 'DEMO PASSENGER',
+          passenger_age: 34,
+          passenger_gender: 'Male'
+        }
+      ]
     },
     {
-      id: 'bk-seed-3',
+      id: 'bk-seed-cancelled',
       pnr_number: '9842105731',
-      passenger_id: 'usr-demo-passenger',
-      train_id: defaultTrainId,
+      passenger_id: dedicatedDemoUserId,
+      train_id: 'train-udupi-12345',
       coach_class: '3A',
       total_fare: 1680,
       status: 'cancelled',
       travel_date: '2026-07-25',
-      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString()
+      cancellation_date_time: '2026-07-22T10:15:00.000Z',
+      cancellation_reason: 'Passenger requested cancellation',
+      refund_status: 'REFUNDED',
+      refund_amount: 1680,
+      created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+      allocations: [
+        {
+          id: 'alloc-seed-cancelled',
+          booking_id: 'bk-seed-cancelled',
+          coach_number: 'B2',
+          seat_number: 15,
+          berth_type: 'SL',
+          passenger_name: 'DEMO PASSENGER',
+          passenger_age: 34,
+          passenger_gender: 'Male'
+        }
+      ]
     }
   ];
 
-  sampleBookings.forEach(b => {
-    mockDb.bookings.set(b.id, b);
-    mockDb.seat_allocations.set(`alloc-${b.id}`, {
-      id: `alloc-${b.id}`,
-      booking_id: b.id,
-      coach_number: 'B1',
-      seat_number: 24,
-      berth_type: 'LB',
-      passenger_name: 'Passenger'
-    });
-    mockDb.payments.set(`pay-${b.id}`, {
-      id: `pay-${b.id}`,
-      booking_id: b.id,
-      amount: b.total_fare,
-      payment_method: 'UPI',
-      status: b.status === 'cancelled' ? 'REFUNDED' : 'SUCCESS'
-    });
+  let addedCount = 0;
+  dummyBookings.forEach(b => {
+    if (!mockDb.bookings.has(b.id)) {
+      const { allocations, ...bookingData } = b;
+      mockDb.bookings.set(b.id, bookingData);
+      addedCount++;
+      (allocations || []).forEach(alloc => {
+        mockDb.seat_allocations.set(alloc.id, alloc);
+      });
+      mockDb.payments.set(`pay-${b.id}`, {
+        id: `pay-${b.id}`,
+        booking_id: b.id,
+        amount: b.total_fare,
+        payment_method: 'UPI',
+        status: b.status === 'cancelled' ? 'REFUNDED' : 'SUCCESS'
+      });
+
+      if (b.status === 'cancelled') {
+        const train = mockDb.trains.get(b.train_id);
+        mockDb.cancellation_records.set(b.id, {
+          id: `canc-${b.id}`,
+          booking_id: b.id,
+          pnr: b.pnr_number,
+          passenger_id: b.passenger_id,
+          train_id: b.train_id,
+          train_number: train ? train.train_number : '12952',
+          train_name: train ? train.train_name : 'Udupi Express',
+          journey_date: b.travel_date,
+          original_fare: b.total_fare,
+          deduction_amount: 0,
+          refund_amount: b.total_fare,
+          refund_status: 'REFUNDED',
+          cancellation_reason: b.cancellation_reason || 'Passenger requested cancellation',
+          cancellation_type: 'passenger',
+          cancelled_by_user_id: b.passenger_id,
+          cancelled_by_role: 'passenger',
+          cancellation_date_time: b.cancellation_date_time || new Date().toISOString(),
+          created_at: b.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      }
+    }
   });
-}
 
-if (isMockMode) {
-  let fileLoaded = false;
-  if (fs.existsSync(DB_FILE_PATH)) {
-    try {
-      const rawData = fs.readFileSync(DB_FILE_PATH, 'utf-8');
-      const parsed = JSON.parse(rawData);
-      for (const [key, val] of Object.entries(parsed)) {
-        if (Array.isArray(val)) {
-          mockDb[key] = new Map(val);
-        } else {
-          mockDb[key] = val;
-        }
-      }
-      console.log('✅ Loaded persistent local database from backend/data/db.json');
-      fileLoaded = true;
-
-      // Purge static seed dummy trains so ONLY staff-added trains remain
-      const staticSeedNumbers = new Set(['12952', '12002', '22436', '12301', '12050', '22671', '12627', '12953', '12262', '12216', '20701', '12650', '12841', '12859', '12615', '12001', '12295', '12649', '12951', '12622', '12009', '16316', '998877']);
-      if (mockDb.trains) {
-        for (const [key, t] of Array.from(mockDb.trains.entries())) {
-          const isTestName = t && t.train_name && t.train_name.toLowerCase().includes('passenger visible express');
-          if (key.match(/^t\d+$/) || isTestName || (t && staticSeedNumbers.has(String(t.train_number)))) {
-            mockDb.trains.delete(key);
-          }
-        }
-      }
-      if (mockDb.routes) {
-        for (const [key, r] of Array.from(mockDb.routes.entries())) {
-          if (key.match(/^r\d+$/) || (r && r.train_id && r.train_id.match(/^t\d+$/))) {
-            mockDb.routes.delete(key);
-          }
-        }
-      }
-      saveMockDbToFile();
-    } catch (err) {
-      console.error('Failed to load db.json, re-seeding default database:', err.message);
+  // Ensure all existing cancelled bookings in mockDb have corresponding cancellation_records
+  for (const b of mockDb.bookings.values()) {
+    if (b.status === 'cancelled' && !mockDb.cancellation_records.has(b.id)) {
+      const train = mockDb.trains.get(b.train_id);
+      mockDb.cancellation_records.set(b.id, {
+        id: `canc-${b.id}`,
+        booking_id: b.id,
+        pnr: b.pnr_number,
+        passenger_id: b.passenger_id,
+        train_id: b.train_id,
+        train_number: train ? train.train_number : '12345',
+        train_name: train ? train.train_name : 'Express Special',
+        journey_date: b.travel_date,
+        original_fare: b.total_fare || 1000,
+        deduction_amount: b.penalty_amount !== undefined ? b.penalty_amount : 240,
+        refund_amount: b.refund_amount !== undefined ? b.refund_amount : Math.max(0, (b.total_fare || 1000) - 240),
+        refund_status: b.refund_status || 'APPROVED',
+        cancellation_reason: b.cancellation_reason || 'Passenger requested cancellation',
+        cancellation_type: 'passenger',
+        cancelled_by_user_id: b.passenger_id,
+        cancelled_by_role: 'passenger',
+        cancellation_date_time: b.cancellation_date_time || b.created_at || new Date().toISOString(),
+        created_at: b.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+      addedCount++;
     }
   }
 
-  if (!fileLoaded) {
-    console.log('⚡ Initializing and seeding local persistent database...');
-    seedInitialMockData();
+  if (addedCount > 0) {
     saveMockDbToFile();
   }
+}
 
-  enableAutoSave(mockDb);
-} else {
+let fileLoaded = false;
+const activeDbFilePath = getDbFilePath();
+if (fs.existsSync(activeDbFilePath)) {
+  try {
+    const rawData = fs.readFileSync(activeDbFilePath, 'utf-8');
+    const parsed = JSON.parse(rawData);
+    for (const [key, val] of Object.entries(parsed)) {
+      if (Array.isArray(val)) {
+        mockDb[key] = new Map(val);
+      } else {
+        mockDb[key] = val;
+      }
+    }
+    console.log(`✅ Loaded persistent local database from ${activeDbFilePath}`);
+    fileLoaded = true;
+    backfillRouteDistances();
+    backfillCancellationLedger();
+  } catch (err) {
+    console.error(`Failed to load ${activeDbFilePath}:`, err.message);
+  }
+}
+
+function resolvePassengerNameForBooking(bookingId, passengerId, fallbackName = null) {
+  const genericNames = ['passenger', 'admin', 'user', 'unknown passenger', 'undefined', 'null', ''];
+
+  // 1. Check seat allocations for bookingId
+  if (bookingId && mockDb.seat_allocations) {
+    const allocations = Array.from(mockDb.seat_allocations.values()).filter(a => a && a.booking_id === bookingId);
+    const allocatedNames = allocations
+      .map(a => a.passenger_name)
+      .filter(n => n && !genericNames.includes(String(n).trim().toLowerCase()));
+
+    if (allocatedNames.length > 0) {
+      return Array.from(new Set(allocatedNames)).join(', ');
+    }
+  }
+
+  // 2. Check booking object
+  if (bookingId && mockDb.bookings) {
+    const b = mockDb.bookings.get(bookingId);
+    if (b) {
+      if (b.passenger_name && !genericNames.includes(String(b.passenger_name).trim().toLowerCase())) {
+        return b.passenger_name;
+      }
+      if (Array.isArray(b.passengers) && b.passengers.length > 0) {
+        const pNames = b.passengers
+          .map(p => typeof p === 'string' ? p : (p.name || p.passenger_name))
+          .filter(n => n && !genericNames.includes(String(n).trim().toLowerCase()));
+        if (pNames.length > 0) return pNames.join(', ');
+      }
+    }
+  }
+
+  // 3. Check user profile by passengerId
+  if (passengerId && mockDb.profiles) {
+    const profile = mockDb.profiles.get(passengerId);
+    if (profile) {
+      if (profile.full_name && !genericNames.includes(String(profile.full_name).trim().toLowerCase())) {
+        return profile.full_name;
+      }
+      if (profile.name && !genericNames.includes(String(profile.name).trim().toLowerCase())) {
+        return profile.name;
+      }
+      if (profile.email && typeof profile.email === 'string') {
+        const emailName = profile.email.split('@')[0];
+        if (emailName && !genericNames.includes(emailName.toLowerCase())) {
+          return emailName;
+        }
+      }
+    }
+  }
+
+  // 4. Check saved_passengers
+  if (passengerId && mockDb.saved_passengers) {
+    const saved = Array.from(mockDb.saved_passengers.values()).find(sp => sp && (sp.user_id === passengerId || sp.passenger_id === passengerId));
+    if (saved && saved.name && !genericNames.includes(String(saved.name).trim().toLowerCase())) {
+      return saved.name;
+    }
+  }
+
+  // 5. Check fallbackName if provided and non-generic
+  if (fallbackName && !genericNames.includes(String(fallbackName).trim().toLowerCase())) {
+    return fallbackName;
+  }
+
+  // 6. Final fallback
+  return 'Unknown Passenger';
+}
+
+function backfillCancellationLedger() {
+  let backfilledCount = 0;
+  if (!mockDb.cancellation_records) mockDb.cancellation_records = new Map();
+  for (const b of mockDb.bookings.values()) {
+    if (b && b.status === 'cancelled' && !mockDb.cancellation_records.has(b.id)) {
+      const train = mockDb.trains.get(b.train_id);
+      const originalFare = Number(b.total_fare || 1000);
+      const deductionAmount = b.penalty_amount !== undefined ? Number(b.penalty_amount) : 240;
+      const refundAmount = b.refund_amount !== undefined ? Number(b.refund_amount) : Math.max(0, originalFare - deductionAmount);
+      
+      const resolvedPassengerName = resolvePassengerNameForBooking(b.id, b.passenger_id, b.passenger_name);
+
+      const rec = {
+        id: `canc-${b.id}`,
+        booking_id: b.id,
+        pnr: b.pnr_number,
+        passenger_id: b.passenger_id,
+        passenger_name: resolvedPassengerName,
+        train_id: b.train_id,
+        train_number: train ? train.train_number : (b.train_number || '12952'),
+        train_name: train ? train.train_name : (b.train_name || 'Express Special'),
+        journey_date: b.travel_date,
+        original_fare: originalFare,
+        deduction_amount: deductionAmount,
+        refund_amount: refundAmount,
+        refund_status: (b.refund_status || 'APPROVED').toUpperCase(),
+        cancellation_reason: b.cancellation_reason || 'Passenger requested cancellation',
+        cancellation_type: 'passenger',
+        cancelled_by_user_id: b.passenger_id,
+        cancelled_by_role: 'passenger',
+        cancellation_date_time: b.cancellation_date_time || b.created_at || new Date().toISOString(),
+        created_at: b.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      mockDb.cancellation_records.set(b.id, rec);
+      backfilledCount++;
+    }
+  }
+
+  // Repair existing records with generic or missing names
+  for (const [key, rec] of mockDb.cancellation_records.entries()) {
+    if (!rec) continue;
+    const curName = rec.passenger_name;
+    const genericNames = ['passenger', 'admin', 'user', 'unknown passenger', 'undefined', 'null', ''];
+    if (!curName || genericNames.includes(String(curName).trim().toLowerCase())) {
+      const resolvedName = resolvePassengerNameForBooking(rec.booking_id, rec.passenger_id, curName);
+      if (resolvedName !== curName) {
+        rec.passenger_name = resolvedName;
+        rec.updated_at = new Date().toISOString();
+        mockDb.cancellation_records.set(key, rec);
+        backfilledCount++;
+      }
+    }
+  }
+
+  if (backfilledCount > 0) {
+    saveMockDbToFile();
+  }
+}
+
+function backfillRouteDistances() {
+  for (const [id, route] of mockDb.routes.entries()) {
+    if (!route || !Array.isArray(route.stops) || route.stops.length === 0) continue;
+    const fullDist = parseFloat(route.distance_km || 1000);
+
+    const parseTimeToMinutes = (tStr) => {
+      if (!tStr) return 0;
+      const clean = String(tStr).trim().split(' ')[0];
+      const parts = clean.split(':');
+      const h = parseInt(parts[0] || '0', 10);
+      const m = parseInt(parts[1] || '0', 10);
+      return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+    };
+
+    const getDurationMins = (depStr, arrStr) => {
+      if (!depStr || !arrStr) return 180;
+      const dep = parseTimeToMinutes(depStr);
+      const arr = parseTimeToMinutes(arrStr);
+      let diff = arr - dep;
+      if (diff <= 0) diff += 24 * 60;
+      return Math.max(15, diff);
+    };
+
+    const totalDuration = getDurationMins(route.departure_time, route.arrival_time);
+    
+    let updated = false;
+    route.stops.forEach((stop, idx) => {
+      if (stop.distanceFromOriginKm === undefined || stop.distanceFromOriginKm === null || isNaN(parseFloat(stop.distanceFromOriginKm))) {
+        const stopDuration = getDurationMins(route.departure_time, stop.arrTime || stop.depTime);
+        if (totalDuration > 0 && stopDuration > 0 && stopDuration < totalDuration) {
+          const ratio = stopDuration / totalDuration;
+          stop.distanceFromOriginKm = Math.round(fullDist * ratio);
+        } else {
+          const ratio = (idx + 1) / (route.stops.length + 1);
+          stop.distanceFromOriginKm = Math.round(fullDist * ratio);
+        }
+        stop.distance_km = stop.distanceFromOriginKm;
+        updated = true;
+      }
+    });
+    if (updated) {
+      mockDb.routes.set(id, route);
+    }
+  }
+}
+
+if (!isMockMode) {
   try {
     supabase = createClient(supabaseUrl, supabaseServiceKey);
     console.log('⚡ Connected to LIVE Supabase at', supabaseUrl);
   } catch (err) {
     console.error('Failed to initialize Supabase client:', err.message);
   }
+} else {
+  if (!fileLoaded || !mockDb.catering_companies || mockDb.catering_companies.size === 0) {
+    console.log('⚡ Initializing local persistent database & catering companies...');
+    seedInitialMockData();
+    saveMockDbToFile();
+  }
+}
+
+enableAutoSave(mockDb);
+
+async function signDocumentUrl(documentUrl) {
+  if (!documentUrl) return '';
+  if (String(documentUrl).startsWith('identity-documents/')) {
+    if (isMockMode || !supabase) {
+      return documentUrl;
+    }
+    try {
+      const cleanPath = String(documentUrl).replace('identity-documents/', '');
+      const { data, error } = await supabase.storage
+        .from('identity-documents')
+        .createSignedUrl(cleanPath, 300); // 5 minutes expiry
+      if (error) {
+        console.error('⚠️ Supabase Storage signed URL creation failed:', error.message);
+        return '';
+      }
+      return data.signedUrl;
+    } catch (err) {
+      console.error('⚠️ Failed to sign document URL:', err.message);
+      return '';
+    }
+  }
+  return documentUrl;
+}
+
+async function getSystemHealthDiagnostics() {
+  const isInvalidKey = !supabaseServiceKey ||
+                        supabaseServiceKey.includes('your-supabase') ||
+                        supabaseServiceKey.includes('your_supabase') ||
+                        supabaseServiceKey.startsWith('sb_publishable_');
+
+  const supabaseUrlStatus = supabaseUrl && !supabaseUrl.includes('mockproject') ? 'CONFIGURED' : 'NOT_CONFIGURED';
+  const supabaseKeyStatus = !isInvalidKey ? 'VALID' : (supabaseServiceKey ? 'INVALID_PUBLISHABLE_OR_PLACEHOLDER' : 'NOT_CONFIGURED');
+  
+  let dbConnection = isMockMode ? 'MOCK_MODE_ACTIVE' : 'NOT_VERIFIED';
+  let schemaStatus = isMockMode ? 'MOCK_MODE_ACTIVE' : 'NOT_VERIFIED';
+  let rlsStatus = isMockMode ? 'MOCK_MODE_ACTIVE' : 'NOT_VERIFIED';
+  let storageStatus = isMockMode ? 'MOCK_MODE_ACTIVE' : 'NOT_VERIFIED';
+
+  if (!isMockMode && supabase && !isInvalidKey) {
+    try {
+      const { data, error } = await supabase.from('trains').select('count', { count: 'exact', head: true });
+      if (error) {
+        dbConnection = 'FAILED';
+        schemaStatus = 'FAILED';
+      } else {
+        dbConnection = 'CONNECTED';
+        schemaStatus = 'PASS';
+        rlsStatus = 'PASS';
+      }
+    } catch (e) {
+      dbConnection = 'FAILED';
+    }
+  }
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const stripeStatus = (stripeKey && !stripeKey.includes('mock') && !stripeKey.includes('placeholder')) ? 'CONFIGURED' : 'MOCK_MODE';
+  
+  const smtpHost = process.env.SMTP_HOST;
+  const emailStatus = (smtpHost && !smtpHost.includes('ethereal') && !smtpHost.includes('mock')) ? 'CONFIGURED' : 'MOCK_MODE';
+
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+  const smsStatus = (twilioSid && !twilioSid.includes('mock')) ? 'CONFIGURED' : 'MOCK_MODE';
+
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const geminiStatus = geminiKey ? 'CONFIGURED' : 'NOT_CONFIGURED';
+
+  return {
+    mode: isMockMode ? 'MOCK_MODE' : 'LIVE_PRODUCTION',
+    supabase_url: supabaseUrlStatus,
+    supabase_key: supabaseKeyStatus,
+    database_connection: dbConnection,
+    schema: schemaStatus,
+    rls: rlsStatus,
+    storage: storageStatus,
+    stripe: stripeStatus,
+    email: emailStatus,
+    sms: smsStatus,
+    gemini: geminiStatus
+  };
 }
 
 module.exports = {
   supabase,
   isMockMode,
   mockDb,
-  saveMockDbToFile
+  saveMockDbToFile,
+  signDocumentUrl,
+  getSystemHealthDiagnostics,
+  resolvePassengerNameForBooking
 };
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, CheckCircle, ArrowUpCircle, UserCheck, ShieldAlert, Sparkles, Zap, Send, Award } from 'lucide-react';
+import { Clock, CheckCircle, ArrowUpCircle, UserCheck, ShieldAlert, Sparkles, Zap, Send, Award, FileText, Check } from 'lucide-react';
 import api from '../services/api';
 
 const AdminRACWaiting = () => {
   const [waitlist, setWaitlist] = useState([]);
+  const [cancelRequests, setCancelRequests] = useState([]);
+  const [activeTab, setActiveTab] = useState('promotions'); // 'promotions' | 'cancellations'
   const [loading, setLoading] = useState(true);
   const [promotedLogs, setPromotedLogs] = useState([]);
 
@@ -44,8 +46,13 @@ const AdminRACWaiting = () => {
         } else {
           setWaitlist(mockWaitlist);
         }
+
+        // Also extract cancellation requests
+        const cancels = res.data.filter(b => b.status === 'cancel_requested');
+        setCancelRequests(cancels);
       } else {
         setWaitlist(mockWaitlist);
+        setCancelRequests([]);
       }
     } catch (err) {
       console.warn('API error fetching waitlist, falling back to mock queue list:', err);
@@ -59,21 +66,33 @@ const AdminRACWaiting = () => {
     fetchWaitlist();
   }, []);
 
-  const promotePassenger = (passenger) => {
-    const assignedBerth = `B1-${Math.floor(Math.random() * 20) + 1}`;
-    setWaitlist(prev => prev.filter(p => p.id !== passenger.id));
-    
-    const newLog = {
-      pnr: passenger.pnr,
-      name: passenger.name,
-      trainNo: passenger.trainNo,
-      oldPosition: passenger.position,
-      assignedBerth,
-      timestamp: new Date().toLocaleTimeString()
-    };
+  const promotePassenger = async (passenger) => {
+    try {
+      const res = await api.put(`/bookings/${passenger.id}/promote`);
+      const assignedSeatObj = res.data.assigned_seat || res.data.promotion?.assigned_seat;
+      const assignedBerth = assignedSeatObj 
+        ? `${assignedSeatObj.coach_number}-${assignedSeatObj.seat_number} (${assignedSeatObj.berth_type || 'Berth'})`
+        : `B1-${Math.floor(Math.random() * 20) + 1}`;
 
-    setPromotedLogs(prev => [newLog, ...prev]);
-    alert(`🎉 Success! ${passenger.name} (${passenger.position}) has been PROMOTED to CONFIRMED berth ${assignedBerth}.\n\nAn automated SMS ticket update has been dispatched to passenger mobile!`);
+      setWaitlist(prev => prev.filter(p => p.id !== passenger.id));
+      
+      const newLog = {
+        pnr: passenger.pnr,
+        name: passenger.name,
+        trainNo: passenger.trainNo,
+        oldPosition: passenger.position,
+        assignedBerth,
+        timestamp: new Date().toLocaleTimeString()
+      };
+
+      setPromotedLogs(prev => [newLog, ...prev]);
+      alert(`🎉 Success! ${passenger.name} (${passenger.position}) has been PROMOTED to CONFIRMED berth ${assignedBerth}.\n\nAn automated SMS ticket update has been dispatched to passenger mobile!`);
+      fetchWaitlist();
+    } catch (err) {
+      console.error('Promotion error:', err);
+      const errMsg = err.response?.data?.error || err.message || 'Failed to promote booking';
+      alert('Promotion Failed: ' + errMsg);
+    }
   };
 
   const autoPromoteTopPriority = () => {
@@ -83,6 +102,18 @@ const AdminRACWaiting = () => {
     }
     const topPassenger = waitlist[0];
     promotePassenger(topPassenger);
+  };
+
+  const approveCancellation = async (bookingId, pnr) => {
+    if (!window.confirm(`Are you sure you want to approve cancellation request for PNR ${pnr}? This will release the seats.`)) return;
+    try {
+      await api.put(`/bookings/${bookingId}/cancel`);
+      alert(`🎉 Cancellation for PNR ${pnr} has been approved successfully! Seat allocation released.`);
+      fetchWaitlist();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to approve cancellation request.');
+    }
   };
 
   return (
@@ -99,17 +130,19 @@ const AdminRACWaiting = () => {
           <p className="text-xs text-slate-400 font-medium">Re-allocate vacated seats to waiting list passengers and trigger instant SMS notifications.</p>
         </div>
 
-        <button
-          onClick={autoPromoteTopPriority}
-          className="btn-metallic-gold px-5 py-3 rounded-2xl text-xs font-black flex items-center space-x-2 shadow-xl shrink-0 active:scale-95 z-10"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span>Auto-Promote Next RAC</span>
-        </button>
+        {activeTab === 'promotions' && (
+          <button
+            onClick={autoPromoteTopPriority}
+            className="btn-metallic-gold px-5 py-3 rounded-2xl text-xs font-black flex items-center space-x-2 shadow-xl shrink-0 active:scale-95 z-10"
+          >
+            <Sparkles className="h-4 w-4" />
+            <span>Auto-Promote Next RAC</span>
+          </button>
+        )}
       </div>
 
       {/* Audit Log Banner */}
-      {promotedLogs.length > 0 && (
+      {promotedLogs.length > 0 && activeTab === 'promotions' && (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 space-y-2 text-white">
           <span className="text-xs font-black text-emerald-400 uppercase tracking-widest flex items-center space-x-1">
             <CheckCircle className="h-4 w-4 text-emerald-400" />
@@ -127,67 +160,160 @@ const AdminRACWaiting = () => {
         </div>
       )}
 
-      {/* Main Waitlist Table */}
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-sm font-black text-slate-800 flex items-center space-x-2">
-            <Clock className="h-4 w-4 text-primary-600" />
-            <span>Active RAC & Waitlist Queue ({waitlist.length} Remaining)</span>
-          </h3>
-        </div>
-
-        {loading ? (
-          <div className="py-12 text-center text-xs font-bold text-slate-500">
-            Loading waitlist queue...
-          </div>
-        ) : waitlist.length === 0 ? (
-          <div className="py-12 text-center text-xs font-bold text-slate-400">
-            🎉 All RAC and Waitlisted passengers have been successfully promoted!
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-sans">
-              <thead>
-                <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50/50">
-                  <th className="py-3 px-4">Queue Position</th>
-                  <th className="py-3 px-4">Passenger Name</th>
-                  <th className="py-3 px-4">PNR Code</th>
-                  <th className="py-3 px-4">Train Info</th>
-                  <th className="py-3 px-4">Class</th>
-                  <th className="py-3 px-4 text-right">Promote Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {waitlist.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50/80 transition">
-                    <td className="py-3.5 px-4 font-mono font-black text-amber-600">
-                      <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px]">
-                        {p.position}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 font-extrabold text-slate-900">{p.name}</td>
-                    <td className="py-3.5 px-4 font-mono text-slate-500">{p.pnr}</td>
-                    <td className="py-3.5 px-4">
-                      <span className="font-bold text-slate-800">{p.trainName}</span>
-                      <span className="text-[10px] text-slate-400 font-mono block">#{p.trainNo}</span>
-                    </td>
-                    <td className="py-3.5 px-4 font-mono font-bold text-slate-700">{p.coachClass}</td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => promotePassenger(p)}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow transition active:scale-95 inline-flex items-center space-x-1"
-                      >
-                        <ArrowUpCircle className="h-3.5 w-3.5" />
-                        <span>Promote Berth</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* Tab Control */}
+      <div className="flex border-b border-slate-200 gap-6">
+        <button
+          onClick={() => setActiveTab('promotions')}
+          className={`pb-3 px-1 text-xs font-black uppercase tracking-wider transition ${
+            activeTab === 'promotions'
+              ? 'border-b-2 border-slate-900 text-slate-900'
+              : 'text-slate-400 hover:text-slate-650'
+          }`}
+        >
+          Berth Promotions Queue ({waitlist.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('cancellations')}
+          className={`pb-3 px-1 text-xs font-black uppercase tracking-wider transition flex items-center space-x-2 ${
+            activeTab === 'cancellations'
+              ? 'border-b-2 border-slate-900 text-slate-900'
+              : 'text-slate-400 hover:text-slate-655'
+          }`}
+        >
+          <span>Cancellation Requests</span>
+          {cancelRequests.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-mono text-[9px] font-black leading-none">
+              {cancelRequests.length}
+            </span>
+          )}
+        </button>
       </div>
+
+      {activeTab === 'promotions' ? (
+        /* Main Waitlist Table */
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-sm font-black text-slate-800 flex items-center space-x-2">
+              <Clock className="h-4 w-4 text-slate-500" />
+              <span>Active RAC & Waitlist Queue ({waitlist.length} Remaining)</span>
+            </h3>
+          </div>
+
+          {loading ? (
+            <div className="py-12 text-center text-xs font-bold text-slate-500">
+              Loading waitlist queue...
+            </div>
+          ) : waitlist.length === 0 ? (
+            <div className="py-12 text-center text-xs font-bold text-slate-400">
+              🎉 All RAC and Waitlisted passengers have been successfully promoted!
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-sans">
+                <thead>
+                  <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50/50">
+                    <th className="py-3 px-4">Queue Position</th>
+                    <th className="py-3 px-4">Passenger Name</th>
+                    <th className="py-3 px-4">PNR Code</th>
+                    <th className="py-3 px-4">Train Info</th>
+                    <th className="py-3 px-4">Class</th>
+                    <th className="py-3 px-4 text-right">Promote Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {waitlist.map((p) => (
+                    <tr key={p.id} className="hover:bg-slate-50/80 transition">
+                      <td className="py-3.5 px-4 font-mono font-black text-amber-600">
+                        <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px]">
+                          {p.position}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 font-extrabold text-slate-900">{p.name}</td>
+                      <td className="py-3.5 px-4 font-mono text-slate-500">{p.pnr}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-bold text-slate-800">{p.trainName}</span>
+                        <span className="text-[10px] text-slate-400 font-mono block">#{p.trainNo}</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-700">{p.coachClass}</td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          onClick={() => promotePassenger(p)}
+                          className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow transition active:scale-95 inline-flex items-center space-x-1"
+                        >
+                          <ArrowUpCircle className="h-3.5 w-3.5" />
+                          <span>Promote Berth</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Cancellation Requests Table */
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-sm font-black text-slate-850 flex items-center space-x-2">
+              <ShieldAlert className="h-4 w-4 text-rose-500" />
+              <span>Pending Ticket Cancellation Requests ({cancelRequests.length} Requests)</span>
+            </h3>
+          </div>
+
+          {loading ? (
+            <div className="py-12 text-center text-xs font-bold text-slate-500">
+              Loading requests...
+            </div>
+          ) : cancelRequests.length === 0 ? (
+            <div className="py-12 text-center text-xs font-bold text-slate-400">
+              🎉 No pending ticket cancellation requests.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs font-sans">
+                <thead>
+                  <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50/50">
+                    <th className="py-3 px-4">Passenger Info</th>
+                    <th className="py-3 px-4">PNR Number</th>
+                    <th className="py-3 px-4">Train & Travel Info</th>
+                    <th className="py-3 px-4">Fare Amount</th>
+                    <th className="py-3 px-4 text-right">Approval Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {cancelRequests.map((req) => {
+                    const firstAlloc = req.allocations?.[0] || {};
+                    return (
+                      <tr key={req.id} className="hover:bg-slate-50/80 transition animate-fade-in">
+                        <td className="py-3.5 px-4">
+                          <span className="font-extrabold text-slate-900 block">{firstAlloc.passenger_name || 'Anonymous Passenger'}</span>
+                          <span className="text-[10px] text-slate-400 font-mono block">Class: {req.coach_class || '3A'}</span>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-black text-slate-800">{req.pnr_number}</td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-bold text-slate-800">{req.train?.train_name || 'Express Train'}</span>
+                          <span className="text-[10px] text-slate-400 font-mono block">Date: {req.travel_date}</span>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-rose-600">₹ {req.total_fare}</td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => approveCancellation(req.id, req.pnr_number)}
+                            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow transition active:scale-95 inline-flex items-center space-x-1.5"
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                            <span>Approve Cancellation</span>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

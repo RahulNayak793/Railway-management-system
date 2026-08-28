@@ -16,12 +16,41 @@ This project is fully configured for production deployment across all major clou
 
 ---
 
-## ⚡ Option 2: Vercel
+## ⚡ Option 2: Hybrid Setup (Render Backend + Vercel Frontend - RECOMMENDED)
 
-1. Sign in to [Vercel.com](https://vercel.com).
-2. Click **Add New** &rarr; **Project**.
-3. Import your GitHub repository: `RahulNayak793/Railway-management-system`.
-4. Vercel will automatically detect `vercel.json` and deploy both the serverless API (`/api/*`) and the static frontend React build.
+This setup runs your database-intensive Express.js backend on **Render.com** (to avoid serverless cold starts and execution timeouts) and hosts your React frontend on **Vercel.com** for maximum speed.
+
+### Step 1: Deploy Backend to Render.com
+1. Sign in to [Render.com](https://render.com).
+2. Click **New +** &rarr; **Web Service**.
+3. Link your GitHub repository.
+4. Select **Node** as the runtime environment.
+5. Set:
+   - **Build Command:** `npm install --prefix backend`
+   - **Start Command:** `npm run start --prefix backend`
+6. Under **Environment Variables**, configure any required secrets (e.g., Supabase, Stripe, JWT_SECRET, nodemailer credentials).
+7. Create the service. Once deployed, note down your Render Web Service URL (e.g. `https://railway-backend.onrender.com`).
+
+### Step 2: Deploy Frontend to Vercel.com
+You can link your Vercel frontend to the Render backend using either of the following methods:
+
+#### Method A: Dashboard Environment Variable (Simplest - No Code Edits)
+1. Import your repository into [Vercel](https://vercel.com).
+2. During setup, under **Environment Variables**, add:
+   - **Key:** `RENDER_BACKEND_URL`
+   - **Value:** Your Render Web Service URL (e.g., `https://railway-backend.onrender.com`)
+3. Deploy! The serverless proxy in `api/index.js` will dynamically route all `/api/*` traffic to Render.
+
+#### Method B: Native Vercel Rewrite Rules (Highest Performance)
+1. Open `vercel.json` in your repository.
+2. Modify the `/api/:path*` rewrite rule to route directly to your Render URL:
+   ```json
+   {
+     "source": "/api/:path*",
+     "destination": "https://your-backend-service.onrender.com/api/:path*"
+   }
+   ```
+3. Commit and push your changes to GitHub. Vercel will rebuild and handle routing natively at the edge, bypassing serverless function invocation entirely.
 
 ---
 

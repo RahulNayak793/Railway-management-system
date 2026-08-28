@@ -30,23 +30,6 @@ const StaffSchedules = () => {
       const res = await api.get('/trains');
       let apiTrains = res.data || [];
       
-      const storedStaffTrains = JSON.parse(localStorage.getItem('added_staff_trains') || '[]');
-      const formattedStaff = storedStaffTrains.map(s => ({
-        id: s.id,
-        train_number: s.trainNo,
-        train_name: s.trainName,
-        status: s.status === 'On Time' ? 'on_time' : 'delayed',
-        delay_minutes: 0,
-        route: { departure_time: s.depTime, destination_station_code: s.to }
-      }));
-
-      const existingIds = new Set(apiTrains.map(t => t.id));
-      formattedStaff.forEach(st => {
-        if (!existingIds.has(st.id)) {
-          apiTrains.push(st);
-        }
-      });
-
       setTrains(apiTrains);
       if (apiTrains.length > 0 && !selectedTrain) {
         handleSelectTrain(apiTrains[0]);
@@ -101,23 +84,21 @@ const StaffSchedules = () => {
       arrTime: newArrTime,
       status: 'On Time',
       capacity: parseInt(newCapacity),
-      classes: newClasses.split(',').map(c => c.trim())
+      classes: newClasses.split(',').map(c => c.trim()),
+      baseFare: 350
     };
 
     try {
       await api.post('/trains', newObj);
+      alert(`Train schedule #${newTrainNo} ${newTrainName} created successfully!`);
+      setShowAddModal(false);
+      setNewTrainNo('');
+      setNewTrainName('');
+      fetchTrains();
     } catch (err) {
-      console.warn('API fallback for create train schedule');
+      console.error(err);
+      alert('Failed to create train: ' + (err.response?.data?.error || err.message));
     }
-
-    const existingStaff = JSON.parse(localStorage.getItem('added_staff_trains') || '[]');
-    localStorage.setItem('added_staff_trains', JSON.stringify([newObj, ...existingStaff]));
-
-    alert(`Train schedule #${newTrainNo} ${newTrainName} created successfully!`);
-    setShowAddModal(false);
-    setNewTrainNo('');
-    setNewTrainName('');
-    fetchTrains();
   };
 
   return (

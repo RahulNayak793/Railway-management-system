@@ -1,8 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { supabase, isMockMode, mockDb } = require('../config/supabase');
+const { supabase, isMockMode, mockDb, signDocumentUrl, saveMockDbToFile } = require('../config/supabase');
 const { authenticateToken } = require('../middleware/auth');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
+const upload = multer({
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 const jwtSecret = process.env.JWT_SECRET || 'mock-jwt-secret-key-32-characters-long';
 
@@ -102,18 +109,28 @@ router.post('/login', async (req, res) => {
            (p.phone && p.phone.replace(/\D/g, '') === cleanEmail.replace(/\D/g, ''))
     );
 
-    let detectedRole = requestedRole || 'passenger';
-    if (profile && profile.role) {
-      detectedRole = profile.role;
-    } else if (cleanEmail === 'admin@railway.com' || cleanEmail.includes('admin')) {
-      detectedRole = 'admin';
-    } else if (cleanEmail === 'staff@railway.com' || cleanEmail === 'shiva@gmail.com' || cleanEmail.includes('staff') || requestedRole === 'staff') {
-      detectedRole = 'staff';
-    } else {
-      detectedRole = 'passenger';
+    const isAdminAccount = cleanEmail === 'admin@railway.com' || cleanEmail.includes('admin') || cleanEmail === 'shiva@gmail.com' || (profile && (profile.role === 'admin' || profile.role === 'staff'));
+
+    if (requestedRole === 'admin' && !isAdminAccount) {
+      return res.status(403).json({
+        error: 'Access Denied: Passenger accounts cannot log in on the Admin Login page. Please use the Passenger Login page at /login.'
+      });
     }
 
-    if (!profile) {
+    if (requestedRole === 'passenger' && isAdminAccount) {
+      return res.status(403).json({
+        error: 'Access Denied: Admin accounts cannot log in on the Passenger Login page. Please use the Admin Login page at /admin/login.'
+      });
+    }
+
+    let detectedRole = isAdminAccount ? (profile?.role || 'admin') : 'passenger';
+    if (requestedRole === 'staff' || cleanEmail === 'staff@railway.com' || cleanEmail.includes('staff')) {
+      detectedRole = 'staff';
+    }
+
+    if (profile) {
+      profile.role = detectedRole;
+    } else {
       const mockId = 'usr-demo-' + detectedRole;
       profile = {
         id: mockId,
@@ -143,11 +160,13 @@ router.post('/login', async (req, res) => {
       if (error) throw error;
 
       // Fetch user profile to return details
-      const { data: profile } = await supabase
+      const { data: profile, error: profErr } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
+
+      if (profErr) throw profErr;
 
       const userObj = { ...data.user, ...profile };
       if (requestedRole === 'staff' || cleanEmail === 'shiva@gmail.com' || cleanEmail.includes('staff')) {
@@ -159,30 +178,8 @@ router.post('/login', async (req, res) => {
         user: userObj
       });
     } catch (err) {
-      console.warn(`⚠️ Supabase Login warning for ${cleanEmail}:`, err.message || err);
-      // Fallback for demo users & mobile sandbox testing
-      let detectedRole = requestedRole || 'passenger';
-      if (cleanEmail.includes('admin')) {
-        detectedRole = 'admin';
-      } else if (cleanEmail.includes('staff') || cleanEmail === 'shiva@gmail.com' || requestedRole === 'staff') {
-        detectedRole = 'staff';
-      }
-
-      const mockId = 'usr-demo-' + Math.random().toString(36).substr(2, 9);
-      const profile = {
-        id: mockId,
-        email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@railway.com`,
-        role: detectedRole,
-        full_name: cleanEmail.split('@')[0].toUpperCase() || 'Railway System User',
-        phone: '+91 9876543210',
-        created_at: new Date().toISOString()
-      };
-      const token = generateMockToken(profile);
-      console.log(`✅ Fallback session generated for: ${profile.email} (${profile.role})`);
-      return res.json({
-        session: { access_token: token },
-        user: profile
-      });
+      console.error(`❌ Supabase Login Error for ${cleanEmail}:`, err.message || err);
+      return res.status(401).json({ error: 'Authentication failed: ' + (err.message || err) });
     }
   }
 });
@@ -227,7 +224,11 @@ router.get('/me', authenticateToken, async (req, res) => {
       };
       mockDb.profiles.set(req.user.id, profile);
     }
-    return res.json({ user: profile });
+    let returnedProfile = { ...profile };
+    if (returnedProfile.document_url) {
+      returnedProfile.document_url = await signDocumentUrl(returnedProfile.document_url);
+    }
+    return res.json({ user: returnedProfile });
   } else {
     try {
       const { data, error } = await supabase
@@ -237,7 +238,11 @@ router.get('/me', authenticateToken, async (req, res) => {
         .single();
 
       if (error) throw error;
-      return res.json({ user: data });
+      let returnedData = { ...data };
+      if (returnedData.document_url) {
+        returnedData.document_url = await signDocumentUrl(returnedData.document_url);
+      }
+      return res.json({ user: returnedData });
     } catch (err) {
       return res.status(400).json({ error: err.message });
     }
@@ -264,7 +269,9 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
     if (full_name !== undefined) profile.full_name = full_name;
     if (phone !== undefined) profile.phone = phone;
-    if (document_url !== undefined) profile.document_url = document_url;
+    if (document_url !== undefined && !String(document_url).startsWith('http://') && !String(document_url).startsWith('https://')) {
+      profile.document_url = document_url;
+    }
     if (gender !== undefined) profile.gender = gender;
     if (age !== undefined) profile.age = age ? parseInt(age) : null;
     if (meal_preference !== undefined) profile.meal_preference = meal_preference;
@@ -272,13 +279,19 @@ router.put('/profile', authenticateToken, async (req, res) => {
     if (wheelchair_required !== undefined) profile.wheelchair_required = !!wheelchair_required;
 
     mockDb.profiles.set(userId, profile);
-    return res.json({ message: 'Profile updated successfully (Mock Mode)', user: profile });
+    let returnedProfile = { ...profile };
+    if (returnedProfile.document_url) {
+      returnedProfile.document_url = await signDocumentUrl(returnedProfile.document_url);
+    }
+    return res.json({ message: 'Profile updated successfully (Mock Mode)', user: returnedProfile });
   } else {
     try {
       const updateData = {};
       if (full_name !== undefined) updateData.full_name = full_name;
       if (phone !== undefined) updateData.phone = phone;
-      if (document_url !== undefined) updateData.document_url = document_url;
+      if (document_url !== undefined && !String(document_url).startsWith('http://') && !String(document_url).startsWith('https://')) {
+        updateData.document_url = document_url;
+      }
       if (gender !== undefined) updateData.gender = gender;
       if (age !== undefined) updateData.age = age ? parseInt(age) : null;
       if (meal_preference !== undefined) updateData.meal_preference = meal_preference;
@@ -294,9 +307,135 @@ router.put('/profile', authenticateToken, async (req, res) => {
         .single();
 
       if (error) throw error;
-      return res.json({ user: data });
+      let returnedData = { ...data };
+      if (returnedData.document_url) {
+        returnedData.document_url = await signDocumentUrl(returnedData.document_url);
+      }
+      return res.json({ user: returnedData });
     } catch (err) {
       return res.status(400).json({ error: err.message });
+    }
+  }
+});
+
+// Upload Identity Verification Document
+router.post('/profile/identity-document', authenticateToken, upload.single('document'), async (req, res) => {
+  const userId = req.user.id;
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'Please select a document file to upload.' });
+  }
+
+  // Double check file size limit (5 MB)
+  if (req.file.size > 5 * 1024 * 1024) {
+    return res.status(413).json({ error: 'File size must be less than 5 MB.' });
+  }
+
+  // Validate allowed mime types
+  const allowedMimeTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+  if (!allowedMimeTypes.includes(req.file.mimetype)) {
+    return res.status(415).json({ error: 'Unsupported file format. Please upload PDF, PNG, JPG, JPEG, or WEBP.' });
+  }
+
+  const ext = path.extname(req.file.originalname) || '.pdf';
+
+  if (isMockMode) {
+    try {
+      const uploadsDir = path.join(__dirname, '../../data/uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const filename = `${userId}-${Date.now()}${ext}`;
+      const filePath = path.join(uploadsDir, filename);
+
+      fs.writeFileSync(filePath, req.file.buffer);
+
+      const profile = mockDb.profiles.get(userId);
+      if (!profile) {
+        return res.status(404).json({ error: 'User profile not found.' });
+      }
+
+      const localDocUrl = `/uploads/${filename}`;
+      profile.document_url = localDocUrl;
+      mockDb.profiles.set(userId, profile);
+      saveMockDbToFile();
+
+      return res.status(201).json({
+        success: true,
+        message: 'Identity document uploaded successfully (Mock Mode)',
+        user: profile
+      });
+    } catch (err) {
+      console.error('⚠️ Mock Mode upload error:', err.message);
+      return res.status(500).json({ error: 'Local storage upload failed: ' + err.message });
+    }
+  } else {
+    const storagePath = `${userId}/${require('crypto').randomUUID()}${ext}`;
+    let oldStoragePath = null;
+
+    try {
+      // 1. Fetch current profile to get old document path (for replacement/cleanup)
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('document_url')
+        .eq('id', userId)
+        .single();
+
+      if (currentProfile && currentProfile.document_url && currentProfile.document_url.startsWith('identity-documents/')) {
+        oldStoragePath = currentProfile.document_url.replace('identity-documents/', '');
+      }
+
+      // 2. Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('identity-documents')
+        .upload(storagePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error('⚠️ Supabase Storage upload error:', uploadError.message);
+        return res.status(500).json({ error: 'Storage provider upload failed: ' + uploadError.message });
+      }
+
+      // 3. Update database profiles table
+      const dbDocUrl = `identity-documents/${storagePath}`;
+      const { data: updatedProfile, error: dbError } = await supabase
+        .from('profiles')
+        .update({ document_url: dbDocUrl })
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('⚠️ Supabase Profile DB update error:', dbError.message);
+        // Rollback uploaded file since DB write failed
+        await supabase.storage.from('identity-documents').remove([storagePath]);
+        return res.status(500).json({ error: 'Database update failed: ' + dbError.message });
+      }
+
+      // 4. Cleanup old document if replacement succeeded
+      if (oldStoragePath) {
+        try {
+          await supabase.storage.from('identity-documents').remove([oldStoragePath]);
+        } catch (cleanupErr) {
+          console.warn('⚠️ Non-blocking warning: Failed to clean up old identity document:', cleanupErr.message);
+        }
+      }
+
+      // 5. Generate secure signed URL for the response
+      const signedUrl = await signDocumentUrl(dbDocUrl);
+      const returnedUser = { ...updatedProfile, document_url: signedUrl };
+
+      return res.status(201).json({
+        success: true,
+        message: 'Identity document uploaded successfully',
+        user: returnedUser
+      });
+    } catch (err) {
+      console.error('⚠️ Supabase Production upload pipeline error:', err.message);
+      return res.status(500).json({ error: 'Upload pipeline failed: ' + err.message });
     }
   }
 });
@@ -320,9 +459,8 @@ router.get('/saved-passengers', authenticateToken, async (req, res) => {
       if (error) throw error;
       return res.json(data);
     } catch (err) {
-      console.warn('⚠️ Supabase saved_passengers fetch error, using fallback:', err.message);
-      const list = Array.from(mockDb.saved_passengers.values()).filter(p => p.user_id === userId);
-      return res.json(list);
+      console.error('⚠️ Supabase saved_passengers fetch error:', err.message);
+      return res.status(500).json({ error: 'Database error fetching saved passengers: ' + err.message });
     }
   }
 });
@@ -370,20 +508,8 @@ router.post('/saved-passengers', authenticateToken, async (req, res) => {
       if (error) throw error;
       return res.status(201).json(data);
     } catch (err) {
-      console.warn('⚠️ Supabase saved_passengers insert error, using fallback:', err.message);
-      const mockId = 'sp-' + Math.random().toString(36).substr(2, 9);
-      const newPassenger = {
-        id: mockId,
-        user_id: userId,
-        full_name,
-        age: age ? parseInt(age) : null,
-        gender: gender || 'Male',
-        berth_preference: berth_preference || 'No Preference',
-        document_url: document_url || '',
-        created_at: new Date().toISOString()
-      };
-      mockDb.saved_passengers.set(mockId, newPassenger);
-      return res.status(201).json(newPassenger);
+      console.error('⚠️ Supabase saved_passengers insert error:', err.message);
+      return res.status(500).json({ error: 'Database error saving passenger: ' + err.message });
     }
   }
 });
@@ -435,21 +561,8 @@ router.put('/saved-passengers/:id', authenticateToken, async (req, res) => {
       if (error) throw error;
       return res.json(data);
     } catch (err) {
-      console.warn('⚠️ Supabase saved_passengers update error, using fallback:', err.message);
-      let passenger = mockDb.saved_passengers.get(passengerId) || {
-        id: passengerId,
-        user_id: userId,
-        full_name: full_name || 'Passenger',
-        created_at: new Date().toISOString()
-      };
-      if (full_name !== undefined) passenger.full_name = full_name;
-      if (age !== undefined) passenger.age = age ? parseInt(age) : null;
-      if (gender !== undefined) passenger.gender = gender;
-      if (berth_preference !== undefined) passenger.berth_preference = berth_preference;
-      if (document_url !== undefined) passenger.document_url = document_url;
-
-      mockDb.saved_passengers.set(passengerId, passenger);
-      return res.json(passenger);
+      console.error('⚠️ Supabase saved_passengers update error:', err.message);
+      return res.status(500).json({ error: 'Database error updating passenger: ' + err.message });
     }
   }
 });
@@ -474,9 +587,8 @@ router.delete('/saved-passengers/:id', authenticateToken, async (req, res) => {
       if (error) throw error;
       return res.json({ message: 'Saved passenger deleted successfully' });
     } catch (err) {
-      console.warn('⚠️ Supabase saved_passengers delete error, using fallback:', err.message);
-      mockDb.saved_passengers.delete(passengerId);
-      return res.json({ message: 'Saved passenger deleted successfully' });
+      console.error('⚠️ Supabase saved_passengers delete error:', err.message);
+      return res.status(500).json({ error: 'Database error deleting passenger: ' + err.message });
     }
   }
 });

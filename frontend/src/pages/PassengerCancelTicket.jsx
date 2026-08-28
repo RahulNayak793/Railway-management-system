@@ -33,8 +33,18 @@ const PassengerCancelTicket = () => {
   const handleCancel = async (bookingId) => {
     if (!window.confirm('Are you sure you want to cancel this ticket reservation? This action cannot be undone.')) return;
     try {
-      await api.put(`/bookings/${bookingId}/cancel`);
-      showToast('Ticket cancelled successfully. Refund of fare has been initiated.', 'success', 'Ticket Cancelled');
+      const res = await api.put(`/bookings/${bookingId}/cancel`);
+      const data = res.data || {};
+      const pnr = data.cancellation_record?.pnr || data.booking?.pnr_number || '';
+      const refundAmt = data.refund_amount !== undefined ? data.refund_amount : (data.cancellation_record?.refund_amount || 0);
+      const penaltyAmt = data.penalty_amount !== undefined ? data.penalty_amount : (data.cancellation_record?.deduction_amount || 0);
+      const origFare = data.booking?.total_fare || (refundAmt + penaltyAmt);
+
+      showToast(
+        `PNR #${pnr} cancelled successfully. Fare: ₹${origFare} | Deduction: ₹${penaltyAmt} | Refund: ₹${refundAmt}.`,
+        'success',
+        'Ticket Cancelled'
+      );
       fetchBookings();
     } catch (err) {
       showToast('Cancellation failed: ' + (err.response?.data?.error || err.message), 'error', 'Cancellation Error');

@@ -60,11 +60,15 @@ const AdminSchedules = lazyWithRetry(() => import('./pages/AdminSchedules'));
 const AdminStations = lazyWithRetry(() => import('./pages/AdminStations'));
 const AdminClasses = lazyWithRetry(() => import('./pages/AdminClasses'));
 const AdminUsers = lazyWithRetry(() => import('./pages/AdminUsers'));
-const AdminStaff = lazyWithRetry(() => import('./pages/AdminStaff'));
 const AdminPayments = lazyWithRetry(() => import('./pages/AdminPayments'));
+const AdminTrainStatus = lazyWithRetry(() => import('./pages/AdminTrainStatus'));
 const AdminPolicies = lazyWithRetry(() => import('./pages/AdminPolicies'));
 const AdminCatering = lazyWithRetry(() => import('./pages/AdminCatering'));
+const CompanyCatering = lazyWithRetry(() => import('./pages/CompanyCatering'));
 const StaffBookings = lazyWithRetry(() => import('./pages/StaffBookings'));
+const StaffRefunds = lazyWithRetry(() => import('./pages/StaffRefunds'));
+const AdminDiagnostics = lazyWithRetry(() => import('./pages/AdminDiagnostics'));
+const AdminReports = lazyWithRetry(() => import('./pages/AdminReports'));
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -159,6 +163,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     const normalizedAllowed = allowedRoles.map(r => r.toLowerCase());
     const isAllowed = normalizedAllowed.includes(userRole);
     if (!isAllowed) {
+      const isTargetingAdmin = window.location.pathname.startsWith('/admin');
+      if (isTargetingAdmin) {
+        return <Navigate to="/admin/login" replace />;
+      }
       if (userRole === 'admin') return <Navigate to="/admin" replace />;
       return <Navigate to="/passenger" replace />;
     }
@@ -170,7 +178,6 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 // Responsive Layout Wrappers
 const PassengerLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sosOpen, setSosOpen] = useState(false);
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-slate-50 relative">
       <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -189,16 +196,6 @@ const PassengerLayout = ({ children }) => {
         </main>
       </div>
 
-      {/* Floating Emergency SOS Button */}
-      <button
-        onClick={() => setSosOpen(true)}
-        className="fixed bottom-6 right-20 sm:right-24 z-40 px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-[11px] sm:text-xs shadow-2xl shadow-rose-600/40 border border-rose-400/40 flex items-center space-x-2 transition active:scale-95 group animate-pulse"
-      >
-        <Radio className="h-4 w-4 text-white group-hover:rotate-12 transition" />
-        <span>Emergency SOS</span>
-      </button>
-
-      <EmergencySOSModal isOpen={sosOpen} onClose={() => setSosOpen(false)} />
       <ChatbotWidget />
     </div>
   );
@@ -346,6 +343,20 @@ function App() {
                         </PassengerLayout>
                       </ProtectedRoute>
                     } />
+                    <Route path="/catering/company" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin', 'catering_company']}>
+                        <PassengerLayout>
+                          <CompanyCatering />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/vendor/catering" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin', 'catering_company']}>
+                        <PassengerLayout>
+                          <CompanyCatering />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/passenger/support" element={
                       <ProtectedRoute allowedRoles={['passenger']}>
                         <PassengerLayout>
@@ -442,14 +453,22 @@ function App() {
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
-                    <Route path="/admin/staff" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
-                        <AdminLayout>
-                          <AdminStaff />
-                        </AdminLayout>
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin/ticket-checking" element={
+                     <Route path="/admin/staff" element={<Navigate to="/admin/dashboard" replace />} />
+                      <Route path="/admin/dashboard" element={
+                        <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                          <AdminLayout>
+                            <AdminDashboard />
+                          </AdminLayout>
+                        </ProtectedRoute>
+                      } />
+                      <Route path="/admin/train-status" element={
+                        <ProtectedRoute allowedRoles={['admin']}>
+                          <AdminLayout>
+                            <AdminTrainStatus />
+                          </AdminLayout>
+                        </ProtectedRoute>
+                      } />
+                     <Route path="/admin/ticket-checking" element={
                       <ProtectedRoute allowedRoles={['admin']}>
                         <AdminLayout>
                           <AdminTicketChecking />
@@ -485,23 +504,23 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/cancellations" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
-                          <AdminPayments />
+                          <StaffRefunds />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/refunds" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
-                          <AdminPayments />
+                          <StaffRefunds />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/cancellation" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
+                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
                         <AdminLayout>
-                          <AdminPayments />
+                          <StaffRefunds />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
@@ -515,18 +534,26 @@ function App() {
                     <Route path="/admin/reports" element={
                       <ProtectedRoute allowedRoles={['admin']}>
                         <AdminLayout>
-                          <AdminDashboard />
+                          <AdminReports />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
-                    <Route path="/admin/analytics" element={
+                    <Route path="/admin/analytics" element={<Navigate to="/admin/reports" replace />} />
+                    <Route path="/admin/system-diagnostics" element={
                       <ProtectedRoute allowedRoles={['admin']}>
                         <AdminLayout>
-                          <AdminDashboard />
+                          <AdminDiagnostics />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/policies" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminPolicies />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/fare-policy" element={
                       <ProtectedRoute allowedRoles={['admin']}>
                         <AdminLayout>
                           <AdminPolicies />
@@ -540,13 +567,7 @@ function App() {
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
-                    <Route path="/admin/settings" element={
-                      <ProtectedRoute allowedRoles={['admin']}>
-                        <AdminLayout>
-                          <AdminPolicies />
-                        </AdminLayout>
-                      </ProtectedRoute>
-                    } />
+                    <Route path="/admin/settings" element={<Navigate to="/admin/policies" replace />} />
 
                     {/* Legacy /staff route redirects to unified /admin */}
                     <Route path="/staff/*" element={<Navigate to="/admin" replace />} />

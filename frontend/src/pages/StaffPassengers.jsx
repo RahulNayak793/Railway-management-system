@@ -760,13 +760,15 @@ const StaffPassengers = () => {
 
                         <div className="flex items-center space-x-3">
                           {selectedPassenger.documentUrl ? (
-                            <button 
-                              onClick={() => alert(`Opening scanned identity document: ${selectedPassenger.documentUrl}`)}
+                            <a 
+                              href={selectedPassenger.documentUrl.startsWith('/') ? `${api.defaults.baseURL.replace('/api', '')}${selectedPassenger.documentUrl}` : selectedPassenger.documentUrl}
+                              target="_blank"
+                              rel="noreferrer"
                               className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-slate-700 font-black text-xs hover:bg-slate-100 transition"
                             >
                               <Download className="h-3.5 w-3.5 text-primary-600" />
                               <span>View Scanned File</span>
-                            </button>
+                            </a>
                           ) : (
                             <span className="text-xs text-rose-500 font-bold italic">No document uploaded</span>
                           )}

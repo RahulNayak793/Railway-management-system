@@ -339,7 +339,7 @@ const PassengerDashboard = () => {
       </div>
 
       {/* Identity Verification Alert */}
-      {user && user.role === 'passenger' && !user.document_url && (
+      {user && user.role === 'passenger' && !user.verified && !user.document_url && (
         <div className="flex flex-col sm:flex-row items-center justify-between rounded-2xl bg-amber-500/10 border border-amber-500/25 p-4 text-amber-900 backdrop-blur-md gap-4 shadow-md shadow-amber-500/5">
           <div className="flex items-center space-x-3.5">
             <div className="rounded-xl bg-amber-500/20 p-2.5 text-amber-600 flex-shrink-0 animate-bounce">
@@ -546,32 +546,83 @@ const PassengerDashboard = () => {
       </div>
 
       {/* Railway Miles Loyalty Program & VIP Lounge Pass Card */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-amber-500/30 rounded-3xl p-6 text-white shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-        <div className="space-y-2 z-10">
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-wider">
-            <Sparkles className="h-3 w-3" />
-            <span>Frequent Traveler Tier &bull; Platinum Executive VIP</span>
-          </div>
-          <h3 className="text-xl font-black text-white tracking-tight">Railway Miles Loyalty Balance</h3>
-          <p className="text-xs text-slate-300 font-medium">
-            You have <strong className="text-amber-400 font-mono text-sm">12,450 Miles</strong> available. Complimentary Executive Lounge access active at NDLS & MMCT.
-          </p>
-          <div className="w-full bg-slate-800 rounded-full h-2 mt-2 max-w-md overflow-hidden border border-slate-700">
-            <div className="bg-gradient-to-r from-amber-400 to-amber-600 h-2 rounded-full w-4/5 shadow-md shadow-amber-500/50"></div>
-          </div>
-        </div>
+      {(() => {
+        const rawMiles = user?.miles ?? user?.loyalty_miles ?? user?.loyalty_points;
+        const hasLoyaltyData = typeof rawMiles === 'number' && !isNaN(rawMiles);
 
-        <button
-          type="button"
-          onClick={() => alert('🎫 Digital Executive Lounge Pass QR code generated for NDLS Central Lounge!')}
-          className="btn-metallic-gold px-6 py-3 rounded-2xl text-xs flex items-center space-x-2 shadow-xl shrink-0 z-10"
-        >
-          <span>Digital VIP Lounge Pass</span>
-        </button>
-      </div>
+        if (!hasLoyaltyData) {
+          return (
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-amber-500/30 rounded-3xl p-6 sm:p-7 text-white shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+              <div className="space-y-2 z-10 flex-1">
+                <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-extrabold uppercase tracking-wider">
+                  <Sparkles className="h-3 w-3 text-amber-400" />
+                  <span>Frequent Traveler Program</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Railway Miles Loyalty Balance
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+                  Loyalty data unavailable. Active miles and tier tracking are not configured for this profile.
+                </p>
+              </div>
+            </div>
+          );
+        }
+
+        const userMiles = rawMiles;
+        const tierName = user?.tier || user?.loyalty_tier || 'Executive VIP';
+        const targetMiles = user?.tier_target || user?.next_tier_miles || 15000;
+        const milesProgressPercent = Math.min(100, Math.round((userMiles / targetMiles) * 100));
+
+        return (
+          <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-amber-500/40 rounded-3xl p-6 sm:p-7 text-white shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+            {/* Subtle background glow */}
+            <div className="absolute left-0 top-0 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl -ml-20 -mt-20 pointer-events-none"></div>
+
+            <div className="space-y-3 z-10 flex-1">
+              <div className="inline-flex items-center space-x-1.5 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider shadow-sm">
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                <span>Frequent Traveler Tier &bull; {tierName}</span>
+              </div>
+              
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Railway Miles Loyalty Balance
+              </h3>
+
+              <p className="text-xs sm:text-sm text-slate-200 font-medium leading-relaxed">
+                You have <strong className="text-amber-300 font-black font-mono text-base sm:text-lg tracking-wide px-1.5 py-0.5 bg-amber-500/15 rounded border border-amber-400/30 shadow-inner">{userMiles.toLocaleString()} Miles</strong> available. Complimentary Executive Lounge access active at <strong className="text-amber-200 font-extrabold font-mono border-b border-amber-400/40 pb-0.5">NDLS</strong> &amp; <strong className="text-amber-200 font-extrabold font-mono border-b border-amber-400/40 pb-0.5">MMCT</strong>.
+              </p>
+
+              <div className="space-y-1.5 pt-1 max-w-md">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300 font-bold">
+                  <span>Tier Progress ({tierName})</span>
+                  <span className="text-amber-300 font-extrabold">{userMiles.toLocaleString()} / {targetMiles.toLocaleString()} Miles</span>
+                </div>
+                <div className="w-full bg-slate-950/90 rounded-full h-3 overflow-hidden border border-slate-700/80 p-0.5 shadow-inner">
+                  <div 
+                    className="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-300 h-full rounded-full shadow-md shadow-amber-500/50 transition-all duration-700"
+                    style={{ width: `${milesProgressPercent}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => alert('🎫 Digital Executive Lounge Pass QR code generated for NDLS Central Lounge!')}
+              className="btn-metallic-gold px-6 py-3.5 rounded-2xl text-xs font-black flex items-center space-x-2 shadow-xl shadow-amber-500/20 shrink-0 z-10 hover:scale-105 active:scale-95 transition-all text-slate-950"
+            >
+              <span>Digital VIP Lounge Pass</span>
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Carbon Footprint & Eco-Travel Calculator Widget */}
-      <EcoImpactWidget distanceKm={1384} />
+      {(() => {
+        const activeDistance = upcomingJourney?.train?.route?.distance_km || upcomingJourney?.train?.distance_km || upcomingJourney?.distance_km || null;
+        return <EcoImpactWidget distanceKm={activeDistance} />;
+      })()}
 
       {/* Split section: Upcoming Journey & Recent Bookings */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-12" onClick={() => { setShowSourceList(false); setShowDestList(false); }}>
@@ -630,6 +681,37 @@ const PassengerDashboard = () => {
                       {upcomingJourney.status}
                     </span>
                   </div>
+
+                  {/* Train Disruptions / Warning Alert */}
+                  {upcomingJourney.train && upcomingJourney.train.status && upcomingJourney.train.status !== 'on_time' && (
+                    <div className={`p-3 rounded-2xl border text-[11px] font-bold flex flex-col gap-1.5 shadow-sm ${
+                      upcomingJourney.train.status === 'cancelled'
+                        ? 'bg-rose-500/10 border-rose-500/20 text-rose-300'
+                        : upcomingJourney.train.status === 'delayed'
+                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                        : 'bg-purple-500/10 border-purple-500/20 text-purple-300'
+                    }`}>
+                      <div className="flex items-center space-x-1.5">
+                        <span className={`h-2 w-2 rounded-full ${
+                          upcomingJourney.train.status === 'cancelled' ? 'bg-rose-500 animate-ping' : upcomingJourney.train.status === 'delayed' ? 'bg-amber-500 animate-pulse' : 'bg-purple-500 animate-pulse'
+                        }`}></span>
+                        <span className="uppercase tracking-wider font-extrabold text-[10px]">
+                          TRAIN SERVICE {upcomingJourney.train.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <span>
+                        {upcomingJourney.train.status === 'cancelled' && (
+                          `⚠️ Cancelled. ${upcomingJourney.train.cancellation_reason ? `Reason: ${upcomingJourney.train.cancellation_reason}` : ''}`
+                        )}
+                        {upcomingJourney.train.status === 'delayed' && (
+                          `🕒 Delayed by ${upcomingJourney.train.delay_minutes} mins. Updated departure: ${upcomingJourney.train.updated_departure_time?.slice(0,5)}`
+                        )}
+                        {upcomingJourney.train.status === 'rescheduled' && (
+                          `📅 Rescheduled. New departure: ${upcomingJourney.train.updated_departure_time?.slice(0,5)}`
+                        )}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Flight/Train Style Station-to-Station Layout */}
                   <div className="flex justify-between items-center text-left">

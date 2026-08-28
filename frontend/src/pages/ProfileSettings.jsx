@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  User, Mail, Phone, Upload, Award, Shield, CheckCircle, 
+  User, Mail, Phone, Upload, Award, Shield, CheckCircle, Clock,
   Settings, Users, Ticket, Heart, Sparkles, Check, Trash2, 
   Edit2, Plus, Calendar, AlertTriangle, Armchair, Pizza, HelpCircle
 } from 'lucide-react';
@@ -105,15 +105,51 @@ const ProfileSettings = () => {
     }
   };
 
-  const handleMockUpload = () => {
-    if (!docFile) return;
+  const handleUploadDocument = async () => {
+    if (!docFile) {
+      alert('Please select a file first.');
+      return;
+    }
+
+    if (docFile.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5 MB.');
+      return;
+    }
+
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!allowedTypes.includes(docFile.type)) {
+      alert('Unsupported file format. Please upload PDF, PNG, JPG, JPEG, or WEBP.');
+      return;
+    }
+
     setUploading(true);
-    setTimeout(() => {
-      const simulatedUrl = 'https://supabase.co/storage/v1/object/public/documents/mock_' + docFile.name;
-      setDocUrl(simulatedUrl);
+    setPersonalSuccessMsg('');
+
+    try {
+      const formData = new FormData();
+      formData.append('document', docFile);
+
+      const res = await api.post('/auth/profile/identity-document', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (res.data && res.data.success) {
+        setUser(res.data.user);
+        setDocUrl(res.data.user.document_url || '');
+        setPersonalSuccessMsg('Identity document uploaded and stored securely!');
+        showToast('Your identity document has been uploaded and stored securely.', 'success', 'Upload Successful');
+      } else {
+        throw new Error(res.data?.message || 'Server did not confirm successful upload.');
+      }
+    } catch (err) {
+      console.error('Document upload failed:', err);
+      const errMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Upload failed.';
+      alert('Upload failed: ' + errMsg);
+    } finally {
       setUploading(false);
-      setPersonalSuccessMsg('Document mock-uploaded successfully! Click Save to update profile.');
-    }, 1200);
+    }
   };
 
   const handleSavePersonal = async (e) => {
@@ -448,10 +484,15 @@ const ProfileSettings = () => {
                         <p className="text-[10px] text-slate-400 mt-0.5">Please upload a scan of your National Identity Card, Passport or Driver's license.</p>
                       </div>
                       
-                      {docUrl ? (
+                      {user?.verified ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full uppercase">
                           <CheckCircle className="h-3 w-3" />
                           Verified
+                        </span>
+                      ) : docUrl ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full uppercase">
+                          <Clock className="h-3.5 w-3.5 animate-spin" style={{ animationDuration: '3s' }} />
+                          Pending Verification
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full uppercase">
@@ -473,7 +514,7 @@ const ProfileSettings = () => {
                       {docFile && (
                         <button
                           type="button"
-                          onClick={handleMockUpload}
+                          onClick={handleUploadDocument}
                           disabled={uploading}
                           className="rounded-xl bg-slate-900 hover:bg-slate-950 text-white px-4 py-2 text-xs font-bold transition disabled:opacity-50"
                         >

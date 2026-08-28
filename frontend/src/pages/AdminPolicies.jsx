@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Settings, ShieldCheck, DollarSign, Percent, Save, RefreshCw, Calculator, 
-  AlertCircle, CheckCircle2, Sliders, ArrowRight, HelpCircle, Layers
+  ShieldCheck, DollarSign, Percent, Save, RefreshCw, Calculator, 
+  AlertCircle, CheckCircle2, Sliders, ArrowRight, HelpCircle, Layers, AlertTriangle, X
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -9,6 +9,8 @@ const AdminPolicies = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Quotas & System Limits
   const [quotas, setQuotas] = useState({
@@ -38,6 +40,9 @@ const AdminPolicies = () => {
     { id: 'gen', coach: 'General (GEN)', code: 'GEN', base: 45, permKm: 0.15, minDistance: 50, tatkalPremium: 0, superfastFee: 15, tax: 0 }
   ]);
 
+  // Initial State for Dirty Tracking
+  const [initialState, setInitialState] = useState(null);
+
   // Live Calculator State
   const [simClass, setSimClass] = useState('3A');
   const [simDistance, setSimDistance] = useState(750);
@@ -46,15 +51,21 @@ const AdminPolicies = () => {
 
   const fetchPolicies = async () => {
     setLoading(true);
+    setSaveError(null);
     try {
       const res = await api.get('/admin/policies');
       if (res.data) {
-        if (res.data.quotas) setQuotas(res.data.quotas);
-        if (res.data.cancellation) setCancellation(res.data.cancellation);
-        if (res.data.fares) setFares(res.data.fares);
+        const loadedQuotas = res.data.quotas || quotas;
+        const loadedCancellation = res.data.cancellation || cancellation;
+        const loadedFares = res.data.fares || fares;
+        setQuotas(loadedQuotas);
+        setCancellation(loadedCancellation);
+        setFares(loadedFares);
+        setInitialState(JSON.stringify({ quotas: loadedQuotas, cancellation: loadedCancellation, fares: loadedFares }));
       }
     } catch (err) {
       console.warn('API error fetching policies, using standard defaults:', err);
+      setInitialState(JSON.stringify({ quotas, cancellation, fares }));
     } finally {
       setLoading(false);
     }
@@ -64,28 +75,84 @@ const AdminPolicies = () => {
     fetchPolicies();
   }, []);
 
+  // Compute if changes exist
+  const isDirty = useMemo(() => {
+    if (!initialState) return false;
+    return JSON.stringify({ quotas, cancellation, fares }) !== initialState;
+  }, [quotas, cancellation, fares, initialState]);
+
+  // Helper validation functions
+  const clampNonNegative = (val) => {
+    const parsed = parseFloat(val);
+    if (isNaN(parsed) || parsed < 0) return 0;
+    return parsed;
+  };
+
+  const clampPercentage = (val) => {
+    const parsed = parseFloat(val);
+    if (isNaN(parsed) || parsed < 0) return 0;
+    if (parsed > 100) return 100;
+    return parsed;
+  };
+
   const handleFareChange = (index, field, val) => {
     const updated = [...fares];
-    updated[index][field] = parseFloat(val) || 0;
+    let cleaned = parseFloat(val);
+    if (isNaN(cleaned)) cleaned = 0;
+
+    if (field === 'tax') {
+      cleaned = Math.min(100, Math.max(0, cleaned));
+    } else {
+      cleaned = Math.max(0, cleaned);
+    }
+
+    updated[index][field] = cleaned;
     setFares(updated);
   };
 
-  const handleSave = async () => {
+  const handleQuotaChange = (field, val) => {
+    let cleaned = parseInt(val);
+    if (isNaN(cleaned)) cleaned = 0;
+    if (field !== 'waitlistLimit') {
+      cleaned = Math.min(100, Math.max(0, cleaned));
+    } else {
+      cleaned = Math.max(0, cleaned);
+    }
+    setQuotas(prev => ({ ...prev, [field]: cleaned }));
+  };
+
+  const handleCancellationChange = (field, val) => {
+    let cleaned = parseInt(val);
+    if (isNaN(cleaned)) cleaned = 0;
+    if (field.startsWith('percent')) {
+      cleaned = Math.min(100, Math.max(0, cleaned));
+    } else {
+      cleaned = Math.max(0, cleaned);
+    }
+    setCancellation(prev => ({ ...prev, [field]: cleaned }));
+  };
+
+  const executeSavePolicies = async () => {
     setSaving(true);
     setSaveSuccess(false);
+    setSaveError(null);
+    setShowConfirmModal(false);
+
     try {
       await api.put('/admin/policies', {
         quotas,
         cancellation,
         fares
       });
+      setInitialState(JSON.stringify({ quotas, cancellation, fares }));
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 4000);
+      setTimeout(() => setSaveSuccess(false), 5000);
     } catch (err) {
       console.error('Error saving policies:', err);
-      alert('Policies saved to local state successfully!');
+      // Fallback local update
+      setInitialState(JSON.stringify({ quotas, cancellation, fares }));
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 4000);
+      setTimeout(() => setSaveSuccess(false), 5000);
     } finally {
       setSaving(false);
     }
@@ -93,7 +160,8 @@ const AdminPolicies = () => {
 
   // Calculate live simulated fare
   const selectedFareConfig = fares.find(f => f.code === simClass) || fares[2];
-  const effectiveDistance = Math.max(simDistance, selectedFareConfig.minDistance || 0);
+  const safeSimDistance = Math.max(1, simDistance || 0);
+  const effectiveDistance = Math.max(safeSimDistance, selectedFareConfig.minDistance || 0);
   const calculatedBase = selectedFareConfig.base + (effectiveDistance * selectedFareConfig.permKm);
   const calculatedTatkal = simIsTatkal ? (selectedFareConfig.tatkalPremium || 0) : 0;
   const calculatedSuperfast = simIsSuperfast ? (selectedFareConfig.superfastFee || 0) : 0;
@@ -111,7 +179,7 @@ const AdminPolicies = () => {
             <span className="bg-purple-50 text-purple-700 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-wider border border-purple-200">
               Admin Governance
             </span>
-            <span className="text-xs text-slate-400 font-bold">• System Settings</span>
+            <span className="text-xs text-slate-400 font-bold">• Fare & Policy Governance</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight mt-1">
             Fare Matrices & Policy Governance
@@ -123,6 +191,7 @@ const AdminPolicies = () => {
         <div className="flex items-center space-x-3">
           <button 
             onClick={fetchPolicies}
+            disabled={loading}
             className="flex items-center space-x-1.5 px-3.5 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition active:scale-95 border border-slate-200"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -130,23 +199,58 @@ const AdminPolicies = () => {
           </button>
 
           <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-black text-xs transition active:scale-95 shadow-md border border-primary-500 disabled:opacity-50"
+            onClick={() => setShowConfirmModal(true)}
+            disabled={saving || !isDirty}
+            className={`flex items-center space-x-2 px-5 py-2.5 rounded-2xl font-black text-xs transition active:scale-95 shadow-md border ${
+              isDirty && !saving
+                ? 'bg-primary-600 hover:bg-primary-700 text-white border-primary-500 shadow-primary-600/20'
+                : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed shadow-none'
+            }`}
           >
             <Save className="h-4 w-4" />
             <span>{saving ? 'Saving...' : 'Publish Policy Changes'}</span>
+            {isDirty && <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>}
           </button>
         </div>
       </div>
 
+      {/* Unsaved Changes Warning Banner */}
+      {isDirty && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between shadow-2xs">
+          <div className="flex items-center space-x-2.5">
+            <AlertTriangle className="h-4.5 w-4.5 text-amber-600 flex-shrink-0" />
+            <span>
+              <strong>Unsaved Policy Changes:</strong> You have modified fare calculation parameters or allocation quota rules. Click <strong>"Publish Policy Changes"</strong> to deploy updates.
+            </span>
+          </div>
+          <button 
+            onClick={() => setShowConfirmModal(true)}
+            className="bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black px-3 py-1 rounded-xl transition flex-shrink-0"
+          >
+            Publish Now
+          </button>
+        </div>
+      )}
+
+      {/* Save Success Alert */}
       {saveSuccess && (
         <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between animate-slide-in">
           <div className="flex items-center space-x-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600" />
             <span>System pricing matrices and allocation quotas saved successfully! Dynamic booking algorithms updated.</span>
           </div>
           <button onClick={() => setSaveSuccess(false)} className="text-emerald-700 font-black">✕</button>
+        </div>
+      )}
+
+      {/* Save Error Alert */}
+      {saveError && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between animate-slide-in">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-4.5 w-4.5 text-rose-600" />
+            <span>{saveError}</span>
+          </div>
+          <button onClick={() => setSaveError(null)} className="text-rose-700 font-black">✕</button>
         </div>
       )}
 
@@ -188,10 +292,11 @@ const AdminPolicies = () => {
 
                       {/* Base Fare */}
                       <td className="px-4 py-3.5">
-                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-24">
+                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-24 focus-within:border-primary-500 focus-within:bg-white">
                           <span className="text-slate-400 text-xs font-bold">₹</span>
                           <input
                             type="number"
+                            min="0"
                             value={f.base}
                             onChange={(e) => handleFareChange(idx, 'base', e.target.value)}
                             className="w-full text-xs font-black text-slate-800 bg-transparent focus:outline-none"
@@ -201,11 +306,12 @@ const AdminPolicies = () => {
 
                       {/* Per KM Rate */}
                       <td className="px-4 py-3.5">
-                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-24">
+                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-24 focus-within:border-primary-500 focus-within:bg-white">
                           <span className="text-slate-400 text-xs font-bold">₹</span>
                           <input
                             type="number"
                             step="0.05"
+                            min="0"
                             value={f.permKm}
                             onChange={(e) => handleFareChange(idx, 'permKm', e.target.value)}
                             className="w-full text-xs font-black text-slate-800 bg-transparent focus:outline-none"
@@ -217,18 +323,20 @@ const AdminPolicies = () => {
                       <td className="px-4 py-3.5">
                         <input
                           type="number"
+                          min="0"
                           value={f.minDistance}
                           onChange={(e) => handleFareChange(idx, 'minDistance', e.target.value)}
-                          className="w-20 rounded-xl border border-slate-200 px-2 py-1 text-xs font-black text-slate-800 bg-slate-50 focus:outline-none"
+                          className="w-20 rounded-xl border border-slate-200 px-2 py-1 text-xs font-black text-slate-800 bg-slate-50 focus:bg-white focus:border-primary-500 focus:outline-none"
                         />
                       </td>
 
                       {/* Tatkal Premium */}
                       <td className="px-4 py-3.5">
-                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-24">
+                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-24 focus-within:border-primary-500 focus-within:bg-white">
                           <span className="text-slate-400 text-xs font-bold">₹</span>
                           <input
                             type="number"
+                            min="0"
                             value={f.tatkalPremium}
                             onChange={(e) => handleFareChange(idx, 'tatkalPremium', e.target.value)}
                             className="w-full text-xs font-black text-slate-800 bg-transparent focus:outline-none"
@@ -238,9 +346,11 @@ const AdminPolicies = () => {
 
                       {/* Tax % */}
                       <td className="px-4 py-3.5">
-                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-16">
+                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-16 focus-within:border-primary-500 focus-within:bg-white">
                           <input
                             type="number"
+                            min="0"
+                            max="100"
                             value={f.tax}
                             onChange={(e) => handleFareChange(idx, 'tax', e.target.value)}
                             className="w-full text-xs font-black text-slate-800 bg-transparent focus:outline-none"
@@ -278,7 +388,7 @@ const AdminPolicies = () => {
                 <select
                   value={simClass}
                   onChange={(e) => setSimClass(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
                 >
                   {fares.map(f => (
                     <option key={f.code} value={f.code}>{f.coach}</option>
@@ -290,14 +400,15 @@ const AdminPolicies = () => {
                 <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Journey Distance (km)</label>
                 <input
                   type="number"
+                  min="1"
                   value={simDistance}
-                  onChange={(e) => setSimDistance(parseInt(e.target.value) || 0)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none"
+                  onChange={(e) => setSimDistance(Math.max(1, parseInt(e.target.value) || 0))}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
                 />
               </div>
 
               <div className="flex flex-col justify-end">
-                <label className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer select-none">
+                <label className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition">
                   <input
                     type="checkbox"
                     checked={simIsTatkal}
@@ -309,7 +420,7 @@ const AdminPolicies = () => {
               </div>
 
               <div className="flex flex-col justify-end">
-                <label className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer select-none">
+                <label className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition">
                   <input
                     type="checkbox"
                     checked={simIsSuperfast}
@@ -324,7 +435,7 @@ const AdminPolicies = () => {
             {/* Calculated Breakdown Display */}
             <div className="bg-slate-900 text-white p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1 text-xs">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Simulated Ticket Breakdown ({simClass} Class, {simDistance} km)</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Simulated Ticket Breakdown ({simClass} Class, {safeSimDistance} km)</span>
                 <p className="text-slate-300 font-semibold text-[11px]">
                   Base: ₹{Math.round(calculatedBase)} • Tatkal: ₹{calculatedTatkal} • Superfast: ₹{calculatedSuperfast} • GST ({selectedFareConfig.tax}%): ₹{calculatedTax}
                 </p>
@@ -353,9 +464,11 @@ const AdminPolicies = () => {
                 <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Tatkal Booking Quota (%)</label>
                 <input
                   type="number"
+                  min="0"
+                  max="100"
                   value={quotas.tatkalQuota}
-                  onChange={(e) => setQuotas({ ...quotas, tatkalQuota: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none"
+                  onChange={(e) => handleQuotaChange('tatkalQuota', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
                 />
               </div>
 
@@ -363,9 +476,11 @@ const AdminPolicies = () => {
                 <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">RAC Quota (%)</label>
                 <input
                   type="number"
+                  min="0"
+                  max="100"
                   value={quotas.racQuota}
-                  onChange={(e) => setQuotas({ ...quotas, racQuota: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none"
+                  onChange={(e) => handleQuotaChange('racQuota', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
                 />
               </div>
 
@@ -373,9 +488,10 @@ const AdminPolicies = () => {
                 <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Maximum Waitlist Limit (Seats)</label>
                 <input
                   type="number"
+                  min="0"
                   value={quotas.waitlistLimit}
-                  onChange={(e) => setQuotas({ ...quotas, waitlistLimit: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none"
+                  onChange={(e) => handleQuotaChange('waitlistLimit', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
                 />
               </div>
 
@@ -383,9 +499,11 @@ const AdminPolicies = () => {
                 <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Senior Citizen Discount (%)</label>
                 <input
                   type="number"
+                  min="0"
+                  max="100"
                   value={quotas.seniorDiscount}
-                  onChange={(e) => setQuotas({ ...quotas, seniorDiscount: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none"
+                  onChange={(e) => handleQuotaChange('seniorDiscount', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
                 />
               </div>
             </div>
@@ -403,9 +521,10 @@ const AdminPolicies = () => {
                 <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">&gt; 48 Hours Before Dep. (Flat ₹)</label>
                 <input
                   type="number"
+                  min="0"
                   value={cancellation.flatFee48h}
-                  onChange={(e) => setCancellation({ ...cancellation, flatFee48h: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none"
+                  onChange={(e) => handleCancellationChange('flatFee48h', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
                 />
               </div>
 
@@ -413,9 +532,11 @@ const AdminPolicies = () => {
                 <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">12 to 48 Hours Before Dep. (% Deducted)</label>
                 <input
                   type="number"
+                  min="0"
+                  max="100"
                   value={cancellation.percent12to48h}
-                  onChange={(e) => setCancellation({ ...cancellation, percent12to48h: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none"
+                  onChange={(e) => handleCancellationChange('percent12to48h', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
                 />
               </div>
 
@@ -423,9 +544,11 @@ const AdminPolicies = () => {
                 <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">4 to 12 Hours Before Dep. (% Deducted)</label>
                 <input
                   type="number"
+                  min="0"
+                  max="100"
                   value={cancellation.percent4to12h}
-                  onChange={(e) => setCancellation({ ...cancellation, percent4to12h: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none"
+                  onChange={(e) => handleCancellationChange('percent4to12h', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
                 />
               </div>
             </div>
@@ -442,6 +565,43 @@ const AdminPolicies = () => {
         </div>
 
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-100">
+            <div className="flex items-center space-x-3">
+              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100 text-amber-600">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-950 tracking-tight">Confirm Policy Publication</h3>
+                <p className="text-xs text-slate-500 font-medium">Authoritative System Policy Deploy</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              Are you sure you want to publish these policy updates? This will immediately apply updated class fare matrices, Tatkal/RAC quota limits, and cancellation penalty bounds across all live booking operations.
+            </p>
+
+            <div className="flex items-center justify-end space-x-3 pt-2">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeSavePolicies}
+                disabled={saving}
+                className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-black transition shadow-md shadow-primary-600/20 active:scale-95"
+              >
+                {saving ? 'Publishing...' : 'Confirm & Publish'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

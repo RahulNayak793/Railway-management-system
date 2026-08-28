@@ -21,7 +21,11 @@ export const AuthProvider = ({ children }) => {
   const [adminUser, setAdminUser] = useState(() => {
     try {
       const saved = localStorage.getItem('admin_user');
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      const r = (parsed?.role || '').toLowerCase();
+      if (r === 'admin' || r === 'staff') return parsed;
+      return null;
     } catch {
       return null;
     }
@@ -95,12 +99,20 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    let userRole = targetRole || 'passenger';
-    if (cleanEmail === 'admin@railway.com' || cleanEmail.includes('admin') || getApprovedAdmins().has(cleanEmail) || targetRole === 'admin') {
-      userRole = 'admin';
-    } else {
-      userRole = 'passenger';
+    const isUserAdmin = cleanEmail === 'admin@railway.com' || cleanEmail.includes('admin') || getApprovedAdmins().has(cleanEmail);
+
+    // Enforce Strict Role Isolation
+    if ((isAdminPath || targetRole === 'admin') && !isUserAdmin) {
+      setLoading(false);
+      throw new Error('Access Denied: Only Administrator accounts can log in on the Admin Portal. Passengers must use the Passenger Login page at /login.');
     }
+
+    if (!isAdminPath && targetRole !== 'admin' && isUserAdmin) {
+      setLoading(false);
+      throw new Error('Access Denied: Admin accounts cannot log in on the Passenger Login page. Please use the Admin Login page at /admin/login.');
+    }
+
+    const userRole = isUserAdmin ? 'admin' : 'passenger';
 
     try {
       const res = await api.post('/auth/login', { email, password, role: userRole });
@@ -129,6 +141,10 @@ export const AuthProvider = ({ children }) => {
         return loggedUser;
       }
     } catch (err) {
+      if (err.response && err.response.data && err.response.data.error) {
+        setLoading(false);
+        throw new Error(err.response.data.error);
+      }
       console.warn('Backend API login request failed, engaging high-availability local session fallback:', err);
     }
 
@@ -141,7 +157,7 @@ export const AuthProvider = ({ children }) => {
       phone: '+91 9876543210',
       created_at: new Date().toISOString()
     };
-    const fallbackToken = 'mock-client-jwt-token-' + Date.now();
+    const fallbackToken = 'mock-base64-' + btoa(unescape(encodeURIComponent(JSON.stringify(fallbackUser))));
 
     if (userRole === 'admin') {
       localStorage.setItem('admin_token', fallbackToken);
@@ -204,7 +220,7 @@ export const AuthProvider = ({ children }) => {
       phone: phone || '+91 9876543210',
       created_at: new Date().toISOString()
     };
-    const fallbackToken = 'mock-client-jwt-token-' + Date.now();
+    const fallbackToken = 'mock-base64-' + btoa(unescape(encodeURIComponent(JSON.stringify(fallbackUser))));
 
     if (userRole === 'admin') {
       localStorage.setItem('admin_token', fallbackToken);

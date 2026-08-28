@@ -43,31 +43,7 @@ async function runFallback() {
     if (error && error.code !== '23505') console.log(`Station ${s.station_code}:`, error.message);
   }
 
-  // Seeding default trains
-  console.log('📌 Seeding Trains...');
-  const trains = [
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', train_number: '12952', train_name: 'Rajdhani Express', status: 'on_time', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a12', train_number: '12002', train_name: 'Shatabdi Express', status: 'delayed', delay_minutes: 15 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a13', train_number: '22436', train_name: 'Vande Bharat Express', status: 'on_time', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a14', train_number: '12301', train_name: 'Kolkata Rajdhani', status: 'cancelled', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a15', train_number: '12050', train_name: 'Gatimaan Express', status: 'on_time', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a16', train_number: '12001', train_name: 'Shatabdi Express', status: 'on_time', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a17', train_number: '12295', train_name: 'Sanghamitra Express', status: 'on_time', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a18', train_number: '12627', train_name: 'Karnataka Express', status: 'on_time', delay_minutes: 5 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a19', train_number: '12649', train_name: 'Sampark Kranti Express', status: 'on_time', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a20', train_number: '12951', train_name: 'Mumbai Rajdhani Express', status: 'on_time', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a21', train_number: '12622', train_name: 'Tamil Nadu Express', status: 'on_time', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', train_number: '12953', train_name: 'August Kranti Rajdhani Express', status: 'on_time', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a23', train_number: '12009', train_name: 'Shatabdi Express', status: 'on_time', delay_minutes: 0 },
-    { id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a24', train_number: '16316', train_name: 'Kochuveli Express', status: 'on_time', delay_minutes: 0 }
-  ];
-
-  for (const t of trains) {
-    const { error } = await supabase.from('trains').insert(t);
-    if (error && error.code !== '23505') console.log(`Train ${t.train_number}:`, error.message);
-  }
-
-  console.log('🎉 Seeding check run finished.');
+  console.log('🎉 Station seeding check finished (train database relies on admin creation).');
 }
 
 runFallback();

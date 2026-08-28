@@ -7,6 +7,7 @@ export const indianStations = [
   { code: 'MAS', name: 'MGR Chennai Central', state: 'Tamil Nadu', platforms: 17, zone: 'SR' },
   { code: 'ADI', name: 'Ahmedabad Junction', state: 'Gujarat', platforms: 12, zone: 'WR' },
   { code: 'PNBE', name: 'Patna Junction', state: 'Bihar', platforms: 10, zone: 'ECR' },
+  { code: 'UDU', name: 'Udupi', state: 'Karnataka', platforms: 3, zone: 'KR' },
   { code: 'JAT', name: 'Jammu Tawi', state: 'Jammu & Kashmir', platforms: 5, zone: 'NR' },
   { code: 'JP', name: 'Jaipur Junction', state: 'Rajasthan', platforms: 7, zone: 'NWR' },
   { code: 'HYB', name: 'Hyderabad Deccan Nampally', state: 'Telangana', platforms: 6, zone: 'SCR' },

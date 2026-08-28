@@ -293,20 +293,7 @@ const ETicket = () => {
       {/* Action Bar & Extra Feature Buttons */}
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div className="flex flex-wrap items-center gap-2">
-          {/* Apple Wallet & Google Pay Pass Buttons */}
-          <button
-            onClick={() => alert('🍏 Ticket Pass added to your Apple Wallet!')}
-            className="flex items-center space-x-2 rounded-xl bg-black hover:bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-lg active:scale-95 transition border border-slate-800"
-          >
-            <span>🍏 Add to Apple Wallet</span>
-          </button>
-          
-          <button
-            onClick={() => alert('📱 Ticket Pass saved to Google Pay Wallet!')}
-            className="flex items-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-950 px-4 py-2.5 text-xs font-bold text-cyan-400 border border-slate-700 shadow-lg active:scale-95 transition"
-          >
-            <span>📱 Save to Google Pay</span>
-          </button>
+
 
           {/* Seat Catering Pre-order Button */}
           <button
@@ -317,14 +304,6 @@ const ETicket = () => {
             <span>Order Seat Meals (e-Catering)</span>
           </button>
 
-          {/* Emergency SOS Button */}
-          <button
-            onClick={() => setShowSosModal(true)}
-            className="flex items-center space-x-2 rounded-xl bg-rose-600 hover:bg-rose-700 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-rose-600/20 active:scale-95 transition"
-          >
-            <ShieldAlert className="h-4 w-4" />
-            <span>Emergency SOS Aid</span>
-          </button>
         </div>
 
         <div className="flex items-center space-x-3">
@@ -449,67 +428,7 @@ const ETicket = () => {
         </div>
       )}
 
-      {/* EMERGENCY SOS MODAL */}
-      {showSosModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col">
-            
-            <div className="bg-rose-600 text-white p-6 flex items-start justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center text-white">
-                  <ShieldAlert className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black tracking-tight">Railway Emergency SOS Request</h3>
-                  <p className="text-xs text-rose-100">Dispatches RPF Security / Medical Team to your coach</p>
-                </div>
-              </div>
-              <button onClick={() => setShowSosModal(false)} className="text-white hover:opacity-80">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
-            <div className="p-6 space-y-4 text-xs">
-              {sosSubmitted ? (
-                <div className="bg-rose-50 border border-rose-200 text-rose-800 p-6 rounded-2xl text-center space-y-2">
-                  <PhoneCall className="h-10 w-10 text-rose-600 mx-auto animate-bounce" />
-                  <h4 className="text-base font-black">SOS Alert Transmitted!</h4>
-                  <p className="text-xs font-semibold text-rose-700">
-                    RPF Security Control and Train Conductor have received your emergency alert for PNR #{booking.pnr_number}. Assistance will reach Coach B1 shortly.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-amber-800 font-medium leading-relaxed">
-                    ⚠️ Emergency SOS should be triggered for urgent medical conditions, security threats, or onboard distress. Helpline 139 is also active 24/7.
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Select Emergency Nature</label>
-                    <select
-                      value={sosReason}
-                      onChange={(e) => setSosReason(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 focus:outline-none"
-                    >
-                      <option value="Medical Assistance Required">Medical Emergency / Doctor Required</option>
-                      <option value="RPF Security Assistance">RPF Security / Theft / Threat Alert</option>
-                      <option value="Coach Technical Emergency">AC / Water / Coach Technical Failure</option>
-                    </select>
-                  </div>
-
-                  <button
-                    onClick={handleSosSubmit}
-                    className="w-full py-3.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition active:scale-95 shadow-md shadow-rose-600/20"
-                  >
-                    DISPATCH EMERGENCY SOS NOW
-                  </button>
-                </>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
 
     </div>
   );

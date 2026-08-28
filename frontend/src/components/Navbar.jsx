@@ -354,6 +354,15 @@ const Navbar = ({ onToggleSidebar }) => {
                         <Bell className="h-4 w-4 text-amber-400" />
                         <span>Feedback & Reviews</span>
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={() => { setShowUserMenu(false); navigate('/admin/login'); }}
+                        className="w-full px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-red-400 hover:text-red-300 flex items-center space-x-2.5 transition text-left"
+                      >
+                        <Shield className="h-4 w-4 text-red-400" />
+                        <span>Admin Portal Sign In</span>
+                      </button>
                     </>
                   )}
 

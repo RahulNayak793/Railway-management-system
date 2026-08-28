@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Train, Users, MessageSquare, Receipt, Settings, ShieldAlert, Home,
   Search, BookOpen, FileText, Clock, XCircle, CreditCard, User, Bell, HelpCircle,
   LogOut, Compass, Ticket, Megaphone, ChevronRight, Calendar, MapPin, Layers, BarChart3, Wallet,
-  Utensils, Radio
+  Utensils, Radio, ChefHat
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
@@ -24,9 +24,9 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
     {
       group: 'MANAGEMENT',
       items: [
-        { name: 'Train Fleet', path: '/admin/trains', icon: Train },
+        { name: 'Train Fleet & Schedule Management', path: '/admin/trains', icon: Train },
+        { name: 'Train Status & Disruptions', path: '/admin/train-status', icon: ShieldAlert },
         { name: 'Route Management', path: '/admin/routes', icon: Compass },
-        { name: 'Schedule Management', path: '/admin/schedules', icon: Clock },
         { name: 'Station Management', path: '/admin/stations', icon: MapPin },
         { name: 'Fare & Policy', path: '/admin/policies', icon: Settings },
         { name: 'Class Management', path: '/admin/classes', icon: Layers },
@@ -35,7 +35,6 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
     {
       group: 'USER MANAGEMENT',
       items: [
-        { name: 'Operations Management', path: '/admin/staff', icon: Users },
         { name: 'Passengers', path: '/admin/users', icon: User },
       ]
     },
@@ -51,13 +50,6 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
       group: 'REPORTS',
       items: [
         { name: 'Reports', path: '/admin/reports', icon: FileText },
-        { name: 'Analytics', path: '/admin/analytics', icon: BarChart3 },
-      ]
-    },
-    {
-      group: 'SYSTEM',
-      items: [
-        { name: 'Settings', path: '/admin/settings', icon: Settings },
       ]
     }
   ];
@@ -66,16 +58,17 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
   if (isAdmin) {
     menuItems.push(
       { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-      { name: 'Train Operations', path: '/admin/schedules', icon: Train },
+      { name: 'Train Fleet & Schedule Management', path: '/admin/trains', icon: Train },
+      { name: 'Train Status & Disruptions', path: '/admin/train-status', icon: ShieldAlert },
       { name: 'Route Management', path: '/admin/routes', icon: Compass },
       { name: 'Station Management', path: '/admin/stations', icon: MapPin },
       { name: 'Class Management', path: '/admin/classes', icon: Layers },
       { name: 'Bookings Management', path: '/admin/bookings', icon: BookOpen },
       { name: 'Passenger Directory', path: '/admin/users', icon: User },
-      { name: 'Operations Access', path: '/admin/staff', icon: Users },
       { name: 'Ticket Checking', path: '/admin/ticket-checking', icon: Ticket },
       { name: 'RAC & Waiting List', path: '/admin/rac-waiting', icon: Clock },
-      { name: 'Food & Catering', path: '/admin/catering', icon: Utensils },
+      { name: 'Catering Authorization', path: '/admin/catering', icon: Utensils },
+      { name: 'Catering Vendor Portal', path: '/catering/company', icon: ChefHat },
       { name: 'Live Announcements', path: '/admin/announcements', icon: Megaphone },
       { name: 'Inquiry Center', path: '/admin/inquiries', icon: MessageSquare },
       { name: 'Refund Disputes', path: '/admin/refunds', icon: Receipt },

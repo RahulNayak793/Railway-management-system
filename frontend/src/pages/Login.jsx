@@ -170,33 +170,7 @@ const Login = ({ mode }) => {
       } else {
         const user = await login(cleanEmail, password, role);
         console.log('✅ Login successful. User received:', user);
-        
-        const detectedRole = (user?.role || (cleanEmail.includes('admin') ? 'admin' : 'passenger')).toLowerCase();
-        const isAdmin = detectedRole === 'admin' || cleanEmail.includes('admin');
-
-        // Separate Page Restriction: Admin accounts CANNOT log in through Passenger login page (/login)
-        if (!isAdminPage && isAdmin) {
-          setError(
-            lang === 'hi'
-              ? 'पहुंच अस्वीकृत: व्यवस्थापक खाते यात्री लॉगिन पृष्ठ से प्रवेश नहीं कर सकते। कृपया /admin/login का उपयोग करें।'
-              : 'Access Denied: Admin accounts cannot log in on the Passenger Login page. Please use the Admin Login page at /admin/login.'
-          );
-          setFormLoading(false);
-          return;
-        }
-
-        // Separate Page Restriction: Passenger accounts CANNOT log in through Admin login page (/admin/login)
-        if (isAdminPage && !isAdmin) {
-          setError(
-            lang === 'hi'
-              ? 'पहुंच अस्वीकृत: केवल व्यवस्थापक ही एडमिन पोर्टल में लॉगिन कर सकते हैं। कृपया /login पृष्ठ का उपयोग करें।'
-              : 'Access Denied: Passenger accounts cannot log in on the Admin Login page. Please use the Passenger Login page at /login.'
-          );
-          setFormLoading(false);
-          return;
-        }
-
-        redirectUser(detectedRole);
+        redirectUser(user?.role || role);
       }
     } catch (err) {
       console.error('❌ Authentication error:', err);
@@ -208,7 +182,7 @@ const Login = ({ mode }) => {
   };
 
   const redirectUser = (userRole) => {
-    const safeRole = (userRole || role || 'passenger').toLowerCase();
+    const safeRole = (userRole || 'passenger').toLowerCase();
     console.log(`🔀 Navigating user to target role dashboard: /${safeRole}`);
     if (safeRole === 'admin' || safeRole === 'staff') {
       navigate('/admin');
@@ -242,7 +216,7 @@ const Login = ({ mode }) => {
     setError(null);
     try {
       console.log(`🔑 Demo Auto-Login initiated for: ${demoEmail}`);
-      const user = await login(demoEmail, 'password');
+      const user = await login(demoEmail, 'password', role);
       console.log('✅ Demo Auto-Login successful:', user);
       redirectUser(user?.role || role);
     } catch (err) {

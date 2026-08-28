@@ -71,110 +71,8 @@ const SearchTrainResults = () => {
         const res = await api.get(`/trains${queryStr}`);
         let fetched = Array.isArray(res.data) ? res.data : [];
 
-        // Exclude static dummy seed trains and test script trains
-        const staticSeedNumbers = new Set(['12952', '12002', '22436', '12301', '12050', '22671', '12627', '12953', '12262', '12216', '20701', '12650', '12841', '12859', '12615', '12001', '12295', '12649', '12951', '12622', '12009', '16316', '998877']);
-        fetched = fetched.filter(t => {
-          if (!t) return false;
-          if (t.id && String(t.id).match(/^t\d+$/)) return false;
-          if (t.train_number && staticSeedNumbers.has(String(t.train_number))) return false;
-          if (t.train_name && t.train_name.toLowerCase().includes('passenger visible express')) return false;
-          return true;
-        });
-
-        // Merge persistent staff trains from localStorage
-        const rawStored = JSON.parse(localStorage.getItem('added_staff_trains') || '[]');
-        const storedStaffTrains = rawStored.filter(st => {
-          if (!st) return false;
-          if (st.trainNo === '998877' || (st.trainName && st.trainName.toLowerCase().includes('passenger visible express'))) return false;
-          return true;
-        });
-
-        const existingTrainNumbers = new Set(fetched.map(f => f.train_number));
-
-        storedStaffTrains.forEach(st => {
-          if (!existingTrainNumbers.has(st.trainNo)) {
-            const stSrc = extractCode(st.source || st.from || 'NDLS');
-            const stDest = extractCode(st.to || st.dest || 'MMCT');
-            
-            // Build the sequence of all stations on the route
-            const routeStations = [
-              stSrc,
-              ...(st.stops || []).map(s => extractCode(s.stationCode)),
-              stDest
-            ].filter(Boolean);
-
-            let matchesRoute = false;
-            let matchedDepTime = st.depTime || '10:00:00';
-            let matchedArrTime = st.arrTime || '18:00:00';
-
-            if (!srcCode && !destCode) {
-              matchesRoute = true;
-            } else if (srcCode && !destCode) {
-              matchesRoute = routeStations.includes(srcCode);
-              if (matchesRoute) {
-                if (srcCode === stSrc) {
-                  matchedDepTime = st.depTime;
-                } else {
-                  const matchStop = (st.stops || []).find(s => extractCode(s.stationCode) === srcCode);
-                  if (matchStop) matchedDepTime = matchStop.depTime;
-                }
-              }
-            } else if (!srcCode && destCode) {
-              matchesRoute = routeStations.includes(destCode);
-              if (matchesRoute) {
-                if (destCode === stDest) {
-                  matchedArrTime = st.arrTime;
-                } else {
-                  const matchStop = (st.stops || []).find(s => extractCode(s.stationCode) === destCode);
-                  if (matchStop) matchedArrTime = matchStop.arrTime;
-                }
-              }
-            } else {
-              // Both srcCode and destCode are specified
-              const srcIdx = routeStations.indexOf(srcCode);
-              const destIdx = routeStations.indexOf(destCode);
-              if (srcIdx !== -1 && destIdx !== -1 && srcIdx < destIdx) {
-                matchesRoute = true;
-                
-                // Get Departure Time from the starting point of the search
-                if (srcCode === stSrc) {
-                  matchedDepTime = st.depTime;
-                } else {
-                  const matchStop = (st.stops || []).find(s => extractCode(s.stationCode) === srcCode);
-                  if (matchStop) matchedDepTime = matchStop.depTime;
-                }
-
-                // Get Arrival Time at the ending point of the search
-                if (destCode === stDest) {
-                  matchedArrTime = st.arrTime;
-                } else {
-                  const matchStop = (st.stops || []).find(s => extractCode(s.stationCode) === destCode);
-                  if (matchStop) matchedArrTime = matchStop.arrTime;
-                }
-              }
-            }
-
-            if (matchesRoute) {
-              fetched.unshift({
-                id: st.id,
-                train_number: st.trainNo,
-                train_name: st.trainName,
-                status: st.status === 'On Time' || st.status === 'Active' ? 'on_time' : 'delayed',
-                delay_minutes: 0,
-                source: srcCode || stSrc,
-                destination: destCode || stDest,
-                route: {
-                  source_station_code: srcCode || stSrc,
-                  destination_station_code: destCode || stDest,
-                  departure_time: matchedDepTime,
-                  arrival_time: matchedArrTime,
-                  distance_km: 500,
-                  fare_multiplier: 1.2
-                }
-              });
-            }
-          }
-        });
+        // Include all active trains returned by backend
+        fetched = fetched.filter(t => !!t && t.status !== 'cancelled' && t.status !== 'inactive');
 
         setTrains(fetched);
         setFilteredTrains(fetched);
@@ -233,9 +131,9 @@ const SearchTrainResults = () => {
 
     if (trainTypes.length > 0) {
       result = result.filter(t => {
-        const name = t.train_name.toLowerCase();
-        if (trainTypes.includes('superfast') && name.includes('rajdhani')) return true;
-        if (trainTypes.includes('express') && name.includes('shatabdi')) return true;
+        const name = (t.train_name || '').toLowerCase();
+        if (trainTypes.includes('superfast') && (name.includes('superfast') || name.includes('rajdhani') || name.includes('vande') || name.includes('express'))) return true;
+        if (trainTypes.includes('express') && (name.includes('express') || name.includes('shatabdi') || name.includes('mail'))) return true;
         if (trainTypes.includes('local') && name.includes('local')) return true;
         return false;
       });
@@ -284,12 +182,22 @@ const SearchTrainResults = () => {
     }
   };
 
-  const handleBook = (trainId, coachClass, fare) => {
-    navigate(`/passenger/booking?train_id=${trainId}&date=${travelDate}&class=${coachClass}&passengers=${passengers}&fare=${fare}&quota=${quota}`);
+  const handleBook = (trainId, coachClass, fare, t) => {
+    const src = t?.source || source;
+    const dest = t?.destination || destination;
+    const availability = getSeatStatus(trainId, coachClass, quota);
+    const statusVal = availability?.code || '';
+    navigate(`/passenger/booking?train_id=${trainId}&date=${travelDate}&class=${coachClass}&passengers=${passengers}&fare=${fare}&source=${src}&destination=${dest}&quota=${quota}&status=${encodeURIComponent(statusVal)}`);
   };
 
-  const getClassFare = (multiplier, className) => {
-    const baseFare = 350;
+  const getClassFare = (multiplier, className, routeBaseFare, train) => {
+    if (train?.fares_by_class && train.fares_by_class[className]) {
+      return train.fares_by_class[className];
+    }
+    if (train?.route?.segment_fares?.faresByClass && train.route.segment_fares.faresByClass[className]) {
+      return train.route.segment_fares.faresByClass[className];
+    }
+    const baseFare = train?.route?.base_fare || routeBaseFare || 350;
     const classMult = className === '1A' ? 3.5 : className === '2A' ? 2.2 : className === '3A' ? 1.5 : 1.0;
     return Math.round(baseFare * (multiplier || 1.0) * classMult);
   };
@@ -640,13 +548,21 @@ const SearchTrainResults = () => {
                         <span>{predictingNumber === t.train_number ? 'AI Predicting...' : 'AI Delay Risk'}</span>
                       </button>
                       <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                        t.status === 'on_time' 
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-255' 
+                        t.status === 'on_time' || !t.status
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                           : t.status === 'delayed' 
-                          ? 'bg-amber-50 text-amber-700 border border-amber-255' 
-                          : 'bg-rose-50 text-rose-700 border border-rose-255'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200' 
+                          : t.status === 'rescheduled'
+                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                          : 'bg-rose-50 text-rose-700 border border-rose-200'
                       }`}>
-                        {t.status === 'on_time' ? 'On Time' : t.status === 'delayed' ? `Delayed (${t.delay_minutes}m)` : 'Cancelled'}
+                        {t.status === 'on_time' || !t.status
+                          ? 'On Time' 
+                          : t.status === 'delayed' 
+                          ? `Delayed (+${t.delay_minutes}m)` 
+                          : t.status === 'rescheduled'
+                          ? 'Rescheduled'
+                          : 'Cancelled'}
                       </span>
                     </div>
                   </div>
@@ -654,7 +570,18 @@ const SearchTrainResults = () => {
                   {/* Times Schedule Block */}
                   <div className="grid grid-cols-3 items-center py-2 text-center bg-slate-50/50 rounded-2xl border border-slate-100/70 p-4 relative overflow-hidden">
                     <div>
-                      <span className="text-lg font-extrabold text-slate-800 tracking-tight">{t.route?.departure_time?.slice(0,5) || '16:30'}</span>
+                      {t.status === 'delayed' || t.status === 'rescheduled' ? (
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs text-slate-400 line-through leading-none font-bold">
+                            {t.scheduled_departure_time?.slice(0,5) || t.route?.departure_time?.slice(0,5) || '16:30'}
+                          </span>
+                          <span className="text-lg font-extrabold text-amber-600 tracking-tight leading-tight mt-1">
+                            {t.updated_departure_time?.slice(0,5) || '18:30'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-lg font-extrabold text-slate-800 tracking-tight">{t.route?.departure_time?.slice(0,5) || '16:30'}</span>
+                      )}
                       <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mt-0.5">{source}</p>
                     </div>
                     <div className="flex flex-col items-center justify-center">
@@ -666,21 +593,39 @@ const SearchTrainResults = () => {
                       <span className="text-[9px] font-bold text-primary-600">Express Corridor</span>
                     </div>
                     <div>
-                      <span className="text-lg font-extrabold text-slate-800 tracking-tight">{t.route?.arrival_time?.slice(0,5) || '08:15'}</span>
+                      {t.status === 'delayed' || t.status === 'rescheduled' ? (
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs text-slate-400 line-through leading-none font-bold">
+                            {t.scheduled_arrival_time?.slice(0,5) || t.route?.arrival_time?.slice(0,5) || '08:15'}
+                          </span>
+                          <span className="text-lg font-extrabold text-amber-600 tracking-tight leading-tight mt-1">
+                            {t.updated_arrival_time?.slice(0,5) || '10:15'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-lg font-extrabold text-slate-800 tracking-tight">{t.route?.arrival_time?.slice(0,5) || '08:15'}</span>
+                      )}
                       <p className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest mt-0.5">{destination}</p>
                     </div>
                   </div>
 
+                  {t.status === 'cancelled' && (
+                    <div className="bg-rose-50 text-rose-800 border border-rose-100 rounded-2xl p-3.5 text-xs font-bold flex items-center space-x-2 animate-pulse">
+                      <span className="h-2 w-2 rounded-full bg-rose-600 animate-ping"></span>
+                      <span>Booking unavailable &mdash; Train Cancelled</span>
+                    </div>
+                  )}
+
                   {/* Coach Class Seat Pricing Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-1">
                     {classesList.map(cName => {
-                      const fare = getClassFare(t.route?.fare_multiplier, cName);
+                      const fare = getClassFare(t.route?.fare_multiplier, cName, t.route?.base_fare, t);
                       const availability = getSeatStatus(t.id, cName, quota);
                       const amenInfo = getClassAmenities(cName);
                       return (
                         <div 
                           key={cName}
-                          onClick={() => t.status !== 'cancelled' && handleBook(t.id, cName, fare)}
+                          onClick={() => t.status !== 'cancelled' && handleBook(t.id, cName, fare, t)}
                           className={`flex flex-col justify-between rounded-2xl border p-3.5 cursor-pointer transition-all duration-200 ${
                             t.status === 'cancelled' 
                               ? 'opacity-40 cursor-not-allowed border-slate-100 bg-slate-50/50' 
@@ -704,9 +649,15 @@ const SearchTrainResults = () => {
                             </div>
                           </div>
 
-                          <span className={`rounded-xl py-1 px-2 text-[9px] font-extrabold text-center border font-mono tracking-wider ${availability.color}`}>
-                            {availability.code}
-                          </span>
+                          {t.status === 'cancelled' ? (
+                            <span className="rounded-xl py-1 px-2 text-[9px] font-extrabold text-center border font-mono tracking-wider bg-rose-50 text-rose-705 border-rose-200">
+                              CANCELLED
+                            </span>
+                          ) : (
+                            <span className={`rounded-xl py-1 px-2 text-[9px] font-extrabold text-center border font-mono tracking-wider ${availability.color}`}>
+                              {availability.code}
+                            </span>
+                          )}
                         </div>
                       );
                     })}

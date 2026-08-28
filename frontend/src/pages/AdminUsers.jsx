@@ -26,27 +26,41 @@ const AdminUsers = () => {
   const handleRoleChange = async (userId, currentRole) => {
     const nextRole = currentRole === 'passenger' ? 'staff' : currentRole === 'staff' ? 'admin' : 'passenger';
     
-    // In-memory update
-    const updated = users.map(u => {
-      if (u.id === userId) {
-        return { ...u, role: nextRole };
-      }
-      return u;
-    });
-    setUsers(updated);
-    alert(`User role successfully changed to ${nextRole}!`);
+    try {
+      const res = await api.put(`/admin/users/${userId}`, { role: nextRole });
+      const updated = users.map(u => {
+        if (u.id === userId) {
+          return { ...u, role: res.data.user?.role || nextRole };
+        }
+        return u;
+      });
+      setUsers(updated);
+      alert(`User role successfully changed to ${nextRole}!`);
+    } catch (err) {
+      console.error('Role update error:', err);
+      const errMsg = err.response?.data?.error || err.message || 'Failed to update role';
+      alert('Failed to update user role: ' + errMsg);
+    }
   };
 
-  const handleToggleStatus = (userId, currentStatus) => {
+  const handleToggleStatus = async (userId, currentStatus) => {
     const nextStatus = currentStatus === 'Active' ? 'Blocked' : 'Active';
-    const updated = users.map(u => {
-      if (u.id === userId) {
-        return { ...u, status: nextStatus };
-      }
-      return u;
-    });
-    setUsers(updated);
-    alert(`Account status updated to ${nextStatus}!`);
+    
+    try {
+      const res = await api.put(`/admin/users/${userId}`, { status: nextStatus });
+      const updated = users.map(u => {
+        if (u.id === userId) {
+          return { ...u, status: res.data.user?.status || nextStatus };
+        }
+        return u;
+      });
+      setUsers(updated);
+      alert(`Account status updated to ${nextStatus}!`);
+    } catch (err) {
+      console.error('Status update error:', err);
+      const errMsg = err.response?.data?.error || err.message || 'Failed to update status';
+      alert('Failed to update account status: ' + errMsg);
+    }
   };
 
   return (

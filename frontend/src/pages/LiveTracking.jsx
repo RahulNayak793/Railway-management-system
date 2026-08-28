@@ -1,103 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Train, Search, Compass, MapPin, Gauge, ShieldCheck, Share2, Clock, CheckCircle2, Navigation, AlertCircle, Copy } from 'lucide-react';
+import { Train, Search, Compass, MapPin, Gauge, ShieldCheck, Share2, Clock, CheckCircle2, Navigation, AlertCircle, Copy, Edit3, Save, Radio, AlertTriangle } from 'lucide-react';
+import L from 'leaflet';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import AIDelayWidget from '../components/AIDelayWidget';
-
-// Route Stops configuration for seeded trains
-const TRAIN_STOPS_MAP = {
-  '12952': [
-    { code: 'NDLS', name: 'New Delhi', arr: '--:--', dep: '16:30', plat: '12', distance: 0 },
-    { code: 'KOTA', name: 'Kota Junction', arr: '21:00', dep: '21:05', plat: '1', distance: 465 },
-    { code: 'RTM', name: 'Ratlam Junction', arr: '00:02', dep: '00:10', plat: '4', distance: 731 },
-    { code: 'BRC', name: 'Vadodara Junction', arr: '03:30', dep: '03:35', plat: '2', distance: 992 },
-    { code: 'MMCT', name: 'Mumbai Central', arr: '08:20', dep: '--:--', plat: '1', distance: 1384 }
-  ],
-  '12002': [
-    { code: 'NDLS', name: 'New Delhi', arr: '--:--', dep: '06:00', plat: '1', distance: 0 },
-    { code: 'AGC', name: 'Agra Cantt', arr: '07:50', dep: '07:55', plat: '1', distance: 188 },
-    { code: 'GWL', name: 'Gwalior Junction', arr: '09:23', dep: '09:25', plat: '2', distance: 306 },
-    { code: 'VGLJ', name: 'VGL Jhansi Junction', arr: '10:45', dep: '10:53', plat: '1', distance: 403 },
-    { code: 'BPL', name: 'Bhopal Junction', arr: '14:25', dep: '--:--', plat: '5', distance: 707 }
-  ],
-  '22436': [
-    { code: 'NDLS', name: 'New Delhi', arr: '--:--', dep: '06:00', plat: '16', distance: 0 },
-    { code: 'CNB', name: 'Kanpur Central', arr: '10:08', dep: '10:10', plat: '1', distance: 440 },
-    { code: 'PRYJ', name: 'Prayagraj Junction', arr: '12:08', dep: '12:10', plat: '6', distance: 633 },
-    { code: 'BSB', name: 'Varanasi Junction', arr: '14:00', dep: '--:--', plat: '1', distance: 759 }
-  ],
-  '12301': [
-    { code: 'HWH', name: 'Howrah Junction', arr: '--:--', dep: '16:55', plat: '8', distance: 0 },
-    { code: 'ASN', name: 'Asansol Junction', arr: '18:57', dep: '18:59', plat: '4', distance: 200 },
-    { code: 'PNBE', name: 'Patna Junction', arr: '22:10', dep: '22:20', plat: '1', distance: 532 },
-    { code: 'DDU', name: 'Pt. Deen Dayal Upadhyaya', arr: '01:25', dep: '01:35', plat: '2', distance: 743 },
-    { code: 'NDLS', name: 'New Delhi', arr: '10:00', dep: '--:--', plat: '12', distance: 1450 }
-  ],
-  '12050': [
-    { code: 'NZM', name: 'Hazrat Nizamuddin', arr: '--:--', dep: '08:10', plat: '5', distance: 0 },
-    { code: 'AGC', name: 'Agra Cantt', arr: '09:50', dep: '--:--', plat: '1', distance: 188 }
-  ]
-};
 
 const LiveTracking = () => {
   const [searchParams] = useSearchParams();
   const trainIdFromParam = searchParams.get('train_id');
+  const dateFromParam = searchParams.get('date') || searchParams.get('travel_date');
+
+  const auth = useAuth();
+  const user = auth?.user;
+
+  // Determine if logged-in user is staff or admin
+  const isStaffOrAdmin = user && (user.role === 'staff' || user.role === 'admin' || user.user_metadata?.role === 'staff' || user.user_metadata?.role === 'admin');
 
   const [query, setQuery] = useState('');
   const [activeTrain, setActiveTrain] = useState(null);
+  const [activeDate, setActiveDate] = useState(dateFromParam || null);
+  const [liveStatus, setLiveStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-
-  // Simulated live telemetry state
-  const [progress, setProgress] = useState(38); // Journey progress percentage (0 - 100)
-  const [speed, setSpeed] = useState(115); // Simulated locomotive speed in km/h
-  const [locoStatus, setLocoStatus] = useState('Active - WAP7');
-
-  const handleSearch = async (e) => {
-    if (e) e.preventDefault();
-    if (!query) return;
-    setLoading(true);
-    try {
-      const res = await api.get('/trains');
-      const matched = res.data.find(t => t.train_number === query || t.train_name.toLowerCase().includes(query.toLowerCase()));
-      if (matched) {
-        setActiveTrain(matched);
-        // Random start progress for visual simulation
-        setProgress(22 + Math.floor(Math.random() * 40));
-      } else {
-        alert('Train not found. Try searching for a valid train number e.g. 12952.');
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const selectTrainNumber = async (number) => {
-    setLoading(true);
-    try {
-      const res = await api.get('/trains');
-      const matched = res.data.find(t => t.train_number === number);
-      if (matched) {
-        setActiveTrain(matched);
-        setProgress(30 + Math.floor(Math.random() * 30));
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const [userBookings, setUserBookings] = useState([]);
+  const [sseConnected, setSseConnected] = useState(false);
 
+  // Staff Telemetry Control Form State
+  const [showStaffControls, setShowStaffControls] = useState(false);
+  const [telemetryForm, setTelemetryForm] = useState({
+    speed: 100,
+    delay_minutes: 0,
+    delay_reason: 'Signal Clearance',
+    status: 'LIVE',
+    current_station_code: '',
+    next_station_code: '',
+    platform: '1',
+    latitude: '',
+    longitude: ''
+  });
+  const [updatingTelemetry, setUpdatingTelemetry] = useState(false);
+
+  // Leaflet Map Ref
+  const mapContainerRef = useRef(null);
+  const leafletMapInstance = useRef(null);
+
+  // Toast Helper
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3500);
+  };
+
+  // Fetch initial trains list and active booked journeys
   useEffect(() => {
-    const fetchBookingsAndDefault = async () => {
+    const fetchInitial = async () => {
       setLoading(true);
       try {
         const [trainsRes, bookingsRes] = await Promise.all([
-          api.get('/trains'),
+          api.get('/trains?include_all=true'),
           api.get('/bookings').catch(() => ({ data: [] }))
         ]);
 
@@ -106,11 +66,17 @@ const LiveTracking = () => {
         setUserBookings(bookingsData);
 
         let targetTrain = null;
+        let targetDate = dateFromParam;
+
         if (trainIdFromParam) {
-          targetTrain = allTrains.find(t => t.id === trainIdFromParam);
+          targetTrain = allTrains.find(t => t.id === trainIdFromParam || t.train_number === trainIdFromParam);
         } else if (bookingsData.length > 0) {
-          const bookedTrainId = bookingsData[0].train_id || bookingsData[0].train?.id;
-          targetTrain = allTrains.find(t => t.id === bookedTrainId) || bookingsData[0].train;
+          const firstBooking = bookingsData[0];
+          const bookedTrainId = firstBooking.train_id || firstBooking.train?.id;
+          targetTrain = allTrains.find(t => t.id === bookedTrainId) || firstBooking.train;
+          if (!targetDate && firstBooking.travel_date) {
+            targetDate = firstBooking.travel_date;
+          }
         }
 
         if (!targetTrain && allTrains.length > 0) {
@@ -119,108 +85,282 @@ const LiveTracking = () => {
 
         if (targetTrain) {
           setActiveTrain(targetTrain);
-          setProgress(35);
+          if (targetDate) setActiveDate(targetDate);
         }
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching initial trains/bookings:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchBookingsAndDefault();
-  }, [trainIdFromParam]);
+    fetchInitial();
+  }, [trainIdFromParam, dateFromParam]);
 
-  // Speed and Progress simulator interval
+  // Fetch Live Status & Connect SSE whenever activeTrain or activeDate changes
   useEffect(() => {
     if (!activeTrain) return;
 
-    // Simulate progress speed crawl
-    const progressInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) return 0;
-        return parseFloat((prev + 0.05).toFixed(2));
-      });
-    }, 1500);
+    let eventSource = null;
 
-    // Simulate speed variations
-    const speedInterval = setInterval(() => {
-      setSpeed(prev => {
-        const variation = Math.floor(Math.random() * 9) - 4; // -4 to +4
-        const nextSpeed = prev + variation;
-        return Math.max(95, Math.min(nextSpeed, 135));
-      });
-    }, 2000);
+    const fetchLiveStatus = async () => {
+      try {
+        const dateQuery = activeDate ? `?date=${activeDate}` : '';
+        const res = await api.get(`/trains/${activeTrain.id}/live-status${dateQuery}`);
+        if (res.data) {
+          setLiveStatus(res.data);
+          if (res.data.telemetry) {
+            setTelemetryForm({
+              speed: res.data.telemetry.speed || 0,
+              delay_minutes: res.data.telemetry.delay_minutes || 0,
+              delay_reason: res.data.telemetry.delay_reason || 'Signal Clearance',
+              status: res.data.telemetry.status || 'LIVE',
+              current_station_code: res.data.telemetry.current_station_code || '',
+              next_station_code: res.data.telemetry.next_station_code || '',
+              platform: res.data.telemetry.platform || '1',
+              latitude: res.data.telemetry.latitude || '',
+              longitude: res.data.telemetry.longitude || ''
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching live status:', err);
+      }
+    };
+
+    fetchLiveStatus();
+
+    // Setup periodic polling interval to auto-transition from NOT_STARTED to LIVE when departure time arrives
+    const statusCheckInterval = setInterval(fetchLiveStatus, 15000);
+
+    // Establish SSE Stream
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const sseUrl = `${apiBaseUrl}/api/tracking/stream/${activeTrain.id}${activeDate ? `?date=${activeDate}` : ''}`;
+
+    try {
+      eventSource = new EventSource(sseUrl);
+      eventSource.onopen = () => setSseConnected(true);
+      eventSource.onmessage = (event) => {
+        try {
+          if (!event.data || event.data.startsWith(':')) return;
+          const data = JSON.parse(event.data);
+          if (data && !data.error) {
+            setLiveStatus(data);
+          }
+        } catch (e) {
+          console.error('Error parsing SSE telemetry payload:', e);
+        }
+      };
+      eventSource.onerror = () => setSseConnected(false);
+    } catch (e) {
+      console.error('SSE initialization failed:', e);
+    }
 
     return () => {
-      clearInterval(progressInterval);
-      clearInterval(speedInterval);
+      clearInterval(statusCheckInterval);
+      if (eventSource) eventSource.close();
     };
-  }, [activeTrain]);
+  }, [activeTrain, activeDate]);
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3000);
-  };
+  // Render Leaflet Map
+  useEffect(() => {
+    if (!mapContainerRef.current || !liveStatus) return;
 
-  const handleShare = () => {
-    if (!activeTrain) return;
-    const shareUrl = `${window.location.origin}/passenger/track?train_id=${activeTrain.id}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      showToast('Live tracking status link copied to clipboard!');
-    }).catch(err => {
-      console.error('Failed to copy: ', err);
+    const stops = liveStatus.stops || [];
+    if (stops.length === 0) return;
+
+    const routeCoords = stops
+      .filter(s => s.lat && s.lng)
+      .map(s => [parseFloat(s.lat), parseFloat(s.lng)]);
+
+    if (routeCoords.length === 0) return;
+
+    if (leafletMapInstance.current) {
+      leafletMapInstance.current.remove();
+      leafletMapInstance.current = null;
+    }
+
+    const isNotStarted = liveStatus.status?.state === 'NOT_STARTED';
+    const isCompleted = liveStatus.status?.state === 'COMPLETED';
+
+    const initialCenter = (isNotStarted)
+      ? routeCoords[0]
+      : (isCompleted ? routeCoords[routeCoords.length - 1] : ((liveStatus.telemetry?.latitude && liveStatus.telemetry?.longitude) ? [parseFloat(liveStatus.telemetry.latitude), parseFloat(liveStatus.telemetry.longitude)] : routeCoords[0]));
+
+    const map = L.map(mapContainerRef.current, {
+      center: initialCenter,
+      zoom: 6,
+      zoomControl: true
     });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(map);
+
+    const polyline = L.polyline(routeCoords, {
+      color: '#003366',
+      weight: 4,
+      opacity: 0.8,
+      dashArray: '8, 8'
+    }).addTo(map);
+
+    // Add station markers
+    stops.forEach((stop) => {
+      if (!stop.lat || !stop.lng) return;
+
+      let markerColor = '#64748B';
+      if (stop.status === 'COMPLETED') markerColor = '#003366';
+      else if (stop.status === 'CURRENT') markerColor = '#10B981';
+      else if (stop.status === 'NEXT') markerColor = '#F59E0B';
+
+      const customIcon = L.divIcon({
+        className: 'custom-station-pin',
+        html: `<div style="background-color: ${markerColor}; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.4);"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      });
+
+      const marker = L.marker([parseFloat(stop.lat), parseFloat(stop.lng)], { icon: customIcon }).addTo(map);
+      marker.bindPopup(`
+        <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
+          <strong style="color: #003366;">${stop.name} (${stop.code})</strong><br/>
+          <span>Platform: ${stop.platform || '1'}</span><br/>
+          <span>Sch Arr: ${stop.arrTime} | Sch Dep: ${stop.depTime}</span><br/>
+          <span style="font-weight: bold; color: ${markerColor};">Status: ${stop.status}</span>
+        </div>
+      `);
+    });
+
+    // Add Train Marker: ONLY if not pre-departure OR at origin station without pulse if NOT_STARTED
+    if (isNotStarted) {
+      // Locked at origin station marker without moving pulse animation
+      const originLat = routeCoords[0][0];
+      const originLng = routeCoords[0][1];
+      const originTrainIcon = L.divIcon({
+        className: 'static-origin-pin',
+        html: `
+          <div style="width: 18px; height: 18px; background: #003366; border: 3px solid #F59E0B; border-radius: 50%; box-shadow: 0 0 6px rgba(0,0,0,0.5);"></div>
+        `,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+      });
+      const trainMarker = L.marker([originLat, originLng], { icon: originTrainIcon }).addTo(map);
+      trainMarker.bindPopup(`
+        <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
+          <strong style="color: #003366;">🚂 #${liveStatus.train.train_number} - ${liveStatus.train.train_name}</strong><br/>
+          <span style="color: #D97706; font-weight: bold;">Status: NOT DEPARTED YET</span><br/>
+          <span>Scheduled Dep: ${liveStatus.status.scheduled_departure_time} (${liveStatus.status.scheduled_departure_date})</span>
+        </div>
+      `);
+    } else if (liveStatus.telemetry?.latitude && liveStatus.telemetry?.longitude) {
+      const trainLat = parseFloat(liveStatus.telemetry.latitude);
+      const trainLng = parseFloat(liveStatus.telemetry.longitude);
+
+      const trainIcon = L.divIcon({
+        className: 'custom-train-pin',
+        html: `
+          <div style="position: relative;">
+            <div style="position: absolute; top: -12px; left: -12px; width: 24px; height: 24px; background: rgba(0, 242, 254, 0.4); border-radius: 50%; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="width: 16px; height: 16px; background: #00F2FE; border: 3px solid #003366; border-radius: 50%; box-shadow: 0 0 12px #00F2FE;"></div>
+          </div>
+        `,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      });
+
+      const trainMarker = L.marker([trainLat, trainLng], { icon: trainIcon }).addTo(map);
+      trainMarker.bindPopup(`
+        <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
+          <strong style="color: #003366;">🚂 #${liveStatus.train.train_number} - ${liveStatus.train.train_name}</strong><br/>
+          <span>Speed: <strong>${liveStatus.telemetry.speed} km/h</strong></span><br/>
+          <span>Status: <strong>${liveStatus.telemetry.status}</strong></span>
+        </div>
+      `).openPopup();
+    }
+
+    map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+    leafletMapInstance.current = map;
+
+    return () => {
+      if (leafletMapInstance.current) {
+        leafletMapInstance.current.remove();
+        leafletMapInstance.current = null;
+      }
+    };
+  }, [liveStatus]);
+
+  // Search Handler
+  const handleSearch = async (e) => {
+    if (e) e.preventDefault();
+    if (!query) return;
+    setLoading(true);
+    try {
+      const res = await api.get('/trains?include_all=true');
+      const matched = res.data.find(t => 
+        t.train_number === query.trim() || 
+        t.train_name.toLowerCase().includes(query.trim().toLowerCase())
+      );
+      if (matched) {
+        setActiveTrain(matched);
+      } else {
+        alert(`Train "${query}" not found.`);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Resolve stations stops for active train
-  const activeStops = activeTrain ? (TRAIN_STOPS_MAP[activeTrain.train_number] || [
-    { code: 'START', name: 'Origin Station', arr: '--:--', dep: '08:00', plat: '1', distance: 0 },
-    { code: 'MID', name: 'Intermediate Station', arr: '12:00', dep: '12:05', plat: '2', distance: 400 },
-    { code: 'END', name: 'Destination Station', arr: '16:00', dep: '--:--', plat: '3', distance: 800 }
-  ]) : [];
+  // Submit Staff Telemetry Updates
+  const handleStaffTelemetrySubmit = async (e) => {
+    e.preventDefault();
+    if (!activeTrain) return;
+    setUpdatingTelemetry(true);
 
-  const totalDistance = activeStops[activeStops.length - 1]?.distance || 1000;
-  const currentDistance = (progress / 100) * totalDistance;
-
-  // Enrich stops status based on simulated distance progress
-  const enrichedStops = activeStops.map((stop, index) => {
-    const stopProgressPercent = (stop.distance / totalDistance) * 100;
-    
-    let status = 'upcoming';
-    let label = '';
-    
-    if (progress >= stopProgressPercent) {
-      status = 'passed';
+    try {
+      const payload = {
+        ...telemetryForm,
+        service_date: activeDate || liveStatus?.status?.service_date
+      };
+      const res = await api.post(`/trains/${activeTrain.id}/telemetry`, payload);
+      if (res.data && res.data.liveStatus) {
+        setLiveStatus(res.data.liveStatus);
+      }
+      showToast('Live telemetry updated and broadcasted successfully!');
+      setShowStaffControls(false);
+    } catch (err) {
+      console.error('Telemetry update failed:', err);
+      showToast('Failed to update telemetry. Staff authorization required.');
+    } finally {
+      setUpdatingTelemetry(false);
     }
-    
-    return {
-      ...stop,
-      percent: stopProgressPercent,
-      status
-    };
-  });
+  };
 
-  // Identify next stop
-  const nextStopIndex = enrichedStops.findIndex(s => s.status === 'upcoming');
-  let nextStop = null;
-  if (nextStopIndex !== -1) {
-    enrichedStops[nextStopIndex].status = 'current';
-    enrichedStops[nextStopIndex].label = 'NEXT STOP';
-    nextStop = enrichedStops[nextStopIndex];
-    if (nextStopIndex > 0) {
-      enrichedStops[nextStopIndex - 1].status = 'just-passed';
+  const isNotStarted = liveStatus?.status?.state === 'NOT_STARTED';
+  const isCompleted = liveStatus?.status?.state === 'COMPLETED';
+
+  // Status badge element
+  const getStatusBadge = () => {
+    const state = liveStatus?.status?.state || 'NOT_STARTED';
+    const delayMinutes = liveStatus?.telemetry?.delay_minutes || 0;
+
+    if (state === 'NOT_STARTED') {
+      return <span className="bg-amber-50 text-amber-700 border-amber-200 border px-3 py-1 rounded-full text-xs font-black uppercase flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> NOT STARTED</span>;
     }
-  }
-
-  // Calculate dynamic ETA to next stop
-  const getETA = () => {
-    if (!nextStop) return 'Arrived';
-    const distToNext = nextStop.distance - currentDistance;
-    const hours = distToNext / speed;
-    const mins = Math.round(hours * 60);
-    if (mins < 1) return 'Approaching...';
-    if (mins < 60) return `In ${mins} mins`;
-    return `In ${Math.floor(mins / 60)}h ${mins % 60}m`;
+    if (state === 'COMPLETED') {
+      return <span className="bg-blue-50 text-blue-700 border-blue-200 border px-3 py-1 rounded-full text-xs font-black uppercase flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> JOURNEY COMPLETED</span>;
+    }
+    if (state === 'SCHEDULE_UNAVAILABLE') {
+      return <span className="bg-slate-100 text-slate-600 border-slate-300 border px-3 py-1 rounded-full text-xs font-black uppercase">SCHEDULE UNAVAILABLE</span>;
+    }
+    if (state === 'DATA_UNAVAILABLE') {
+      return <span className="bg-slate-100 text-slate-600 border-slate-300 border px-3 py-1 rounded-full text-xs font-black uppercase">DATA UNAVAILABLE</span>;
+    }
+    if (delayMinutes > 0 || state === 'DELAYED') {
+      return <span className="bg-amber-50 text-amber-700 border-amber-200 border px-3 py-1 rounded-full text-xs font-black uppercase">DELAYED {delayMinutes}m</span>;
+    }
+    return <span className="bg-green-50 text-green-700 border-green-200 border px-3 py-1 rounded-full text-xs font-black uppercase">LIVE - ON TIME</span>;
   };
 
   return (
@@ -237,8 +377,15 @@ const LiveTracking = () => {
       {/* Header section */}
       <div className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-slate-800 tracking-tight">Live Train Tracking</h1>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">Track real-time train positions, speed, platform updates and stops timeline.</p>
+          <div className="flex items-center space-x-2">
+            <h1 className="text-xl font-black text-slate-800 tracking-tight">Live Train Tracking</h1>
+            {sseConnected && (
+              <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
+                <Radio className="h-3 w-3 text-emerald-500 animate-pulse" /> SSE LIVE STREAM
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-slate-400 font-semibold mt-0.5">Real-time GPS telemetry position, live speed, station timeline and platform updates.</p>
         </div>
 
         {/* Train Lookup Search */}
@@ -279,7 +426,8 @@ const LiveTracking = () => {
             {userBookings.map((b) => {
               const trainName = b.train?.train_name || 'Rajdhani Express';
               const trainNo = b.train?.train_number || '12952';
-              const isSelected = activeTrain && (activeTrain.id === b.train_id || activeTrain.train_number === trainNo);
+              const travelDate = b.travel_date || b.booking_date;
+              const isSelected = activeTrain && (activeTrain.id === b.train_id || activeTrain.train_number === trainNo) && activeDate === travelDate;
 
               return (
                 <div
@@ -287,7 +435,7 @@ const LiveTracking = () => {
                   onClick={() => {
                     const matched = b.train || { id: b.train_id, train_name: trainName, train_number: trainNo, status: 'on_time' };
                     setActiveTrain(matched);
-                    setProgress(28 + Math.floor(Math.random() * 30));
+                    setActiveDate(travelDate);
                   }}
                   className={`cursor-pointer rounded-xl p-3.5 border transition-all flex items-center justify-between ${
                     isSelected
@@ -304,7 +452,7 @@ const LiveTracking = () => {
                         <span className="text-xs font-black text-white">{trainName}</span>
                         <span className="text-[10px] bg-white/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono font-bold">#{trainNo}</span>
                       </div>
-                      <p className="text-[11px] text-slate-300 font-medium mt-0.5">PNR: {b.pnr_number} • Date: {b.travel_date}</p>
+                      <p className="text-[11px] text-slate-300 font-medium mt-0.5">PNR: {b.pnr_number} • Date: {travelDate}</p>
                     </div>
                   </div>
 
@@ -326,107 +474,214 @@ const LiveTracking = () => {
       {loading ? (
         <div className="text-center py-20">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#003366] border-r-transparent align-[-0.125em]" />
-          <p className="text-xs text-slate-400 font-bold mt-3">Connecting to GPS telemetry sat...</p>
+          <p className="text-xs text-slate-400 font-bold mt-3">Connecting to dynamic telemetry server...</p>
         </div>
       ) : activeTrain ? (
         <div className="space-y-6">
           
-          {/* Active Train Status Card */}
+          {/* Active Train Header Card */}
           <div className="bg-[#f0f5fc] rounded-2xl border border-blue-150 p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
             <div className="flex items-center space-x-3.5">
               <div className="rounded-xl bg-[#003366]/10 p-3 text-[#003366]">
                 <Train className="h-6 w-6" />
               </div>
               <div>
-                <span className="text-[10px] bg-[#003366]/10 text-[#003366] font-black px-2 py-0.5 rounded-md font-mono">
-                  #{activeTrain.train_number}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] bg-[#003366]/10 text-[#003366] font-black px-2 py-0.5 rounded-md font-mono">
+                    #{activeTrain.train_number}
+                  </span>
+                  {liveStatus?.status?.scheduled_departure_date && (
+                    <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md font-mono font-bold">
+                      Journey Date: {liveStatus.status.scheduled_departure_date}
+                    </span>
+                  )}
+                </div>
                 <h2 className="text-lg md:text-xl font-black text-slate-800 tracking-tight mt-1">{activeTrain.train_name}</h2>
                 <p className="text-xs text-slate-400 font-bold mt-0.5">
-                  Route: {activeStops[0]?.name} &rarr; {activeStops[activeStops.length - 1]?.name}
+                  Route: {liveStatus?.stops?.[0]?.name || activeTrain.source || 'Origin'} &rarr; {liveStatus?.stops?.[liveStatus.stops.length - 1]?.name || activeTrain.destination || 'Destination'}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-3 self-stretch md:self-auto justify-between">
-              <span className={`inline-flex px-3 py-1 rounded-full text-xs font-black border uppercase ${
-                activeTrain.status === 'on_time' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-              }`}>
-                {activeTrain.status === 'on_time' ? 'ON TIME' : `DELAYED ${activeTrain.delay_minutes}m`}
-              </span>
+              {getStatusBadge()}
+
+              {/* Staff/Admin Control Button */}
+              {isStaffOrAdmin && (
+                <button
+                  onClick={() => setShowStaffControls(!showStaffControls)}
+                  className="flex items-center space-x-1.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3.5 py-2 text-xs font-black text-amber-900 transition active:scale-95 shadow-sm"
+                >
+                  <Edit3 className="h-3.5 w-3.5 text-amber-700" />
+                  <span>{showStaffControls ? 'Close Staff Controls' : 'Staff Telemetry Controls'}</span>
+                </button>
+              )}
+
               <button
-                onClick={handleShare}
+                onClick={() => {
+                  const shareUrl = `${window.location.origin}/passenger/track?train_id=${activeTrain.id}${activeDate ? `&date=${activeDate}` : ''}`;
+                  navigator.clipboard.writeText(shareUrl).then(() => showToast('Live status link copied!')).catch(() => {});
+                }}
                 className="flex items-center space-x-1.5 rounded-xl border border-slate-250 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-black text-slate-700 transition active:scale-95 shadow-sm"
               >
                 <Share2 className="h-3.5 w-3.5" />
-                <span>Share Live Status</span>
+                <span>Share Status</span>
               </button>
             </div>
           </div>
 
-          {/* AI Route Delay & Weather Intelligence Widget */}
-          <AIDelayWidget trainNumber={activeTrain.train_number} />
+          {/* HARD UI STATE FOR PRE-DEPARTURE: NOT_STARTED CARD */}
+          {isNotStarted && (
+            <div className="bg-white rounded-3xl border border-amber-200 p-8 shadow-sm flex flex-col items-center justify-center text-center space-y-5 max-w-2xl mx-auto animate-scale-in">
+              <div className="h-16 w-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200 shadow-inner">
+                <Clock className="h-8 w-8 animate-bounce" />
+              </div>
+              <div className="space-y-2">
+                <span className="text-[11px] font-black uppercase text-amber-600 tracking-widest bg-amber-100/80 px-3 py-1 rounded-full border border-amber-300">
+                  NOT STARTED
+                </span>
+                <h3 className="text-lg font-black text-slate-800 pt-1">Train Has Not Departed Yet</h3>
+                <p className="text-xs text-slate-500 max-w-lg leading-relaxed font-medium">
+                  This train is scheduled to depart from <strong className="text-slate-800">{liveStatus?.status?.origin_station || activeTrain.source}</strong> on{' '}
+                  <strong className="text-slate-800">{liveStatus?.status?.scheduled_departure_date}</strong> at{' '}
+                  <strong className="text-[#003366]">{liveStatus?.status?.scheduled_departure_time}</strong>.
+                  Live GPS speed and progress movement will automatically activate at scheduled departure time.
+                </p>
+              </div>
 
-          {/* SVG Animated Route Progress Map - Dark Mesh Styling */}
-          <div className="hero-mesh-bg rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-4 text-white">
+              <div className="w-full bg-[#f0f5fc] rounded-2xl border border-blue-150 p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+                <div>
+                  <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Scheduled Journey Date</span>
+                  <span className="text-xs font-extrabold text-slate-800 font-mono mt-0.5 block">{liveStatus?.status?.scheduled_departure_date}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Scheduled Departure Time</span>
+                  <span className="text-xs font-extrabold text-[#003366] font-mono mt-0.5 block">{liveStatus?.status?.scheduled_departure_time}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Scheduled Platform</span>
+                  <span className="text-xs font-extrabold text-emerald-600 mt-0.5 block">PF {liveStatus?.stops?.[0]?.platform || '1'}</span>
+                </div>
+              </div>
+
+              {liveStatus?.status?.mins_until_departure > 0 && (
+                <div className="text-xs font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <span>Time remaining until scheduled departure: {Math.floor(liveStatus.status.mins_until_departure / 60)}h {liveStatus.status.mins_until_departure % 60}m</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Staff Telemetry Update Form Modal/Card */}
+          {showStaffControls && isStaffOrAdmin && (
+            <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-6 shadow-md space-y-4 animate-scale-in">
+              <div className="flex items-center justify-between border-b border-amber-200 pb-3">
+                <div className="flex items-center space-x-2 text-amber-900">
+                  <Edit3 className="h-5 w-5" />
+                  <h3 className="text-sm font-black uppercase tracking-wider">Authorized Staff Telemetry Management</h3>
+                </div>
+                <span className="text-[10px] bg-amber-200/60 text-amber-900 px-2.5 py-0.5 rounded font-bold uppercase font-mono">
+                  Journey Date: {activeDate || liveStatus?.status?.service_date || 'Today'}
+                </span>
+              </div>
+
+              <form onSubmit={handleStaffTelemetrySubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-amber-800 mb-1">Speed (km/h)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="200"
+                    value={telemetryForm.speed}
+                    onChange={(e) => setTelemetryForm({ ...telemetryForm, speed: e.target.value })}
+                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-amber-800 mb-1">Delay Minutes</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={telemetryForm.delay_minutes}
+                    onChange={(e) => setTelemetryForm({ ...telemetryForm, delay_minutes: e.target.value })}
+                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-amber-800 mb-1">Delay Reason</label>
+                  <select
+                    value={telemetryForm.delay_reason}
+                    onChange={(e) => setTelemetryForm({ ...telemetryForm, delay_reason: e.target.value })}
+                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="Signal Clearance">Signal Clearance</option>
+                    <option value="Weather / Dense Fog">Weather / Dense Fog</option>
+                    <option value="Track Maintenance Work">Track Maintenance Work</option>
+                    <option value="Locomotive Technical Issue">Locomotive Technical Issue</option>
+                    <option value="Late Arrival of Pairing Train">Late Arrival of Pairing Train</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-amber-800 mb-1">Status State</label>
+                  <select
+                    value={telemetryForm.status}
+                    onChange={(e) => setTelemetryForm({ ...telemetryForm, status: e.target.value })}
+                    className="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="LIVE">LIVE (Running)</option>
+                    <option value="DELAYED">DELAYED</option>
+                    <option value="STOPPED">STOPPED</option>
+                    <option value="NOT STARTED">NOT STARTED</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2 md:col-span-4 flex justify-end space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowStaffControls(false)}
+                    className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-black rounded-xl text-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={updatingTelemetry}
+                    className="flex items-center space-x-1.5 px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-xl text-xs transition shadow"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>{updatingTelemetry ? 'Saving...' : 'Save & Broadcast Telemetry'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* AI Route Delay & Weather Intelligence Widget */}
+          <AIDelayWidget trainNumber={activeTrain.train_number} liveStatus={liveStatus} />
+
+          {/* Interactive Geographic Map Section using Leaflet */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-4 text-white">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center gap-2">
-                <Navigation className="h-4 w-4 text-cyan-400 animate-pulse" /> Live Telemetry Map & Satellite Track
+                <Navigation className="h-4 w-4 text-cyan-400 animate-pulse" /> Geographic GPS Route & Satellite Track
               </h3>
               <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
-                REAL-TIME SATELLITE LOCK • 99.8% ACCURACY
+                {isNotStarted ? 'PRE-DEPARTURE ROUTE MAP' : (isCompleted ? 'JOURNEY COMPLETED ROUTE' : 'LIVE GPS TELEMETRY ACTIVE')}
               </span>
             </div>
-            
-            <div className="relative pt-8 pb-4 px-6 bg-slate-950/70 rounded-xl border border-slate-800 shadow-inner">
-              <svg viewBox="0 0 1000 90" className="w-full h-auto overflow-visible" xmlns="http://www.w3.org/2000/svg">
-                {/* Track background */}
-                <line x1="50" y1="45" x2="950" y2="45" stroke="#1E293B" strokeWidth="6" strokeLinecap="round" />
-                {/* Covered track progress glowing line */}
-                <line x1="50" y1="45" x2={50 + (progress / 100) * 900} y2="45" stroke="#00F2FE" strokeWidth="6" strokeLinecap="round" className="drop-shadow-[0_0_12px_rgba(0,242,254,0.8)]" />
-                
-                {/* Stop Nodes */}
-                {enrichedStops.map((stop, idx) => {
-                  const x = 50 + (stop.percent / 100) * 900;
-                  
-                  let fill = '#0F172A';
-                  let stroke = '#475569';
-                  let radius = 6;
-                  
-                  if (stop.status === 'passed' || stop.status === 'just-passed') {
-                    fill = '#00F2FE';
-                    stroke = '#4FACFE';
-                  } else if (stop.status === 'current') {
-                    fill = '#10B981';
-                    stroke = '#34D399';
-                    radius = 9;
-                  }
-                  
-                  return (
-                    <g key={idx}>
-                      <circle cx={x} cy="45" r={radius} fill={fill} stroke={stroke} strokeWidth="3" />
-                      <text x={x} y="22" textAnchor="middle" fill="#94A3B8" className="text-[10px] font-black font-mono tracking-wider">{stop.code}</text>
-                      <text x={x} y="72" textAnchor="middle" fill="#CBD5E1" className="text-[9px] font-extrabold truncate max-w-[80px]">{stop.name.split(' ')[0]}</text>
-                    </g>
-                  );
-                })}
 
-                {/* Animated Train Marker */}
-                {(() => {
-                  const trainX = 50 + (progress / 100) * 900;
-                  return (
-                    <g className="animate-pulse">
-                      <circle cx={trainX} cy="45" r="18" fill="#00F2FE" fillOpacity="0.2" />
-                      <circle cx={trainX} cy="45" r="12" fill="#00F2FE" fillOpacity="0.4" />
-                      <circle cx={trainX} cy="45" r="6" fill="#F59E0B" stroke="#FFFFFF" strokeWidth="2" />
-                    </g>
-                  );
-                })()}
-              </svg>
+            {/* Leaflet Map DOM Container */}
+            <div className="relative rounded-xl overflow-hidden border border-slate-800 shadow-inner h-80 bg-slate-950">
+              <div ref={mapContainerRef} className="w-full h-full z-10" />
             </div>
           </div>
 
-          {/* Grid split: Telemetry & Vertical Timeline */}
+          {/* Grid split: Telemetry details & Vertical Timeline */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             
             {/* Left Column: Telemetry details */}
@@ -435,17 +690,17 @@ const LiveTracking = () => {
               {/* Speed speedometer card */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl text-white flex items-center justify-between">
                 <div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Live Speedometer</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Speedometer</span>
                   <div className="text-3xl font-black text-cyan-300 mt-1 flex items-baseline space-x-1 font-mono">
-                    <span>{speed}</span>
+                    <span>{isNotStarted ? 0 : (liveStatus?.telemetry?.speed ?? 0)}</span>
                     <span className="text-xs font-bold text-slate-400">km/h</span>
                   </div>
                   <span className="text-[9.5px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md mt-2 inline-block border border-emerald-500/20">
-                    ⚡ Traction: WAP-7 6350 HP
+                    {isNotStarted ? '⏸ Stationary at Origin' : '⚡ Locomotive Telemetry: Active'}
                   </span>
                 </div>
                 <div className="p-3.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-lg shadow-cyan-500/10">
-                  <Gauge className="h-9 w-9 animate-spin-slow" />
+                  <Gauge className="h-9 w-9" />
                 </div>
               </div>
 
@@ -454,10 +709,10 @@ const LiveTracking = () => {
                 <div>
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Next Station ETA</span>
                   <div className="text-2xl font-black text-amber-400 mt-1 flex items-baseline space-x-1 font-mono">
-                    <span>{getETA()}</span>
+                    <span>{isNotStarted ? 'ETA unavailable' : (liveStatus?.journey?.eta_next_station || 'ETA unavailable')}</span>
                   </div>
                   <span className="text-[10px] font-semibold text-slate-300 block mt-2">
-                    Next Stop: <strong className="text-cyan-300">{nextStop ? nextStop.name : 'Destination'}</strong>
+                    Next Stop: <strong className="text-cyan-300">{liveStatus?.telemetry?.next_station_code || '---'}</strong>
                   </span>
                 </div>
                 <div className="p-3.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -467,54 +722,43 @@ const LiveTracking = () => {
 
               {/* Progress distance card */}
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl text-white space-y-3">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Journey Distance</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Journey Distance Progress</span>
                 <div className="flex items-center justify-between text-xs font-black text-slate-200 mt-2">
-                  <span>{progress}% Completed</span>
-                  <span className="font-mono text-cyan-300">{Math.round(currentDistance)} / {totalDistance} km</span>
+                  <span>{isNotStarted ? 0 : (liveStatus?.journey?.progress_percent || 0)}% Completed</span>
+                  <span className="font-mono text-cyan-300">
+                    {isNotStarted ? 0 : Math.round(liveStatus?.telemetry?.distance_travelled_km || 0)} / {liveStatus?.journey?.total_distance_km || 1000} km
+                  </span>
                 </div>
                 <div className="w-full bg-slate-800 rounded-full h-2.5 mt-2 overflow-hidden shadow-inner border border-slate-700">
-                  <div className="bg-gradient-to-r from-cyan-400 to-blue-600 h-2.5 rounded-full transition-all duration-500 shadow-md shadow-cyan-500/50" style={{ width: `${progress}%` }}></div>
-                </div>
-              </div>
-
-              {/* Locomotive engine specs */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3.5">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Telemetry specs</span>
-                <div className="space-y-2.5 text-[11px] font-semibold">
-                  <div className="flex justify-between border-b border-slate-100 pb-2">
-                    <span className="text-slate-400">Locomotive Model</span>
-                    <span className="font-extrabold text-slate-800">WAP-7 (Co-Co Class)</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2">
-                    <span className="text-slate-400">Total Power</span>
-                    <span className="font-extrabold text-slate-800">6,350 Horsepower</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Current Platform</span>
-                    <span className="font-extrabold text-blue-750">PF {nextStop ? nextStop.plat : '1'}</span>
-                  </div>
+                  <div
+                    className="bg-gradient-to-r from-cyan-400 to-blue-600 h-2.5 rounded-full transition-all duration-500 shadow-md shadow-cyan-500/50"
+                    style={{ width: `${isNotStarted ? 0 : (liveStatus?.journey?.progress_percent || 0)}%` }}
+                  ></div>
                 </div>
               </div>
 
             </div>
 
-            {/* Right Column: Vertical Timeline stops */}
+            {/* Right Column: Vertical Timeline stops dynamically loaded from DB */}
             <div className="md:col-span-8 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Stops & Schedules Timings</h3>
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Dynamic Route Station Timeline & Schedules</h3>
 
               <div className="relative pl-8 border-l-2 border-slate-150 space-y-6 py-2 ml-4">
-                {enrichedStops.map((stop, idx) => {
+                {(liveStatus?.stops || []).map((stop, idx) => {
                   let pointStyle = 'border-slate-300 bg-white text-slate-300';
                   let textStyle = 'text-slate-400 font-semibold';
                   let cardStyle = 'border-transparent bg-transparent';
                   
-                  if (stop.status === 'passed' || stop.status === 'just-passed') {
+                  if (stop.status === 'COMPLETED') {
                     pointStyle = 'border-[#003366] bg-[#003366] text-white shadow-sm';
                     textStyle = 'text-slate-500 font-bold';
-                  } else if (stop.status === 'current') {
+                  } else if (stop.status === 'CURRENT') {
                     pointStyle = 'border-green-500 bg-green-500 text-white ring-4 ring-green-100 animate-pulse';
                     textStyle = 'text-slate-850 font-black';
                     cardStyle = 'bg-green-50/50 border-green-100 border p-3.5 rounded-2xl shadow-sm';
+                  } else if (stop.status === 'NEXT') {
+                    pointStyle = 'border-amber-500 bg-amber-500 text-white ring-4 ring-amber-100';
+                    textStyle = 'text-slate-800 font-extrabold';
                   } else {
                     textStyle = 'text-slate-700 font-bold';
                   }
@@ -522,11 +766,11 @@ const LiveTracking = () => {
                   return (
                     <div key={idx} className={`relative transition-all duration-300 ${cardStyle}`}>
                       
-                      {/* Timeline locator node */}
+                      {/* Timeline node */}
                       <span className={`absolute left-[-45px] top-1 flex h-6 w-6 items-center justify-center rounded-full border transition-all ${pointStyle}`}>
-                        {stop.status === 'passed' || stop.status === 'just-passed' ? (
+                        {stop.status === 'COMPLETED' ? (
                           <CheckCircle2 className="h-4.5 w-4.5 text-white" />
-                        ) : stop.status === 'current' ? (
+                        ) : stop.status === 'CURRENT' ? (
                           <Navigation className="h-3 w-3 text-white rotate-45" />
                         ) : (
                           <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
@@ -537,24 +781,35 @@ const LiveTracking = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <div className="flex items-center space-x-2">
-                            <span className="text-[10px] bg-slate-100 border border-slate-200 rounded font-mono font-black px-1.5 py-0.5 text-slate-500">
+                            <span className="text-[10px] bg-slate-100 border border-slate-200 rounded font-mono font-black px-1.5 py-0.5 text-slate-600">
                               {stop.code}
                             </span>
                             <span className={`text-sm tracking-tight ${textStyle}`}>{stop.name}</span>
                           </div>
                           
-                          <p className="text-[10px] text-slate-400 font-bold mt-1.5 flex items-center space-x-1.5">
-                            <span>Platform {stop.plat}</span>
+                          <p className="text-[10px] text-slate-400 font-bold mt-1.5 flex flex-wrap items-center gap-2">
+                            <span>Platform PF {stop.platform || '1'}</span>
                             <span>&bull;</span>
-                            <span>Sch Arr: {stop.arr}</span>
+                            <span>Sch Arr: {stop.arrTime}</span>
                             <span>&bull;</span>
-                            <span>Sch Dep: {stop.dep}</span>
+                            <span>Sch Dep: {stop.depTime}</span>
+                            {stop.distanceFromOriginKm !== undefined && (
+                              <>
+                                <span>&bull;</span>
+                                <span className="font-mono">{stop.distanceFromOriginKm} km</span>
+                              </>
+                            )}
                           </p>
                         </div>
 
-                        {stop.label && (
+                        {stop.status === 'CURRENT' && (
                           <span className="rounded-full bg-green-150 text-green-800 px-2.5 py-0.5 text-[8.5px] font-black uppercase tracking-wider animate-pulse">
-                            {stop.label}
+                            {isNotStarted ? 'ORIGIN TERMINAL' : 'CURRENT POSITION'}
+                          </span>
+                        )}
+                        {stop.status === 'NEXT' && (
+                          <span className="rounded-full bg-amber-150 text-amber-800 px-2.5 py-0.5 text-[8.5px] font-black uppercase tracking-wider">
+                            NEXT STOP
                           </span>
                         )}
                       </div>
@@ -570,61 +825,17 @@ const LiveTracking = () => {
       ) : (
         /* Popular Quick Select list */
         <div className="space-y-6">
-          
-          {/* Simulated Compass select banner */}
           <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center max-w-xl mx-auto space-y-4">
-            <div className="h-16 w-16 bg-blue-50 text-blue-750 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+            <div className="h-16 w-16 bg-blue-50 text-[#003366] rounded-2xl flex items-center justify-center mx-auto shadow-inner">
               <Compass className="h-8 w-8 animate-spin-slow" />
             </div>
             <div className="space-y-1">
               <h3 className="text-base font-black text-slate-800">Track Current Train Location</h3>
-              <p className="text-xs text-slate-450 leading-relaxed">
-                Enter your train number in the search input above or quick select a seeded route below to launch GPS simulation.
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Search by train number above or select any active route below to load dynamic telemetry and Leaflet map tracking.
               </p>
             </div>
           </div>
-
-          {/* Quick Select Grid cards */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Quick Select Active Routes</h4>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { number: '12952', name: 'Mumbai Rajdhani Express', route: 'Delhi NDLS &harr; Mumbai Central', badge: 'Superfast' },
-                { number: '12002', name: 'Bhopal Shatabdi Express', route: 'Delhi NDLS &harr; Bhopal Junction', badge: 'Express' },
-                { number: '22436', name: 'Vande Bharat Express', route: 'Delhi NDLS &harr; Varanasi Junction', badge: 'Semi-Highspeed' },
-                { number: '12301', name: 'Kolkata Rajdhani Express', route: 'Howrah HWH &harr; New Delhi', badge: 'Superfast' },
-                { number: '12050', name: 'Gatimaan Express', route: 'Nizamuddin NZM &harr; Agra Cantt', badge: 'Highspeed' }
-              ].map((item) => (
-                <div 
-                  key={item.number}
-                  onClick={() => selectTrainNumber(item.number)}
-                  className="bg-white border border-slate-200 rounded-2xl p-4 cursor-pointer hover:border-blue-500/40 hover:-translate-y-0.5 transition duration-200 shadow-sm flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10.5px] bg-blue-50 text-blue-750 font-black px-2 py-0.5 rounded font-mono border border-blue-100">
-                        #{item.number}
-                      </span>
-                      <span className="text-[9px] bg-slate-50 text-slate-450 font-extrabold px-1.5 py-0.5 rounded border border-slate-100">
-                        {item.badge}
-                      </span>
-                    </div>
-                    <h5 className="text-xs font-black text-slate-800">{item.name}</h5>
-                    <p className="text-[10px] text-slate-400 font-bold mt-1" dangerouslySetInnerHTML={{ __html: item.route }}></p>
-                  </div>
-                  
-                  <button 
-                    type="button" 
-                    className="w-full mt-4 bg-slate-50 hover:bg-blue-50 text-[#003366] py-2 rounded-xl text-[10.5px] font-black border border-slate-200 hover:border-blue-150 transition text-center"
-                  >
-                    Start Live Tracking &rarr;
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
         </div>
       )}
 

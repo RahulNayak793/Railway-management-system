@@ -30,4 +30,20 @@ lerna-debug.log*
 *.sw?
 .DS_Store
 Thumbs.db
+# Scratch and temporary files
+scratch/
+*.backup*
+*.bak*
+*.tmp*
+backend/data/*.backup*
+backend/data/*.bak*
+backend/data/*.tmp*
+backend/data/test-*.json
+
+# Visual tests & Screenshots
 puppeteer-screenshots/
+
+# Uploads
+backend/data/uploads/
+
+

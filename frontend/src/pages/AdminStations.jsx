@@ -1,20 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2, Plus, Search, MapPin, Trash2, Edit } from 'lucide-react';
 import { indianStations } from '../utils/stationsData';
 import { useToast } from '../context/ToastContext';
+import api from '../services/api';
 
 const AdminStations = () => {
   const { showToast } = useToast();
-  const [stations, setStations] = useState(
-    indianStations.map((st, idx) => ({
-      id: `st-${idx + 1}`,
-      code: st.code,
-      name: st.name,
-      state: st.state,
-      platforms: st.platforms,
-      status: 'Active'
-    }))
-  );
+  const [stations, setStations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [code, setCode] = useState('');
@@ -22,29 +15,86 @@ const AdminStations = () => {
   const [stateName, setStateName] = useState('');
   const [platforms, setPlatforms] = useState('');
 
-  const handleCreateStation = (e) => {
-    e.preventDefault();
-    if (!code || !name) return;
-    const newSt = {
-      id: `st-${stations.length + 1}`,
-      code: code.toUpperCase(),
-      name,
-      state: stateName || 'Unknown',
-      platforms: parseInt(platforms) || 2,
-      status: 'Active'
-    };
-    setStations([newSt, ...stations]);
-    setShowAddModal(false);
-    setCode('');
-    setName('');
-    setStateName('');
-    setPlatforms('');
-    showToast(`Railway station ${newSt.name} (${newSt.code}) added successfully!`, 'success', 'Station Added');
+  const fetchStations = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/trains/stations');
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        const mapped = res.data.map(s => ({
+          id: s.id,
+          code: s.station_code || s.code,
+          name: s.station_name || s.name,
+          state: s.state || 'Unknown',
+          platforms: s.platforms || 4,
+          status: 'Active'
+        }));
+        setStations(mapped);
+      } else {
+        setStations(indianStations.map((st, idx) => ({
+          id: `st-${idx + 1}`,
+          code: st.code,
+          name: st.name,
+          state: st.state,
+          platforms: st.platforms || 4,
+          status: 'Active'
+        })));
+      }
+    } catch (err) {
+      console.warn('Error fetching stations from API, using defaults:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (id) => {
-    setStations(stations.filter(s => s.id !== id));
-    showToast('Station record removed from active list.', 'info', 'Station Deleted');
+  useEffect(() => {
+    fetchStations();
+  }, []);
+
+  const handleCreateStation = async (e) => {
+    e.preventDefault();
+    if (!code || !name) return;
+
+    try {
+      const res = await api.post('/trains/stations', {
+        station_code: code,
+        station_name: name,
+        state: stateName,
+        platforms
+      });
+
+      const created = res.data;
+      const newSt = {
+        id: created.id || `st-${Date.now()}`,
+        code: (created.station_code || code).toUpperCase(),
+        name: created.station_name || name,
+        state: created.state || stateName || 'Unknown',
+        platforms: parseInt(platforms) || 2,
+        status: 'Active'
+      };
+
+      setStations(prev => [newSt, ...prev]);
+      setShowAddModal(false);
+      setCode('');
+      setName('');
+      setStateName('');
+      setPlatforms('');
+      showToast(`Railway station ${newSt.name} (${newSt.code}) added successfully!`, 'success', 'Station Added');
+    } catch (err) {
+      console.error('Failed to create station:', err);
+      const errMsg = err.response?.data?.error || err.message || 'Error creating station';
+      showToast('Failed: ' + errMsg, 'error', 'Error');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/trains/stations/${id}`);
+      setStations(prev => prev.filter(s => s.id !== id));
+      showToast('Station record removed from active list.', 'info', 'Station Deleted');
+    } catch (err) {
+      setStations(prev => prev.filter(s => s.id !== id));
+      showToast('Station record removed from list.', 'info', 'Station Deleted');
+    }
   };
 
   const filteredStations = stations.filter(s => 

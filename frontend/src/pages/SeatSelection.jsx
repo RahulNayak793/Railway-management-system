@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Train, User, Plus, Trash2, ArrowRight, UserPlus, Users, Eye, Sparkles } from 'lucide-react';
+import { Train, User, Plus, Trash2, ArrowRight, UserPlus, Users, Eye, Sparkles, Clock, ShieldCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import CoachVRModal from '../components/CoachVRModal';
@@ -13,9 +13,12 @@ const SeatSelection = () => {
   const { user } = useAuth();
 
   const trainId = searchParams.get('train_id') || 't1';
+  const sourceParam = searchParams.get('source') || '';
+  const destParam = searchParams.get('destination') || '';
   const tomorrowStr = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString().split('T')[0];
   const travelDate = searchParams.get('date') || tomorrowStr;
   const coachClass = searchParams.get('class') || '3A';
+  const urlStatus = searchParams.get('status') || '';
   const initialPassengersCount = parseInt(searchParams.get('passengers') || '1');
   const baseFare = parseInt(searchParams.get('fare') || '750');
   const { formatPrice } = useCurrency();
@@ -30,6 +33,7 @@ const SeatSelection = () => {
   const [train, setTrain] = useState(null);
   const [seats, setSeats] = useState([]);
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [availabilityData, setAvailabilityData] = useState(null);
   const [passengers, setPassengers] = useState(
     Array.from({ length: initialPassengersCount }).map(() => ({ name: '', age: '', gender: 'Male', berth: 'No Preference' }))
   );
@@ -40,6 +44,63 @@ const SeatSelection = () => {
   // IRCTC Account Verification States
   const [irctcUsername, setIrctcUsername] = useState(() => localStorage.getItem('saved_irctc_id') || '');
   const [isIrctcVerified, setIsIrctcVerified] = useState(() => !!localStorage.getItem('saved_irctc_id'));
+  const [idempotencyKey, setIdempotencyKey] = useState('');
+
+  // Helper helper functions to manage sessionStorage booking attempts
+  const getOrCreateIdempotencyKey = (userId, tId, date, cls, passengerCount) => {
+    const storageKey = `booking_attempt_${userId}`;
+    try {
+      const savedStr = sessionStorage.getItem(storageKey);
+      if (savedStr) {
+        const saved = JSON.parse(savedStr);
+        if (
+          saved.trainId === tId &&
+          saved.travelDate === date &&
+          saved.coachClass === cls &&
+          saved.passengersCount === passengerCount
+        ) {
+          return saved.idempotencyKey;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to read booking attempt key from sessionStorage:', e);
+    }
+    
+    let newKey;
+    try {
+      newKey = window.crypto.randomUUID();
+    } catch (e) {
+      newKey = 'f1d' + Math.random().toString(36).substr(2, 9) + '-' + Math.random().toString(36).substr(2, 9);
+    }
+
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify({
+        idempotencyKey: newKey,
+        trainId: tId,
+        travelDate: date,
+        coachClass: cls,
+        passengersCount: passengerCount
+      }));
+    } catch (e) {
+      console.warn('Failed to save booking attempt key to sessionStorage:', e);
+    }
+    return newKey;
+  };
+
+  const clearIdempotencyKey = (userId) => {
+    try {
+      sessionStorage.removeItem(`booking_attempt_${userId}`);
+    } catch (e) {
+      console.warn('Failed to clear booking attempt key from sessionStorage:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id && trainId && travelDate && activeCoachClass && passengers.length > 0) {
+      const key = getOrCreateIdempotencyKey(user.id, trainId, travelDate, activeCoachClass, passengers.length);
+      setIdempotencyKey(key);
+    }
+  }, [user?.id, trainId, travelDate, activeCoachClass, passengers.length]);
   const [irctcLoading, setIrctcLoading] = useState(false);
   const [irctcError, setIrctcError] = useState('');
 
@@ -63,19 +124,27 @@ const SeatSelection = () => {
       setLoading(true);
       try {
         // Fetch train details
-        const trainsRes = await api.get('/trains');
+        const queryStr = sourceParam && destParam ? `?source=${sourceParam}&destination=${destParam}` : '';
+        const trainsRes = await api.get(`/trains${queryStr}`);
         const trainDetail = trainsRes.data.find(t => t.id === trainId) || trainsRes.data[0] || {
           id: trainId,
           train_name: 'Rajdhani Express',
           train_number: '12952',
-          source: 'NDLS',
-          destination: 'MMCT'
+          source: sourceParam || 'NDLS',
+          destination: destParam || 'MMCT'
         };
         setTrain(trainDetail);
 
         // Fetch seat layout status
         const seatsRes = await api.get(`/trains/${trainId}/seats?date=${travelDate}&coach_class=${activeCoachClass}`);
-        let fetchedSeats = seatsRes.data || [];
+        let rawData = seatsRes.data;
+        let fetchedSeats = Array.isArray(rawData) ? rawData : (rawData?.seats || []);
+
+        if (!Array.isArray(rawData) && rawData?.status) {
+          setAvailabilityData(rawData);
+        } else {
+          setAvailabilityData(null);
+        }
 
         if (fetchedSeats.length === 0) {
           const coachNum = selectedCoachCode;
@@ -111,12 +180,38 @@ const SeatSelection = () => {
           };
         });
         setSeats(fallbackSeats);
+        setAvailabilityData(null);
       } finally {
         setLoading(false);
       }
     };
     fetchSeatLayout();
   }, [trainId, travelDate, activeCoachClass, selectedCoachCode]);
+
+  // Determine booking mode: 'AVL', 'RAC', or 'WL'
+  const getBookingMode = () => {
+    if (availabilityData?.status) {
+      const s = availabilityData.status.toUpperCase();
+      if (s.includes('RAC')) return 'RAC';
+      if (s.includes('WL') || s.includes('WAITLIST')) return 'WL';
+      if (s.includes('AVL') || s.includes('AVAILABLE')) return 'AVL';
+    }
+    if (urlStatus) {
+      const u = urlStatus.toUpperCase();
+      if (u.includes('RAC')) return 'RAC';
+      if (u.includes('WL') || u.includes('WAITLIST')) return 'WL';
+      if (u.includes('AVL') || u.includes('AVAILABLE')) return 'AVL';
+    }
+    if (seats.length > 0) {
+      const unbooked = seats.filter(s => !s.is_booked).length;
+      if (unbooked === 0) return 'RAC';
+    }
+    return 'AVL';
+  };
+
+  const bookingMode = getBookingMode();
+  const racPositionText = availabilityData?.status_code || (urlStatus && urlStatus.toUpperCase().includes('RAC') ? urlStatus : 'RAC Position Assigned Automatically');
+  const wlPositionText = availabilityData?.status_code || (urlStatus && urlStatus.toUpperCase().includes('WL') ? urlStatus : 'Waiting List Position Assigned Automatically');
 
   const toggleSeatSelection = (seat) => {
     if (seat.is_booked) return;
@@ -180,7 +275,8 @@ const SeatSelection = () => {
       return;
     }
 
-    if (!autoAllocate && selectedSeats.length < passengers.length) {
+    // Require seats ONLY for Available (AVL) bookings without autoAllocate
+    if (bookingMode === 'AVL' && !autoAllocate && selectedSeats.length < passengers.length) {
       alert(`Please select ${passengers.length} seats on the grid or enable auto-allocate.`);
       return;
     }
@@ -190,12 +286,16 @@ const SeatSelection = () => {
       const res = await api.post('/bookings/book', {
         train_id: trainId,
         travel_date: travelDate,
-        coach_class: coachClass,
+        coach_class: activeCoachClass || coachClass,
         passengers,
-        total_fare: calculateTotalFare()
+        total_fare: calculateTotalFare(),
+        idempotency_key: idempotencyKey,
+        source: sourceParam,
+        destination: destParam
       });
 
       const { booking } = res.data;
+      clearIdempotencyKey(user?.id);
       navigate(`/passenger/payment?booking_id=${booking.id}&amount=${calculateTotalFare()}`);
     } catch (err) {
       console.error(err);
@@ -218,176 +318,268 @@ const SeatSelection = () => {
             <Train className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-extrabold text-slate-800">Seat Selection & Berth Allocation</h1>
+            <h1 className="text-xl font-extrabold text-slate-800">
+              {bookingMode === 'RAC' ? 'RAC Reservation Details' : bookingMode === 'WL' ? 'Waitlist Reservation Details' : 'Seat Selection & Berth Allocation'}
+            </h1>
             <p className="text-xs text-slate-400 font-semibold uppercase font-mono">
-              {train?.train_name} ({train?.train_number}) &bull; {travelDate} &bull; {coachClass}
+              {train?.train_name} ({train?.train_number}) &bull; {travelDate} &bull; {activeCoachClass}
             </p>
           </div>
         </div>
+        {/* Status Badge */}
+        {bookingMode === 'RAC' && (
+          <span className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-black text-amber-700 font-mono flex items-center gap-1.5 shadow-xs">
+            <Clock className="h-3.5 w-3.5 text-amber-600" />
+            {racPositionText}
+          </span>
+        )}
+        {bookingMode === 'WL' && (
+          <span className="rounded-xl bg-rose-50 border border-rose-200 px-3 py-1 text-xs font-black text-rose-700 font-mono flex items-center gap-1.5 shadow-xs">
+            <AlertCircle className="h-3.5 w-3.5 text-rose-600" />
+            {wlPositionText}
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Left Side: Seat Layout Grid */}
+        {/* Left Side: Seat Layout Grid or RAC/WL Informational Panel */}
         <div className="lg:col-span-2 space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-800">Select Your Berth</h3>
-              {/* Auto Allocate Toggle */}
-              <div className="flex items-center space-x-2">
-                <span className="text-xs font-semibold text-slate-500">Auto-allocate seat</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAutoAllocate(!autoAllocate);
-                    setSelectedSeats([]);
-                  }}
-                  className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                    autoAllocate ? 'bg-primary-600' : 'bg-slate-200'
-                  }`}
-                >
-                  <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${
-                    autoAllocate ? 'translate-x-4' : 'translate-x-0'
-                  }`} />
-                </button>
-              </div>
-            </div>
-
-            {/* Interactive Train Composition Diagram */}
-            <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 text-white space-y-3">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-                <span className="flex items-center gap-1.5 uppercase font-mono tracking-wider text-cyan-400">
-                  <Train className="h-4 w-4" /> Train Composition & Coach Map
-                </span>
-                <span className="text-[10px] text-amber-400 font-mono">SELECTED: COACH {selectedCoachCode} ({activeCoachClass})</span>
-              </div>
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                <button
-                  type="button"
-                  onClick={() => alert('🚂 ENGINE LOCOMOTIVE: WAP-7 High-Power 6350 HP Electric Locomotive. Authorized loco pilot personnel only.')}
-                  className="flex items-center justify-center px-3 py-2 bg-gradient-to-r from-red-600 to-amber-600 rounded-xl text-[10px] font-black uppercase tracking-wider text-white shadow-md flex-shrink-0 hover:scale-105 transition"
-                >
-                  🚂 ENGINE
-                </button>
-
-                {[
-                  { label: 'H1 (1A)', code: 'H1', cls: '1A' },
-                  { label: 'A1 (2A)', code: 'A1', cls: '2A' },
-                  { label: 'B1 (3A)', code: 'B1', cls: '3A' },
-                  { label: 'B2 (3A)', code: 'B2', cls: '3A' },
-                  { label: 'PANTRY 🍴', code: 'PANTRY', isPantry: true },
-                  { label: 'S1 (SL)', code: 'S1', cls: 'SL' },
-                  { label: 'S2 (SL)', code: 'S2', cls: 'SL' },
-                  { label: 'GUARD 🔴', code: 'GUARD', isGuard: true }
-                ].map((coach, i) => {
-                  const isActive = selectedCoachCode === coach.code;
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => {
-                        if (coach.isPantry) {
-                          setShowVrModal(true);
-                        } else if (coach.isGuard) {
-                          alert('🔴 GUARD VAN: Rear brake control & emergency safety van.');
-                        } else {
-                          setSelectedCoachCode(coach.code);
-                          setActiveCoachClass(coach.cls);
-                          setSelectedSeats([]);
-                        }
-                      }}
-                      className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex-shrink-0 transition-all border ${
-                        isActive
-                          ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-cyan-400 shadow-lg shadow-cyan-500/30 scale-105'
-                          : coach.isPantry
-                          ? 'bg-purple-950/80 text-purple-300 border-purple-800 hover:bg-purple-900 hover:text-white'
-                          : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
-                      }`}
-                    >
-                      {coach.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Seat Colors & Features Legend */}
-            <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-1.5">
-                  <span className="h-3.5 w-3.5 rounded-md bg-white border border-slate-300 shadow-xs"></span>
-                  <span className="text-slate-600">Available</span>
+            
+            {/* Mode-Specific Header & Content */}
+            {bookingMode === 'RAC' ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-base font-extrabold text-slate-800">RAC Booking</h3>
+                    <span className="rounded-lg bg-amber-100 px-2.5 py-0.5 text-xs font-black text-amber-800 font-mono">
+                      {racPositionText}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+                    Auto-Assigned Position
+                  </span>
                 </div>
-                <div className="flex items-center space-x-1.5">
-                  <span className="h-3.5 w-3.5 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-white"></span>
-                  <span className="text-slate-600">Selected</span>
-                </div>
-                <div className="flex items-center space-x-1.5">
-                  <span className="h-3.5 w-3.5 rounded-md bg-rose-100 border border-rose-200"></span>
-                  <span className="text-slate-600">Booked</span>
+
+                <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/80 to-amber-100/40 p-6 space-y-3">
+                  <div className="flex items-center space-x-3 text-amber-900">
+                    <div className="rounded-xl bg-amber-500 p-2 text-white shadow-md shadow-amber-500/20">
+                      <Clock className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-amber-950">No Seat Selection Required</h4>
+                      <p className="text-xs text-amber-800 font-medium">Your RAC position will be assigned automatically.</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-amber-900/90 leading-relaxed font-medium pt-1">
+                    Passengers booking under RAC status are guaranteed travel on the train. A berth position (side-lower shared or full berth) will be automatically allocated during final chart preparation.
+                  </p>
+
+                  <div className="pt-2 flex items-center space-x-2 text-[11px] font-bold text-amber-800">
+                    <CheckCircle2 className="h-4 w-4 text-amber-600" />
+                    <span>You can proceed directly to payment without selecting a seat on the grid.</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
-                <span className="px-2 py-0.5 rounded berth-tag-lb">LB: Lower</span>
-                <span className="px-2 py-0.5 rounded berth-tag-mb">MB: Middle</span>
-                <span className="px-2 py-0.5 rounded berth-tag-ub">UB: Upper</span>
-                <span className="px-2 py-0.5 rounded berth-tag-sl">SL: Side</span>
-              </div>
-            </div>
+            ) : bookingMode === 'WL' ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-base font-extrabold text-slate-800">Waiting List Booking</h3>
+                    <span className="rounded-lg bg-rose-100 px-2.5 py-0.5 text-xs font-black text-rose-800 font-mono">
+                      {wlPositionText}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg">
+                    Queued Booking
+                  </span>
+                </div>
 
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent align-[-0.125em]" />
-              </div>
-            ) : autoAllocate ? (
-              <div className="rounded-xl bg-slate-50 p-6 text-center border border-dashed border-slate-200 text-slate-500 py-12">
-                <p className="font-bold text-slate-700">Auto-Allocation Mode Enabled</p>
-                <p className="text-xs mt-1">System will allocate the best available berths sequentially upon payment.</p>
+                <div className="rounded-2xl border border-rose-200/80 bg-gradient-to-br from-rose-50/80 to-rose-100/40 p-6 space-y-3">
+                  <div className="flex items-center space-x-3 text-rose-900">
+                    <div className="rounded-xl bg-rose-500 p-2 text-white shadow-md shadow-rose-500/20">
+                      <AlertCircle className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-rose-950">No Seat Selection Required</h4>
+                      <p className="text-xs text-rose-800 font-medium">Your waiting-list position will be assigned automatically.</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-rose-900/90 leading-relaxed font-medium pt-1">
+                    Your booking will be placed on the official waiting list. As cancellations occur, your position will automatically upgrade towards RAC and confirmed status prior to train departure.
+                  </p>
+
+                  <div className="pt-2 flex items-center space-x-2 text-[11px] font-bold text-rose-800">
+                    <CheckCircle2 className="h-4 w-4 text-rose-600" />
+                    <span>You can proceed directly to payment without selecting a seat on the grid.</span>
+                  </div>
+                </div>
               </div>
             ) : (
-              /* Enhanced Coach Grid with Window & Aisle visual layout */
-              <div className="coach-container p-5 md:p-6 space-y-4">
-                <div className="flex justify-between items-center text-[10px] font-mono font-black text-slate-400 border-b border-slate-700/60 pb-2">
-                  <span>WINDOW SIDE 🪟</span>
-                  <span>MAIN BAY</span>
-                  <span>AISLE 🚶‍♂️</span>
-                  <span>SIDE BERTHS</span>
+              /* Standard Available (AVL) Seat Selection View */
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-slate-800">Select Your Berth</h3>
+                  {/* Auto Allocate Toggle */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-semibold text-slate-500">Auto-allocate seat</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAutoAllocate(!autoAllocate);
+                        setSelectedSeats([]);
+                      }}
+                      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                        autoAllocate ? 'bg-primary-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${
+                        autoAllocate ? 'translate-x-4' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-6 gap-3 max-w-lg mx-auto py-2">
-                  {seats.map((seat) => {
-                    const isSelected = selectedSeats.some(s => s.id === seat.id);
-                    const isBooked = seat.is_booked;
-                    const isWindow = seat.seat_number % 6 === 1 || seat.seat_number % 6 === 6;
-                    
-                    let berthClass = 'berth-tag-lb';
-                    if (seat.berth_type === 'MB') berthClass = 'berth-tag-mb';
-                    if (seat.berth_type === 'UB') berthClass = 'berth-tag-ub';
-                    if (seat.berth_type === 'SL' || seat.berth_type === 'SU') berthClass = 'berth-tag-sl';
 
-                    return (
-                      <button
-                        key={seat.id}
-                        onClick={() => toggleSeatSelection(seat)}
-                        disabled={isBooked}
-                        className={`seat-3d flex flex-col items-center justify-center p-2 h-16 rounded-xl border transition-all ${
-                          isBooked 
-                            ? 'bg-rose-950/40 border-rose-900/60 text-rose-400 opacity-60 cursor-not-allowed'
-                            : isSelected
-                            ? 'bg-gradient-to-br from-cyan-500 to-blue-600 border-cyan-300 text-white font-extrabold shadow-lg shadow-cyan-500/30 scale-105'
-                            : 'bg-slate-800/90 border-slate-700 text-slate-200 hover:border-cyan-400 hover:bg-slate-700'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between w-full px-1 mb-0.5">
-                          <span className="text-[11px] font-black">{seat.seat_number}</span>
-                          {isWindow && <span className="text-[9px]" title="Window Seat">🪟</span>}
-                        </div>
-                        <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded ${berthClass}`}>
-                          {seat.berth_type}
-                        </span>
-                      </button>
-                    );
-                  })}
+                {/* Interactive Train Composition Diagram */}
+                <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 text-white space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                    <span className="flex items-center gap-1.5 uppercase font-mono tracking-wider text-cyan-400">
+                      <Train className="h-4 w-4" /> Train Composition & Coach Map
+                    </span>
+                    <span className="text-[10px] text-amber-400 font-mono">SELECTED: COACH {selectedCoachCode} ({activeCoachClass})</span>
+                  </div>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                    <button
+                      type="button"
+                      onClick={() => alert('🚂 ENGINE LOCOMOTIVE: WAP-7 High-Power 6350 HP Electric Locomotive. Authorized loco pilot personnel only.')}
+                      className="flex items-center justify-center px-3 py-2 bg-gradient-to-r from-red-600 to-amber-600 rounded-xl text-[10px] font-black uppercase tracking-wider text-white shadow-md flex-shrink-0 hover:scale-105 transition"
+                    >
+                      🚂 ENGINE
+                    </button>
+
+                    {[
+                      { label: 'H1 (1A)', code: 'H1', cls: '1A' },
+                      { label: 'A1 (2A)', code: 'A1', cls: '2A' },
+                      { label: 'B1 (3A)', code: 'B1', cls: '3A' },
+                      { label: 'B2 (3A)', code: 'B2', cls: '3A' },
+                      { label: 'PANTRY 🍴', code: 'PANTRY', isPantry: true },
+                      { label: 'S1 (SL)', code: 'S1', cls: 'SL' },
+                      { label: 'S2 (SL)', code: 'S2', cls: 'SL' },
+                      { label: 'GUARD 🔴', code: 'GUARD', isGuard: true }
+                    ].map((coach, i) => {
+                      const isActive = selectedCoachCode === coach.code;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            if (coach.isPantry) {
+                              setShowVrModal(true);
+                            } else if (coach.isGuard) {
+                              alert('🔴 GUARD VAN: Rear brake control & emergency safety van.');
+                            } else {
+                              setSelectedCoachCode(coach.code);
+                              setActiveCoachClass(coach.cls);
+                              setSelectedSeats([]);
+                            }
+                          }}
+                          className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider flex-shrink-0 transition-all border ${
+                            isActive
+                              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-cyan-400 shadow-lg shadow-cyan-500/30 scale-105'
+                              : coach.isPantry
+                              ? 'bg-purple-950/80 text-purple-300 border-purple-800 hover:bg-purple-900 hover:text-white'
+                              : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                          }`}
+                        >
+                          {coach.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                {/* Seat Colors & Features Legend */}
+                <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-bold border-b border-slate-100 pb-3">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-1.5">
+                      <span className="h-3.5 w-3.5 rounded-md bg-white border border-slate-300 shadow-xs"></span>
+                      <span className="text-slate-600">Available</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                      <span className="h-3.5 w-3.5 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 text-white"></span>
+                      <span className="text-slate-600">Selected</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                      <span className="h-3.5 w-3.5 rounded-md bg-rose-100 border border-rose-200"></span>
+                      <span className="text-slate-600">Booked</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
+                    <span className="px-2 py-0.5 rounded berth-tag-lb">LB: Lower</span>
+                    <span className="px-2 py-0.5 rounded berth-tag-mb">MB: Middle</span>
+                    <span className="px-2 py-0.5 rounded berth-tag-ub">UB: Upper</span>
+                    <span className="px-2 py-0.5 rounded berth-tag-sl">SL: Side</span>
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-600 border-r-transparent align-[-0.125em]" />
+                  </div>
+                ) : autoAllocate ? (
+                  <div className="rounded-xl bg-slate-50 p-6 text-center border border-dashed border-slate-200 text-slate-500 py-12">
+                    <p className="font-bold text-slate-700">Auto-Allocation Mode Enabled</p>
+                    <p className="text-xs mt-1">System will allocate the best available berths sequentially upon payment.</p>
+                  </div>
+                ) : (
+                  /* Enhanced Coach Grid with Window & Aisle visual layout */
+                  <div className="coach-container p-5 md:p-6 space-y-4">
+                    <div className="flex justify-between items-center text-[10px] font-mono font-black text-slate-400 border-b border-slate-700/60 pb-2">
+                      <span>WINDOW SIDE 🪟</span>
+                      <span>MAIN BAY</span>
+                      <span>AISLE 🚶‍♂️</span>
+                      <span>SIDE BERTHS</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-6 gap-3 max-w-lg mx-auto py-2">
+                      {seats.map((seat) => {
+                        const isSelected = selectedSeats.some(s => s.id === seat.id);
+                        const isBooked = seat.is_booked;
+                        const isWindow = seat.seat_number % 6 === 1 || seat.seat_number % 6 === 6;
+                        
+                        let berthClass = 'berth-tag-lb';
+                        if (seat.berth_type === 'MB') berthClass = 'berth-tag-mb';
+                        if (seat.berth_type === 'UB') berthClass = 'berth-tag-ub';
+                        if (seat.berth_type === 'SL' || seat.berth_type === 'SU') berthClass = 'berth-tag-sl';
+
+                        return (
+                          <button
+                            key={seat.id}
+                            onClick={() => toggleSeatSelection(seat)}
+                            disabled={isBooked}
+                            className={`seat-3d flex flex-col items-center justify-center p-2 h-16 rounded-xl border transition-all ${
+                              isBooked 
+                                ? 'bg-rose-950/40 border-rose-900/60 text-rose-400 opacity-60 cursor-not-allowed'
+                                : isSelected
+                                ? 'bg-gradient-to-br from-cyan-500 to-blue-600 border-cyan-300 text-white font-extrabold shadow-lg shadow-cyan-500/30 scale-105'
+                                : 'bg-slate-800/90 border-slate-700 text-slate-200 hover:border-cyan-400 hover:bg-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between w-full px-1 mb-0.5">
+                              <span className="text-[11px] font-black">{seat.seat_number}</span>
+                              {isWindow && <span className="text-[9px]" title="Window Seat">🪟</span>}
+                            </div>
+                            <span className={`text-[8px] font-mono font-bold px-1.5 py-0.5 rounded ${berthClass}`}>
+                              {seat.berth_type}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { indianStations } from '../utils/stationsData';
+import { useAuth } from '../context/AuthContext';
 
 const getStationName = (code) => {
   if (!code) return '';
@@ -15,6 +16,7 @@ const getStationName = (code) => {
 
 const MyBookings = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' | 'completed' | 'cancelled'
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,64 +42,72 @@ const MyBookings = () => {
     fetchBookings();
   }, []);
 
-  const handleCancel = async (bookingId) => {
-    if (!window.confirm('Are you sure you want to cancel this ticket reservation?')) return;
+  const handleRequestCancel = async (bookingId) => {
+    if (!window.confirm('Are you sure you want to request cancellation for this ticket?')) return;
     try {
-      await api.put(`/bookings/${bookingId}/cancel`);
-      
-      // Immediately update local state to cancelled and switch active tab to 'cancelled'
-      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
-      setActiveTab('cancelled');
-      
-      alert('Ticket cancelled successfully. Refund processing has initiated and ticket details are shown in Cancelled Tickets tab.');
+      await api.put(`/bookings/${bookingId}/request-cancel`);
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancel_requested' } : b));
+      alert('Cancellation request submitted successfully to Admin. It will show as Cancelled once approved.');
       fetchBookings();
     } catch (err) {
-      // Fallback local cancellation update if backend in mock mode
-      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b));
+      console.error(err);
+      alert('Failed to submit cancellation request.');
+    }
+  };
+
+  const isBookingCompleted = (b) => {
+    if (String(b.status).toLowerCase() === 'cancelled') return false;
+    if (String(b.status).toLowerCase() === 'completed') return true;
+
+    if (b.destination_arrival_date_time) {
+      const arrMs = new Date(b.destination_arrival_date_time).getTime();
+      if (!isNaN(arrMs) && Date.now() >= arrMs) return true;
+    }
+
+    return false;
+  };
+
+  const isBookingCancelled = (b) => {
+    return String(b.status).toLowerCase() === 'cancelled';
+  };
+
+  const handleCancel = async (bookingId) => {
+    if (!window.confirm('Are you sure you want to cancel this ticket reservation? This action cannot be undone.')) return;
+    try {
+      const res = await api.put(`/bookings/${bookingId}/cancel`);
+      
+      setBookings(prev => prev.map(b => b.id === bookingId ? { 
+        ...b, 
+        status: 'cancelled',
+        cancellation_date_time: new Date().toISOString(),
+        refund_status: 'REFUNDED',
+        refund_amount: b.total_fare
+      } : b));
       setActiveTab('cancelled');
-      alert('Ticket cancelled successfully. Refund processing has initiated and ticket details are shown in Cancelled Tickets tab.');
+      
+      alert('Ticket cancelled successfully. Refund of ₹' + (res.data?.booking?.total_fare || 'fare') + ' has been initiated to your account.');
+      fetchBookings();
+    } catch (err) {
+      console.error('Cancellation failed:', err);
+      alert('Cancellation failed: ' + (err.response?.data?.error || err.message));
     }
   };
 
   const getFilteredBookings = () => {
-    const todayMs = new Date().setHours(0, 0, 0, 0);
-
     return bookings.filter(b => {
-      // 1. All Bookings Tab
       if (activeTab === 'all') return true;
-
-      // 2. Cancelled Tickets Tab
-      if (activeTab === 'cancelled') {
-        return b.status === 'cancelled';
-      }
-
-      if (b.status === 'cancelled') return false;
-
-      // 3. Determine if journey is completed
-      let isCompleted = b.status === 'completed';
-      if (!isCompleted && b.travel_date) {
-        const travelMs = new Date(b.travel_date).getTime();
-        if (!isNaN(travelMs) && travelMs < todayMs) {
-          isCompleted = true;
-        }
-      }
-
-      // 4. Filter by Active Tab
-      if (activeTab === 'completed') {
-        return isCompleted;
-      } else {
-        // Upcoming Journeys Tab
-        return !isCompleted;
-      }
+      if (activeTab === 'cancelled') return isBookingCancelled(b);
+      if (isBookingCancelled(b)) return false;
+      if (activeTab === 'completed') return isBookingCompleted(b);
+      return !isBookingCompleted(b); // 'upcoming'
     });
   };
 
   const filtered = getFilteredBookings();
 
-  const todayMs = new Date().setHours(0, 0, 0, 0);
-  const upcomingCount = bookings.filter(b => b.status !== 'cancelled' && b.status !== 'completed' && new Date(b.travel_date).getTime() >= todayMs).length;
-  const completedCount = bookings.filter(b => b.status === 'completed' || (b.status !== 'cancelled' && new Date(b.travel_date).getTime() < todayMs)).length;
-  const cancelledCount = bookings.filter(b => b.status === 'cancelled').length;
+  const upcomingCount = bookings.filter(b => !isBookingCancelled(b) && !isBookingCompleted(b)).length;
+  const completedCount = bookings.filter(b => isBookingCompleted(b)).length;
+  const cancelledCount = bookings.filter(b => isBookingCancelled(b)).length;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 font-sans space-y-6 animate-slide-in">
@@ -116,7 +126,7 @@ const MyBookings = () => {
 
         <button
           onClick={fetchBookings}
-          className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/15 transition flex items-center space-x-1.5"
+          className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/15 transition flex items-center space-x-1.5 active:scale-95"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>Refresh Bookings</span>
@@ -179,27 +189,35 @@ const MyBookings = () => {
       ) : (
         <div className="space-y-4">
           {filtered.map((b) => {
-            const isCompleted = activeTab === 'completed' || b.status === 'completed' || (b.status !== 'cancelled' && new Date(b.travel_date) < new Date().setHours(0,0,0,0));
-            const alloc = b.allocations?.[0] || {};
+            const isCompleted = isBookingCompleted(b);
+            const isCancelled = isBookingCancelled(b);
 
             return (
               <div 
                 key={b.id} 
                 className={`rounded-3xl border bg-white p-6 shadow-sm space-y-4 transition ${
-                  isCompleted ? 'border-emerald-200/80 bg-gradient-to-r from-emerald-50/20 via-white to-white' : 'border-slate-200'
+                  isCancelled 
+                    ? 'border-rose-200/80 bg-gradient-to-r from-rose-50/20 via-white to-white' 
+                    : isCompleted 
+                    ? 'border-emerald-200/80 bg-gradient-to-r from-emerald-50/20 via-white to-white' 
+                    : 'border-slate-200'
                 }`}
               >
                 {/* Header Bar */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-3 gap-2">
                   <div className="flex items-center space-x-3">
                     <div className={`h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                      isCompleted ? 'bg-emerald-100 text-emerald-800' : 'bg-primary-50 text-primary-700'
+                      isCancelled
+                        ? 'bg-rose-100 text-rose-800'
+                        : isCompleted 
+                        ? 'bg-emerald-100 text-emerald-800' 
+                        : 'bg-primary-50 text-primary-700'
                     }`}>
                       <Train className="h-5 w-5" />
                     </div>
                     <div>
                       <h3 className="font-black text-slate-900 text-sm sm:text-base">
-                        {b.train?.train_name || 'Express Train'} <span className="font-mono text-slate-400 text-xs">#{b.train?.train_number || '12952'}</span>
+                        {b.train?.train_name || b.train_name || 'Train details unavailable'} {(b.train?.train_number || b.train_number) ? <span className="font-mono text-slate-400 text-xs">#{b.train?.train_number || b.train_number}</span> : null}
                       </h3>
                       <p className="text-xs text-slate-400 font-mono font-bold">PNR: {b.pnr_number}</p>
                     </div>
@@ -207,13 +225,18 @@ const MyBookings = () => {
 
                   {/* Status Badge */}
                   <span className={`px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider flex items-center space-x-1.5 ${
-                    b.status === 'cancelled'
+                    isCancelled
                       ? 'bg-rose-100 text-rose-800 border border-rose-200'
                       : isCompleted
                       ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                       : 'bg-primary-100 text-primary-800 border border-primary-200'
                   }`}>
-                    {isCompleted ? (
+                    {isCancelled ? (
+                      <>
+                        <XCircle className="h-3.5 w-3.5 text-rose-700" />
+                        <span>CANCELLED</span>
+                      </>
+                    ) : isCompleted ? (
                       <>
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700" />
                         <span>Journey Completed</span>
@@ -224,34 +247,83 @@ const MyBookings = () => {
                   </span>
                 </div>
 
+                {/* Train Disruptions / Status Banner */}
+                {b.train && b.train.status && b.train.status !== 'on_time' && !isCancelled && (
+                  <div className={`p-4 rounded-2xl border text-xs font-semibold flex flex-col gap-1 shadow-sm ${
+                    b.train.status === 'cancelled'
+                      ? 'bg-rose-50 border-rose-200 text-rose-900'
+                      : b.train.status === 'delayed'
+                      ? 'bg-amber-50 border-amber-200 text-amber-900'
+                      : 'bg-purple-50 border-purple-200 text-purple-900'
+                  }`}>
+                    <div className="flex items-center space-x-2">
+                      <span className={`h-2 w-2 rounded-full ${
+                        b.train.status === 'cancelled'
+                          ? 'bg-rose-650 animate-ping'
+                          : b.train.status === 'delayed'
+                          ? 'bg-amber-650 animate-pulse'
+                          : 'bg-purple-650 animate-pulse'
+                      }`}></span>
+                      <span className="uppercase tracking-wide font-extrabold text-[10px]">
+                        Service Announcement &mdash; Train Status: {b.train.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <div>
+                      {b.train.status === 'cancelled' && (
+                        <p className="leading-relaxed">
+                          ⚠️ Train has been cancelled by railway administration. {b.train.cancellation_reason ? `Reason: ${b.train.cancellation_reason}.` : ''} {b.train.cancellation_message || ''}
+                        </p>
+                      )}
+                      {b.train.status === 'delayed' && (
+                        <p className="leading-relaxed">
+                          🕒 Train is delayed by {b.train.delay_minutes} minutes. {b.train.delay_reason ? `Reason: ${b.train.delay_reason}.` : ''} {b.train.delay_message || ''}
+                          <br />
+                          <span className="mt-1 block text-[10px] text-amber-700 font-mono">
+                            Scheduled Dep: {b.train.scheduled_departure_time?.slice(0,5) || b.route?.departure_time?.slice(0,5) || '--:--'} &rarr; Updated Dep: {b.train.updated_departure_time?.slice(0,5) || '--:--'}
+                          </span>
+                        </p>
+                      )}
+                      {b.train.status === 'rescheduled' && (
+                        <p className="leading-relaxed">
+                          📅 Train is rescheduled. {b.train.delay_reason ? `Reason: ${b.train.delay_reason}.` : ''} {b.train.delay_message || ''}
+                          <br />
+                          <span className="mt-1 block text-[10px] text-purple-700 font-mono">
+                            Original: {b.train.scheduled_departure_time?.slice(0,5) || b.route?.departure_time?.slice(0,5) || '--:--'} &rarr; Rescheduled: {b.train.updated_departure_time?.slice(0,5) || '--:--'}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Journey Route & Details */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-xs">
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Departure Station</span>
                     <span className="font-extrabold text-slate-800 text-sm mt-0.5 block">
-                      {b.route?.source_station_code ? getStationName(b.route.source_station_code) : 'New Delhi (NDLS)'}
+                      {b.route?.source_station_code ? getStationName(b.route.source_station_code) : b.train?.source ? getStationName(b.train.source) : b.source ? getStationName(b.source) : 'Not specified'}
                     </span>
-                    <span className="text-[10px] text-slate-500 font-mono font-bold">Dep: {b.route?.departure_time || '16:30'}</span>
+                    <span className="text-[10px] text-slate-500 font-mono font-bold">Dep: {b.route?.departure_time || b.train?.departure_time || b.departure_time || '--:--'}</span>
                   </div>
 
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Destination Station</span>
                     <span className="font-extrabold text-slate-800 text-sm mt-0.5 block">
-                      {b.route?.destination_station_code ? getStationName(b.route.destination_station_code) : 'Mumbai Central (MMCT)'}
+                      {b.route?.destination_station_code ? getStationName(b.route.destination_station_code) : b.train?.destination ? getStationName(b.train.destination) : b.destination ? getStationName(b.destination) : 'Not specified'}
                     </span>
-                    <span className="text-[10px] text-slate-500 font-mono font-bold">Arr: {b.route?.arrival_time || '08:15'}</span>
+                    <span className="text-[10px] text-slate-500 font-mono font-bold">Arr: {b.route?.arrival_time || b.train?.arrival_time || b.arrival_time || '--:--'}</span>
                   </div>
 
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Travel Date & Class</span>
                     <span className="font-extrabold text-slate-800 text-sm mt-0.5 block">{b.travel_date}</span>
-                    <span className="text-[10px] font-bold text-primary-700">Class {b.coach_class || '3A'}</span>
+                    <span className="text-[10px] font-bold text-primary-700">{b.coach_class ? `Class ${b.coach_class}` : 'Standard Class'}</span>
                   </div>
 
                   <div>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Fare Paid</span>
                     <span className="font-mono font-black text-emerald-700 text-sm mt-0.5 block">₹{b.total_fare}</span>
-                    <span className="text-[10px] font-bold text-slate-400">{b.allocations?.length || 1} Passenger(s)</span>
+                    <span className="text-[10px] font-bold text-slate-400">{(b.allocations && b.allocations.length) || (b.passengers && b.passengers.length) || 1} Passenger(s)</span>
                   </div>
                 </div>
 
@@ -261,24 +333,45 @@ const MyBookings = () => {
                     Booked Passenger(s) & Seat Allocations
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                    {(b.allocations && b.allocations.length > 0 ? b.allocations : [
-                      { passenger_name: user?.full_name || 'Passenger', age: 30, gender: 'Male', coach_number: 'B1', seat_number: 24, berth_type: 'UB' }
-                    ]).map((p, idx) => (
+                    {(b.allocations && b.allocations.length > 0 ? b.allocations : (b.passengers || [{ passenger_name: user?.full_name || 'Passenger' }])).map((p, idx) => (
                       <div key={idx} className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between text-xs">
                         <div>
-                          <p className="font-extrabold text-slate-800">{p.passenger_name}</p>
-                          <p className="text-[10px] text-slate-400 font-semibold">{p.age ? `${p.age} yrs` : ''} {p.gender ? `• ${p.gender}` : ''}</p>
+                          <p className="font-extrabold text-slate-800">{p.passenger_name || p.name || user?.full_name || 'Passenger'}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold">{(p.passenger_age || p.age) ? `${p.passenger_age || p.age} yrs` : ''} {(p.passenger_gender || p.gender) ? `• ${p.passenger_gender || p.gender}` : ''}</p>
                         </div>
-                        <div className="text-right">
-                          <span className="font-mono font-black text-primary-700 bg-primary-50 px-2.5 py-1 rounded-lg border border-primary-100 text-xs block">
-                            {p.coach_number || 'B1'}-{p.seat_number || 24}
-                          </span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase font-mono mt-0.5 block">{p.berth_type || 'BERTH'}</span>
-                        </div>
+                        {(p.coach_number || p.seat_number) && (
+                          <div className="text-right">
+                            <span className="font-mono font-black text-primary-700 bg-primary-50 px-2.5 py-1 rounded-lg border border-primary-100 text-xs block">
+                              {p.coach_number || ''}{p.seat_number ? `-${p.seat_number}` : ''}
+                            </span>
+                            {p.berth_type && <span className="text-[9px] font-bold text-slate-400 uppercase font-mono mt-0.5 block">{p.berth_type}</span>}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
+
+                {/* Cancelled Details Highlights Banner */}
+                {isCancelled && (
+                  <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between text-rose-950 gap-3">
+                    <div>
+                      <span className="font-black text-rose-900 block">Cancellation Recorded</span>
+                      <span className="text-rose-700 text-[11px] block mt-0.5">
+                        Cancelled on: <strong>{b.cancellation_date_time ? new Date(b.cancellation_date_time).toLocaleString() : 'Recent'}</strong>
+                      </span>
+                      {b.cancellation_reason && (
+                        <span className="text-rose-600 text-[10px] block mt-0.5 italic">Reason: {b.cancellation_reason}</span>
+                      )}
+                    </div>
+                    <div className="bg-white px-3 py-2 rounded-xl border border-rose-200 text-right shrink-0">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Refund Status</span>
+                      <span className="font-mono font-black text-emerald-700 text-xs block">
+                        ₹{b.refund_amount !== undefined ? b.refund_amount : b.total_fare} ({b.refund_status || 'REFUNDED'})
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Completed Details Highlights Banner */}
                 {isCompleted && (
@@ -301,7 +394,7 @@ const MyBookings = () => {
 
                 {/* Actions Footer Bar */}
                 <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
-                  {isCompleted && (
+                  {!isCancelled && isCompleted && (
                     <button
                       type="button"
                       onClick={() => navigate(`/passenger/feedback?pnr=${b.pnr_number}`)}
@@ -312,16 +405,17 @@ const MyBookings = () => {
                     </button>
                   )}
 
-                  {b.status !== 'cancelled' && !isCompleted && (
+                  {!isCancelled && !isCompleted && (
                     <button
                       onClick={() => handleCancel(b.id)}
-                      className="px-4 py-2 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-bold transition"
+                      className="px-4 py-2 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-bold transition active:scale-95 flex items-center space-x-1.5"
                     >
-                      Cancel Journey
+                      <XCircle className="h-3.5 w-3.5 text-rose-600" />
+                      <span>Request Cancellation</span>
                     </button>
                   )}
 
-                  {b.status !== 'cancelled' && !isCompleted && (
+                  {!isCancelled && !isCompleted && (
                     <button
                       onClick={() => navigate(`/passenger/catering?pnr=${b.pnr_number}`)}
                       className="px-4 py-2 rounded-xl border border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 text-xs font-bold transition flex items-center space-x-1.5"

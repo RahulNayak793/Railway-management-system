@@ -40,7 +40,7 @@ const ChatbotWidget = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/ai/chatbot', { message: text });
+      const response = await api.post('/ai/chatbot', { message: text, history: messages });
       setMessages(prev => [
         ...prev, 
         { 
