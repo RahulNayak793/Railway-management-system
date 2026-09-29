@@ -6,6 +6,25 @@ const { getLiveStatusForTrain } = require('../utils/liveStatusHelper');
 const clientConnections = new Map();
 
 /**
+ * GET /api/tracking/train/:trainNumber
+ * Direct train number live status tracking endpoint.
+ */
+router.get('/train/:trainNumber', async (req, res) => {
+  try {
+    const { trainNumber } = req.params;
+    const date = req.query.date || req.query.service_date || req.query.travel_date;
+    const liveStatus = await getLiveStatusForTrain(trainNumber, date);
+    if (!liveStatus) {
+      return res.status(404).json({ success: false, error: 'Train not found or route data unavailable' });
+    }
+    return res.json(liveStatus);
+  } catch (err) {
+    console.error('Error fetching train tracking by trainNumber:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch tracking status: ' + err.message });
+  }
+});
+
+/**
  * GET /api/tracking/stream/:trainId
  * SSE endpoint for streaming live telemetry updates to passengers and staff.
  */
@@ -46,6 +65,18 @@ router.get('/stream/:trainId', async (req, res) => {
   const trainClients = clientConnections.get(trainId);
   trainClients.add(clientObj);
 
+  // Stream dynamic live telemetry updates every 3 seconds so the client experiences real-time continuous movement
+  const streamTimer = setInterval(async () => {
+    try {
+      const currentStatus = await getLiveStatusForTrain(trainId, date);
+      if (currentStatus) {
+        res.write(`data: ${JSON.stringify(currentStatus)}\n\n`);
+      }
+    } catch (e) {
+      clearInterval(streamTimer);
+    }
+  }, 3000);
+
   // Setup periodic heartbeat every 15 seconds to keep stream active
   const heartbeatTimer = setInterval(() => {
     try {
@@ -57,6 +88,7 @@ router.get('/stream/:trainId', async (req, res) => {
 
   // Cleanup on client disconnect
   req.on('close', () => {
+    clearInterval(streamTimer);
     clearInterval(heartbeatTimer);
     trainClients.delete(clientObj);
     if (trainClients.size === 0) {

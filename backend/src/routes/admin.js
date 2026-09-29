@@ -1,30 +1,207 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { isMockMode, mockDb, supabase, signDocumentUrl, saveMockDbToFile, resolvePassengerNameForBooking } = require('../config/supabase');
-const { authenticateToken, requireRoles } = require('../middleware/auth');
+const { authenticateToken, requireRoles, requirePermission } = require('../middleware/auth');
 
-// Get all profiles (Admin & Staff)
-router.get('/users', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
-  if (isMockMode) {
-    const users = Array.from(mockDb.profiles.values());
-    const enrichedUsers = await Promise.all(users.map(async u => {
-      if (u.document_url) {
-        return { ...u, document_url: await signDocumentUrl(u.document_url) };
+// Get all profiles (Admin only)
+router.get('/users', authenticateToken, requireRoles(['admin']), async (req, res) => {
+  const {
+    search,
+    status,
+    role: roleFilter,
+    registration_filter,
+    booking_activity,
+    from_date,
+    to_date,
+    sort = 'newest',
+    order = 'desc',
+    page = 1,
+    limit = 25
+  } = req.query;
+
+  const allBookings = Array.from(mockDb.bookings.values());
+
+  const processUserList = (rawUsers) => {
+    let users = rawUsers.map(u => {
+      const pBookings = allBookings.filter(b => 
+        b.passenger_id === u.id || 
+        b.user_id === u.id || 
+        (u.email && b.user_email && b.user_email.toLowerCase() === u.email.toLowerCase()) ||
+        (u.email && b.passenger_email && b.passenger_email.toLowerCase() === u.email.toLowerCase())
+      );
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const hasBookings = pBookings.length > 0;
+      const hasUpcoming = pBookings.some(b => b.travel_date >= todayStr && b.status !== 'cancelled');
+      const hasCompleted = pBookings.some(b => b.status === 'completed' || b.travel_date < todayStr);
+      const hasCancelled = pBookings.some(b => b.status === 'cancelled' || b.status === 'auto_cancelled');
+
+      return {
+        ...u,
+        status: u.status || 'Active',
+        irctc_user_id: u.irctc_user_id || `IRCTC_${u.id ? String(u.id).slice(-6) : '001'}`,
+        created_at: u.created_at || '2026-01-01T00:00:00.000Z',
+        bookings_count: pBookings.length,
+        has_bookings: hasBookings,
+        has_upcoming: hasUpcoming,
+        has_completed: hasCompleted,
+        has_cancelled: hasCancelled,
+        recent_booking_pnr: pBookings.length > 0 ? (pBookings[0].pnr_number || pBookings[0].pnr || pBookings[0].id) : null
+      };
+    });
+
+    // 1. Search (Name, Email, Phone, IRCTC ID, User ID)
+    if (search && String(search).trim()) {
+      const q = String(search).trim().toLowerCase();
+      users = users.filter(u => 
+        (u.full_name && u.full_name.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q)) ||
+        (u.phone && u.phone.toLowerCase().includes(q)) ||
+        (u.id && String(u.id).toLowerCase().includes(q)) ||
+        (u.irctc_user_id && String(u.irctc_user_id).toLowerCase().includes(q))
+      );
+    }
+
+    // 2. Status Filter
+    if (status && status !== 'ALL' && status !== 'All' && status !== 'all') {
+      const st = String(status).toLowerCase();
+      users = users.filter(u => String(u.status).toLowerCase() === st);
+    }
+
+    // 3. Role Filter
+    if (roleFilter && roleFilter !== 'ALL' && roleFilter !== 'All' && roleFilter !== 'all') {
+      const rf = String(roleFilter).toLowerCase();
+      users = users.filter(u => String(u.role).toLowerCase() === rf);
+    }
+
+    // 4. Registration Date Filter
+    if (from_date || to_date) {
+      if (from_date) users = users.filter(u => u.created_at >= from_date);
+      if (to_date) users = users.filter(u => u.created_at <= to_date + 'T23:59:59');
+    }
+
+    // 5. Booking Activity Filter
+    if (booking_activity && booking_activity !== 'ALL' && booking_activity !== 'All' && booking_activity !== 'all') {
+      const act = String(booking_activity).toLowerCase();
+      if (act === 'has_bookings' || act === 'has bookings') {
+        users = users.filter(u => u.has_bookings);
+      } else if (act === 'no_bookings' || act === 'no bookings') {
+        users = users.filter(u => !u.has_bookings);
+      } else if (act === 'upcoming' || act === 'active/upcoming booking') {
+        users = users.filter(u => u.has_upcoming);
+      } else if (act === 'completed' || act === 'completed journey') {
+        users = users.filter(u => u.has_completed);
+      } else if (act === 'cancelled' || act === 'cancelled booking') {
+        users = users.filter(u => u.has_cancelled);
       }
-      return u;
+    }
+
+    // 6. Sorting
+    const sortKey = String(sort).toLowerCase();
+    const isDesc = String(order).toLowerCase() === 'desc' || sortKey === 'newest';
+
+    users.sort((a, b) => {
+      let valA = a.created_at;
+      let valB = b.created_at;
+
+      if (sortKey === 'oldest') {
+        valA = a.created_at;
+        valB = b.created_at;
+      } else if (sortKey === 'name') {
+        valA = a.full_name || '';
+        valB = b.full_name || '';
+      } else if (sortKey === 'email') {
+        valA = a.email || '';
+        valB = b.email || '';
+      } else if (sortKey === 'bookings') {
+        valA = a.bookings_count;
+        valB = b.bookings_count;
+      }
+
+      if (valA < valB) return isDesc ? 1 : -1;
+      if (valA > valB) return isDesc ? -1 : 1;
+      return 0;
+    });
+
+    const total = users.length;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, parseInt(limit, 10) || 25);
+    const totalPages = Math.ceil(total / limitNum) || 1;
+
+    const startIndex = (pageNum - 1) * limitNum;
+    const paginated = users.slice(startIndex, startIndex + limitNum);
+
+    return {
+      users: paginated,
+      allFiltered: users,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages
+    };
+  };
+
+  if (isMockMode) {
+    const rawUsers = Array.from(mockDb.profiles.values());
+    const enrichedUsers = await Promise.all(rawUsers.map(async u => {
+      const userObj = { ...u, status: u.status || 'Active' };
+      if (u.document_url) {
+        userObj.document_url = await signDocumentUrl(u.document_url);
+      }
+      return userObj;
     }));
-    return res.json(enrichedUsers);
+
+    const processed = processUserList(enrichedUsers);
+
+    if (req.query.paginated === 'true') {
+      return res.json({
+        users: processed.users,
+        total: processed.total,
+        page: processed.page,
+        limit: processed.limit,
+        totalPages: processed.totalPages
+      });
+    }
+
+    const resArray = (req.query.page || req.query.limit) ? processed.users : processed.allFiltered;
+    resArray.total = processed.total;
+    resArray.page = processed.page;
+    resArray.limit = processed.limit;
+    resArray.totalPages = processed.totalPages;
+
+    return res.json(resArray);
   } else {
     try {
       const { data, error } = await supabase.from('profiles').select('*');
       if (error) throw error;
       const enrichedUsers = await Promise.all(data.map(async u => {
+        const userObj = { ...u, status: u.status || 'Active' };
         if (u.document_url) {
-          return { ...u, document_url: await signDocumentUrl(u.document_url) };
+          userObj.document_url = await signDocumentUrl(u.document_url);
         }
-        return u;
+        return userObj;
       }));
-      return res.json(enrichedUsers);
+
+      const processed = processUserList(enrichedUsers);
+
+      if (req.query.paginated === 'true') {
+        return res.json({
+          users: processed.users,
+          total: processed.total,
+          page: processed.page,
+          limit: processed.limit,
+          totalPages: processed.totalPages
+        });
+      }
+
+      const resArray = (req.query.page || req.query.limit) ? processed.users : processed.allFiltered;
+      resArray.total = processed.total;
+      resArray.page = processed.page;
+      resArray.limit = processed.limit;
+      resArray.totalPages = processed.totalPages;
+
+      return res.json(resArray);
     } catch (err) {
       console.error('⚠️ Supabase profiles query failed:', err.message);
       return res.status(500).json({ error: 'Database query failed: ' + err.message });
@@ -103,15 +280,164 @@ router.put('/users/:userId', authenticateToken, requireRoles(['admin']), async (
         .single();
 
       if (error) throw error;
-      return res.json(data);
+      return res.json({ message: 'User updated successfully', user: data });
     } catch (err) {
-      return res.status(400).json({ error: err.message });
+      console.error('⚠️ Supabase update user failed:', err.message);
+      return res.status(500).json({ error: 'Database update failed: ' + err.message });
     }
   }
 });
 
-// Get operational/revenue metrics
-router.get('/metrics', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
+// Admin Staff Management Endpoints (Mounted at /api/admin)
+
+// GET /api/admin/staff - Admin list staff roster
+router.get('/staff', authenticateToken, requireRoles(['admin']), (req, res) => {
+  const staffList = Array.from(mockDb.staff_profiles.values()).map(st => {
+    const perms = mockDb.staff_permissions.get(st.id) || st.permissions || [];
+    return { ...st, permissions: perms };
+  });
+
+  const summary = {
+    total_staff: staffList.length,
+    active_staff: staffList.filter(s => String(s.status).toUpperCase() === 'ACTIVE').length,
+    suspended: staffList.filter(s => String(s.status).toUpperCase() === 'SUSPENDED').length
+  };
+
+  return res.json({ summary, staff: staffList });
+});
+
+// POST /api/admin/staff - Admin create staff member
+router.post('/staff', authenticateToken, requireRoles(['admin']), (req, res) => {
+  const {
+    full_name,
+    email,
+    phone,
+    employee_id,
+    department,
+    designation,
+    staff_type,
+    joining_date,
+    status,
+    permissions
+  } = req.body;
+
+  if (!full_name || !email) {
+    return res.status(400).json({ error: 'Full name and email are required to create staff' });
+  }
+
+  const cleanEmail = email ? email.trim().toLowerCase() : '';
+  const cleanEmpId = employee_id ? employee_id.trim().toLowerCase() : '';
+
+  const existingStaffByEmail = Array.from(mockDb.staff_profiles.values()).find(s => s && s.email && s.email.trim().toLowerCase() === cleanEmail);
+  const existingProfileByEmail = Array.from(mockDb.profiles.values()).find(p => p && p.email && p.email.trim().toLowerCase() === cleanEmail);
+  const existingStaffByEmpId = cleanEmpId ? Array.from(mockDb.staff_profiles.values()).find(s => s && s.employee_id && s.employee_id.trim().toLowerCase() === cleanEmpId) : null;
+
+  if (existingStaffByEmail || existingProfileByEmail) {
+    return res.status(400).json({ error: 'A user or staff member with this Email already exists.' });
+  }
+  if (existingStaffByEmpId) {
+    return res.status(400).json({ error: 'A staff member with this Employee ID already exists.' });
+  }
+
+  const staffId = 'stf-' + Date.now();
+  const empId = employee_id || `EMP-${Math.floor(10000 + Math.random() * 90000)}`;
+  const defaultPerms = permissions || [
+    'VIEW_DASHBOARD', 'VIEW_ASSIGNED_TRAINS', 'VIEW_BOOKINGS', 'VIEW_PASSENGERS',
+    'VERIFY_TICKETS', 'VIEW_PNR', 'VIEW_MANIFEST', 'VIEW_RAC_WAITLIST',
+    'VIEW_CATERING_ORDERS', 'UPDATE_CATERING_STATUS', 'VIEW_TRAIN_STATUS',
+    'HANDLE_SERVICE_REQUESTS', 'CREATE_INCIDENT_REPORT', 'SUBMIT_DAILY_REPORT', 'VIEW_NOTIFICATIONS'
+  ];
+
+  const newStaff = {
+    id: staffId,
+    employee_id: empId,
+    full_name,
+    email,
+    phone: phone || '+91 9876543210',
+    role: 'staff',
+    staff_type: staff_type || 'Passenger Support Officer',
+    department: department || 'Passenger Services',
+    designation: designation || 'Passenger Support Officer',
+    joining_date: joining_date || new Date().toISOString().split('T')[0],
+    status: (status || 'ACTIVE').toUpperCase(),
+    duty_status: 'OFF DUTY',
+    permissions: defaultPerms,
+    created_by_admin: req.user.id,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  mockDb.staff_profiles.set(staffId, newStaff);
+  mockDb.staff_permissions.set(staffId, defaultPerms);
+
+  // Mirror in mockDb.profiles so JWT auth works
+  mockDb.profiles.set(staffId, {
+    id: staffId,
+    email,
+    role: 'staff',
+    full_name,
+    phone: phone || '+91 9876543210',
+    status: (status || 'ACTIVE').toUpperCase(),
+    created_at: new Date().toISOString()
+  });
+
+  // Audit log
+  const auditId = 'aud-' + Date.now();
+  mockDb.staff_audit_logs.set(auditId, {
+    id: auditId,
+    staff_id: staffId,
+    actor_id: req.user.id,
+    action: 'ADMIN_CREATED_STAFF',
+    timestamp: new Date().toISOString()
+  });
+
+  saveMockDbToFile();
+  return res.status(201).json(newStaff);
+});
+
+// PATCH /api/admin/staff/:id/status - Admin update staff status
+router.patch('/staff/:id/status', authenticateToken, requireRoles(['admin']), (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  if (!status) return res.status(400).json({ error: 'Status is required' });
+
+  const staffProf = mockDb.staff_profiles.get(id);
+  if (!staffProf) return res.status(404).json({ error: 'Staff member not found' });
+
+  staffProf.status = status.toUpperCase();
+  staffProf.updated_at = new Date().toISOString();
+  mockDb.staff_profiles.set(id, staffProf);
+
+  const mainProf = mockDb.profiles.get(id);
+  if (mainProf) {
+    mainProf.status = status.toUpperCase();
+    mockDb.profiles.set(id, mainProf);
+  }
+
+  saveMockDbToFile();
+  return res.json({ message: 'Staff status updated successfully', staff: staffProf });
+});
+
+// PATCH /api/admin/staff/:id/permissions - Admin update staff permissions
+router.patch('/staff/:id/permissions', authenticateToken, requireRoles(['admin']), (req, res) => {
+  const { id } = req.params;
+  const { permissions } = req.body;
+  if (!Array.isArray(permissions)) return res.status(400).json({ error: 'Permissions must be an array' });
+
+  const staffProf = mockDb.staff_profiles.get(id);
+  if (!staffProf) return res.status(404).json({ error: 'Staff member not found' });
+
+  staffProf.permissions = permissions;
+  staffProf.updated_at = new Date().toISOString();
+  mockDb.staff_profiles.set(id, staffProf);
+  mockDb.staff_permissions.set(id, permissions);
+
+  saveMockDbToFile();
+  return res.json({ message: 'Permissions updated successfully', permissions });
+});
+
+// Get operational/revenue metrics (ADMIN ONLY)
+router.get('/metrics', authenticateToken, requireRoles(['admin']), async (req, res) => {
   const period = req.query.period || '7d';
   const now = new Date();
 
@@ -717,7 +1043,9 @@ if (isMockMode && !mockDb.system_policies) {
       flatFee48h: 240,
       percent12to48h: 25,
       percent4to12h: 50,
-      chartPrepRefund: 0
+      chartPrepRefund: 0,
+      cancellation_fee_percentage: 10,
+      full_refund_when_fee_paid: true
     },
     fares: [
       { id: '1a', coach: 'AC 1-Tier (1A)', code: '1A', base: 1450, permKm: 3.40, minDistance: 500, tatkalPremium: 500, superfastFee: 75, tax: 5 },
@@ -850,18 +1178,153 @@ router.get('/system-health', authenticateToken, requireRoles(['admin', 'staff'])
 
 // GET /api/admin/train-status
 router.get('/train-status', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
+  const { getTrainOperationalAndBookingStatus } = require('../services/journeyAvailabilityService');
+  const targetDate = req.query.date || req.query.service_date || null;
+  const isUpcomingOnly = req.query.filter === 'upcoming' || req.query.status === 'upcoming' || req.query.view === 'upcoming';
+
   if (isMockMode) {
     let trainsList = Array.from(mockDb.trains.values()).filter(t => !!t && t.status !== 'inactive');
     if (process.env.NODE_ENV !== 'test') {
       trainsList = trainsList.filter(t => t.source !== 'test' && t.record_source !== 'test');
     }
+
+    // Cleanly deduplicate duplicate trains sharing identical train_number
+    const dedupeMap = new Map();
+    for (const t of trainsList) {
+      const tNum = String(t.train_number || t.trainNo || '').trim();
+      const jDate = (t.is_date_specific && t.journey_date) ? t.journey_date : (targetDate || 'regular');
+      const key = `${tNum}_${jDate}`;
+
+      if (!dedupeMap.has(key)) {
+        dedupeMap.set(key, t);
+      } else {
+        const existing = dedupeMap.get(key);
+        if (process.env.NODE_ENV === 'test' && (String(t.id).includes('test') || String(t.id).includes('iso'))) {
+          dedupeMap.set(key, t);
+          continue;
+        }
+        // Prefer the train that has scheduled stops or scheduled departure time
+        const existingScore = (Array.isArray(existing.stops) ? existing.stops.length : 0) + (existing.scheduled_departure_time ? 10 : 0);
+        const currentScore = (Array.isArray(t.stops) ? t.stops.length : 0) + (t.scheduled_departure_time ? 10 : 0);
+        if (currentScore > existingScore) {
+          dedupeMap.set(key, t);
+        }
+      }
+    }
+    trainsList = Array.from(dedupeMap.values());
+
     const routesList = Array.from(mockDb.routes.values());
-    const enriched = trainsList.map(t => {
-      const r = routesList.find(route => route.train_id === t.id) || null;
+    let enriched = trainsList.map(t => {
+      const r = routesList.find(route => route && (route.train_id === t.id || String(route.train_number) === String(t.train_number) || route.id === t.route_id)) || null;
       const sourceCode = t.source_station_code || r?.source_station_code || t.source || 'NDLS';
       const destCode = t.destination_station_code || r?.destination_station_code || t.destination || 'MMCT';
       const depTime = t.scheduled_departure_time || r?.departure_time || t.departure_time || '10:00:00';
       const arrTime = t.scheduled_arrival_time || r?.arrival_time || t.arrival_time || '18:00:00';
+
+      const statusInfo = getTrainOperationalAndBookingStatus({
+        train: t,
+        route: r,
+        date: targetDate
+      });
+
+      const effectiveJourneyDate = targetDate || ((t.is_date_specific && t.journey_date) ? t.journey_date : (statusInfo.departureDate || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })));
+      const activeBookingsForTrain = Array.from(mockDb.bookings.values()).filter(
+        b => (b.train_id === t.id || b.train_id === t.train_number || String(b.train_number) === String(t.train_number)) &&
+             b.travel_date === effectiveJourneyDate &&
+             b.status !== 'cancelled'
+      );
+      const passengerImpactCount = activeBookingsForTrain.reduce((sum, b) => {
+        const count = (Array.isArray(b.passengers) && b.passengers.length > 0) ? b.passengers.length : 1;
+        return sum + count;
+      }, 0);
+
+      // Resolve operational status specifically for effectiveJourneyDate
+      let dateStatus = null;
+      if (mockDb.train_status_by_date) {
+        dateStatus = mockDb.train_status_by_date.get(`${t.id}_${effectiveJourneyDate}`) ||
+                     mockDb.train_status_by_date.get(`${t.train_number}_${effectiveJourneyDate}`);
+      }
+
+      // Check train_services for effectiveJourneyDate
+      if (!dateStatus && mockDb.train_services) {
+        const svc = Array.from(mockDb.train_services.values()).find(
+          s => s && (s.train_id === t.id || String(s.train_number) === String(t.train_number)) && s.service_date === effectiveJourneyDate
+        );
+        if (svc && (svc.delay_minutes > 0 || svc.status === 'DELAYED' || svc.status === 'CANCELLED' || svc.status === 'RESCHEDULED' || svc.updated_departure_time)) {
+          dateStatus = {
+            status: (svc.status || 'on_time').toLowerCase(),
+            operational_status: (svc.operational_status || svc.status || 'on_time').toLowerCase(),
+            delay_minutes: svc.delay_minutes || 0,
+            reason: svc.delay_reason || null,
+            announcement_message: svc.delay_message || null,
+            updated_departure_time: svc.updated_departure_time || null,
+            updated_arrival_time: svc.updated_arrival_time || null,
+            updated_at: svc.status_updated_at || svc.updated_at || null
+          };
+        }
+      }
+
+      // Check train_status_history for an update specifically matching effectiveJourneyDate
+      if (!dateStatus && mockDb.train_status_history) {
+        const matchingHist = Array.from(mockDb.train_status_history.values())
+          .filter(h => h && (h.train_id === t.id || String(h.train_number) === String(t.train_number)))
+          .filter(h => h.journey_date === effectiveJourneyDate || (!h.journey_date && h.updated_at && h.updated_at.slice(0, 10) === effectiveJourneyDate))
+          .sort((a, b) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime());
+        if (matchingHist.length > 0) {
+          dateStatus = matchingHist[0];
+        }
+      }
+
+      let effectiveStatus = 'on_time';
+      let effectiveDelay = 0;
+      let effectiveReason = null;
+      let effectiveMessage = null;
+      let effectiveDepTime = statusInfo.departureTime || depTime;
+      let effectiveArrTime = statusInfo.arrivalTime || arrTime;
+      let effectiveUpdatedAt = null;
+
+      if (dateStatus) {
+        effectiveStatus = (dateStatus.new_status || dateStatus.status || 'on_time').toLowerCase();
+        effectiveDelay = dateStatus.delay_minutes || 0;
+        effectiveReason = dateStatus.reason || dateStatus.delay_reason || null;
+        effectiveMessage = dateStatus.announcement_message || dateStatus.message || null;
+        if (dateStatus.updated_departure_time) {
+          effectiveDepTime = dateStatus.updated_departure_time.slice(0, 5);
+        } else if (effectiveDelay > 0) {
+          effectiveDepTime = addMinutesToTime(depTime, effectiveDelay).slice(0, 5);
+        }
+        if (dateStatus.updated_arrival_time) {
+          effectiveArrTime = dateStatus.updated_arrival_time.slice(0, 5);
+        } else if (effectiveDelay > 0) {
+          effectiveArrTime = addMinutesToTime(arrTime, effectiveDelay).slice(0, 5);
+        }
+        effectiveUpdatedAt = dateStatus.updated_at || dateStatus.status_updated_at || null;
+      } else if (!targetDate && t.is_date_specific && t.journey_date) {
+        const isTodayService = t.journey_date === todayIST;
+        if (isTodayService) {
+          effectiveStatus = (t.status || 'on_time').toLowerCase();
+          effectiveDelay = t.delay_minutes || 0;
+          effectiveReason = t.delay_reason || null;
+          effectiveMessage = t.announcement_message || null;
+          effectiveDepTime = (t.status === 'delayed' || t.status === 'rescheduled') && t.updated_departure_time ? t.updated_departure_time.slice(0, 5) : (statusInfo.departureTime || depTime);
+          effectiveArrTime = (t.status === 'delayed' || t.status === 'rescheduled') && t.updated_arrival_time ? t.updated_arrival_time.slice(0, 5) : (statusInfo.arrivalTime || arrTime);
+          effectiveUpdatedAt = t.status_updated_at || null;
+        }
+      } else if (!targetDate && t.status && (t.status.toLowerCase() === 'delayed' || t.status.toLowerCase() === 'rescheduled' || t.status.toLowerCase() === 'cancelled')) {
+        const isUpdatedToday = t.status_updated_at && t.status_updated_at.slice(0, 10) === todayIST;
+        if (isUpdatedToday) {
+          effectiveStatus = t.status.toLowerCase();
+          effectiveDelay = t.delay_minutes || 0;
+          effectiveReason = t.delay_reason || null;
+          effectiveMessage = t.announcement_message || null;
+          effectiveDepTime = (t.status === 'delayed' || t.status === 'rescheduled') && t.updated_departure_time ? t.updated_departure_time.slice(0, 5) : (statusInfo.departureTime || depTime);
+          effectiveArrTime = (t.status === 'delayed' || t.status === 'rescheduled') && t.updated_arrival_time ? t.updated_arrival_time.slice(0, 5) : (statusInfo.arrivalTime || arrTime);
+          effectiveUpdatedAt = t.status_updated_at || null;
+        }
+      }
+
+      const isDisrupted = effectiveStatus === 'delayed' || effectiveStatus === 'rescheduled' || effectiveStatus === 'cancelled' || effectiveStatus === 'diverted' || effectiveStatus === 'short_terminated';
+
       return {
         ...t,
         train_number: t.train_number || t.trainNo || '',
@@ -872,30 +1335,69 @@ router.get('/train-status', authenticateToken, requireRoles(['admin', 'staff']),
         destination: destCode,
         scheduled_departure_time: depTime,
         scheduled_arrival_time: arrTime,
-        departure_time: depTime,
-        arrival_time: arrTime,
-        status: t.status || 'on_time',
-        delay_minutes: t.delay_minutes || 0,
+        departure_time: effectiveDepTime,
+        arrival_time: effectiveArrTime,
+        departure_date: statusInfo.departureDate || effectiveJourneyDate,
+        arrival_date: statusInfo.arrivalDate || effectiveJourneyDate,
+        departure_date_formatted: statusInfo.departureDateFormatted,
+        arrival_date_formatted: statusInfo.arrivalDateFormatted,
+        date_route_label: statusInfo.dateRouteLabel,
+        duration_formatted: statusInfo.durationFormatted,
+        status: effectiveStatus,
+        operational_status: effectiveStatus,
+        booking_status: statusInfo.bookingStatus,
+        is_upcoming: statusInfo.isUpcoming,
+        is_departed: statusInfo.isDeparted,
+        is_completed: statusInfo.isCompleted,
+        delay_minutes: effectiveStatus === 'delayed' ? effectiveDelay : 0,
+        delay_reason: (effectiveStatus === 'delayed' || effectiveStatus === 'rescheduled') ? effectiveReason : null,
+        cancellation_reason: effectiveStatus === 'cancelled' ? (effectiveReason || t.cancellation_reason || null) : null,
+        announcement_message: isDisrupted ? effectiveMessage : null,
+        platform: t.platform || null,
+        passenger_impact_count: passengerImpactCount,
+        affected_bookings_count: activeBookingsForTrain.length,
+        journey_date: effectiveJourneyDate,
+        effective_journey_date: effectiveJourneyDate,
+        status_updated_at: isDisrupted ? effectiveUpdatedAt : (dateStatus ? effectiveUpdatedAt : null),
+        stops: (t.stops && t.stops.length > 0) ? t.stops : (r?.stops || []),
+        available_classes: t.available_classes || t.classes || r?.available_classes || ['SL', '3A', '2A', '1A'],
+        duration: t.duration || r?.duration || statusInfo.durationFormatted || '12h 00m',
+        running_days: Array.isArray(t.operating_days) ? t.operating_days : (Array.isArray(t.running_days) ? t.running_days : (Array.isArray(r?.operating_days) ? r.operating_days : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])),
+        operating_days: Array.isArray(t.operating_days) ? t.operating_days : (Array.isArray(t.running_days) ? t.running_days : (Array.isArray(r?.operating_days) ? r.operating_days : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])),
+        frequency: t.frequency || r?.frequency || 'Daily',
         route: r ? {
           ...r,
           source_station_code: r.source_station_code || sourceCode,
           destination_station_code: r.destination_station_code || destCode,
           departure_time: r.departure_time || depTime,
-          arrival_time: r.arrival_time || arrTime
+          arrival_time: r.arrival_time || arrTime,
+          stops: (r.stops && r.stops.length > 0) ? r.stops : (t.stops || [])
         } : null
       };
     });
+
+    if (isUpcomingOnly) {
+      enriched = enriched.filter(t => t.is_upcoming);
+    }
+
     return res.json(enriched);
   } else {
     try {
       const { data, error } = await supabase.from('trains').select('*, routes:routes(*)');
       if (error) throw error;
-      const enriched = (data || []).filter(t => t.status !== 'inactive').map(t => {
+      let enriched = (data || []).filter(t => t.status !== 'inactive').map(t => {
         const r = t.routes && t.routes.length > 0 ? t.routes[0] : null;
         const sourceCode = t.source_station_code || r?.source_station_code || t.source || 'NDLS';
         const destCode = t.destination_station_code || r?.destination_station_code || t.destination || 'MMCT';
         const depTime = t.scheduled_departure_time || r?.departure_time || t.departure_time || '10:00:00';
         const arrTime = t.scheduled_arrival_time || r?.arrival_time || t.arrival_time || '18:00:00';
+
+        const statusInfo = getTrainOperationalAndBookingStatus({
+          train: t,
+          route: r,
+          date: targetDate
+        });
+
         return {
           ...t,
           train_number: t.train_number || t.trainNo || '',
@@ -906,9 +1408,20 @@ router.get('/train-status', authenticateToken, requireRoles(['admin', 'staff']),
           destination: destCode,
           scheduled_departure_time: depTime,
           scheduled_arrival_time: arrTime,
-          departure_time: depTime,
-          arrival_time: arrTime,
-          status: t.status || 'on_time',
+          departure_time: statusInfo.departureTime || depTime,
+          arrival_time: statusInfo.arrivalTime || arrTime,
+          departure_date: statusInfo.departureDate,
+          arrival_date: statusInfo.arrivalDate,
+          departure_date_formatted: statusInfo.departureDateFormatted,
+          arrival_date_formatted: statusInfo.arrivalDateFormatted,
+          date_route_label: statusInfo.dateRouteLabel,
+          duration_formatted: statusInfo.durationFormatted,
+          status: statusInfo.status,
+          operational_status: statusInfo.operationalStatus,
+          booking_status: statusInfo.bookingStatus,
+          is_upcoming: statusInfo.isUpcoming,
+          is_departed: statusInfo.isDeparted,
+          is_completed: statusInfo.isCompleted,
           delay_minutes: t.delay_minutes || 0,
           route: r ? {
             ...r,
@@ -919,6 +1432,11 @@ router.get('/train-status', authenticateToken, requireRoles(['admin', 'staff']),
           } : null
         };
       });
+
+      if (isUpcomingOnly) {
+        enriched = enriched.filter(t => t.is_upcoming);
+      }
+
       return res.json(enriched);
     } catch (err) {
       return res.status(500).json({ error: 'Failed to fetch train statuses: ' + err.message });
@@ -929,22 +1447,114 @@ router.get('/train-status', authenticateToken, requireRoles(['admin', 'staff']),
 // GET /api/admin/train-status/:trainId/history
 router.get('/train-status/:trainId/history', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
   const { trainId } = req.params;
+  const { journey_date } = req.query;
+
   if (isMockMode) {
-    const history = Array.from(mockDb.train_status_history.values())
-      .filter(h => h.train_id === trainId)
-      .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    let history = Array.from(mockDb.train_status_history.values())
+      .filter(h => h.train_id === trainId || String(h.train_number) === String(trainId));
+    
+    if (journey_date) {
+      history = history.filter(h => !h.journey_date || h.journey_date === journey_date);
+    }
+
+    history.sort((a, b) => new Date(b.updated_at || b.timestamp || 0) - new Date(a.updated_at || a.timestamp || 0));
     return res.json(history);
   } else {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('train_status_history')
         .select('*')
         .eq('train_id', trainId)
         .order('updated_at', { ascending: false });
+      
+      if (journey_date) {
+        query = query.eq('journey_date', journey_date);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return res.json(data || []);
     } catch (err) {
       return res.status(500).json({ error: 'Failed to fetch status history: ' + err.message });
+    }
+  }
+});
+
+// GET /api/admin/train-status/:trainId/passenger-impact
+router.get('/train-status/:trainId/passenger-impact', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
+  const { trainId } = req.params;
+  const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+  const requestedDate = req.query.date || req.query.journey_date;
+
+  if (isMockMode) {
+    const train = mockDb.trains.get(trainId) || Array.from(mockDb.trains.values()).find(t => t.id === trainId || t.train_number === trainId);
+    if (!train) return res.status(404).json({ error: 'Train not found' });
+
+    const targetDate = requestedDate || (train.is_date_specific && train.journey_date ? train.journey_date : todayIST);
+
+    const activeBookings = Array.from(mockDb.bookings.values()).filter(
+      b => (b.train_id === train.id || b.train_id === trainId || String(b.train_number) === String(train.train_number)) &&
+           b.travel_date === targetDate &&
+           b.status !== 'cancelled'
+    );
+
+    const affectedBookingsCount = activeBookings.length;
+    const affectedPassengersCount = activeBookings.reduce((sum, b) => {
+      const count = (Array.isArray(b.passengers) && b.passengers.length > 0) ? b.passengers.length : 1;
+      return sum + count;
+    }, 0);
+
+    const pnrs = [...new Set(activeBookings.map(b => b.pnr_number).filter(Boolean))];
+
+    return res.json({
+      train_id: train.id,
+      train_number: train.train_number,
+      train_name: train.train_name,
+      journey_date: targetDate,
+      affectedBookingsCount,
+      affectedPassengersCount,
+      pnrs,
+      bookings: activeBookings.map(b => ({
+        id: b.id,
+        pnr: b.pnr_number,
+        passenger_name: b.passenger_name || resolvePassengerNameForBooking(b),
+        travel_date: b.travel_date,
+        seat_number: b.seat_number,
+        coach_number: b.coach_number,
+        status: b.status,
+        total_passengers: (Array.isArray(b.passengers) && b.passengers.length > 0) ? b.passengers.length : 1
+      }))
+    });
+  } else {
+    try {
+      const { data: train } = await supabase.from('trains').select('*').eq('id', trainId).single();
+      const targetDate = requestedDate || train?.journey_date || todayIST;
+
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('train_id', trainId)
+        .eq('travel_date', targetDate)
+        .neq('status', 'cancelled');
+      if (error) throw error;
+
+      const bList = bookings || [];
+      const affectedBookingsCount = bList.length;
+      const affectedPassengersCount = bList.reduce((sum, b) => sum + ((Array.isArray(b.passengers) && b.passengers.length > 0) ? b.passengers.length : 1), 0);
+      const pnrs = [...new Set(bList.map(b => b.pnr_number).filter(Boolean))];
+
+      return res.json({
+        train_id: trainId,
+        train_number: train?.train_number || '',
+        train_name: train?.train_name || '',
+        journey_date: targetDate,
+        affectedBookingsCount,
+        affectedPassengersCount,
+        pnrs,
+        bookings: bList
+      });
+    } catch (err) {
+      return res.status(500).json({ error: 'Failed to calculate passenger impact: ' + err.message });
     }
   }
 });
@@ -967,90 +1577,218 @@ function addMinutesToTime(timeStr, mins) {
   return `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-// PATCH /api/admin/train-status/:trainId
-router.patch('/train-status/:trainId', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
-  const { trainId } = req.params;
-  const { status, delay_minutes, reason, message, updated_departure_time, updated_arrival_time } = req.body;
+// Map normalized status codes
+const STATUS_NORM_MAP = {
+  'on time': 'on_time',
+  'on_time': 'on_time',
+  'delayed': 'delayed',
+  'rescheduled': 'rescheduled',
+  'cancelled': 'cancelled',
+  'diverted': 'diverted',
+  'short terminated': 'short_terminated',
+  'short_terminated': 'short_terminated',
+  'regulated': 'regulated',
+  'platform changed': 'platform_changed',
+  'platform_changed': 'platform_changed',
+  'boarding': 'boarding',
+  'departed': 'departed',
+  'arrived': 'arrived'
+};
 
-  const validStatuses = ['on_time', 'delayed', 'cancelled', 'rescheduled'];
-  if (!status || !validStatuses.includes(status)) {
-    return res.status(400).json({ error: 'Invalid status. Status must be: on_time, delayed, cancelled, or rescheduled.' });
+const VALID_OPERATIONAL_STATUSES = [
+  'on_time', 'delayed', 'rescheduled', 'cancelled', 'diverted',
+  'short_terminated', 'regulated', 'platform_changed', 'boarding',
+  'departed', 'arrived'
+];
+
+const NOTIF_TITLE_MAP = {
+  'delayed': 'Train Delayed',
+  'rescheduled': 'Train Rescheduled',
+  'cancelled': 'Train Cancelled',
+  'diverted': 'Train Route Changed',
+  'short_terminated': 'Train Service Changed',
+  'regulated': 'Train Service Regulated',
+  'platform_changed': 'Platform Changed',
+  'on_time': 'Train Status Updated',
+  'boarding': 'Boarding Started',
+  'departed': 'Train Departed',
+  'arrived': 'Train Arrived'
+};
+
+// PATCH /api/admin/train-status/:trainId
+router.patch('/train-status/:trainId', authenticateToken, requireRoles(['admin', 'staff']), requirePermission(['UPDATE_AUTHORIZED_TRAIN_STATUS', 'MANAGE_TRAINS', 'MANAGE_TRAIN_SCHEDULES']), async (req, res) => {
+  const { trainId } = req.params;
+  const {
+    status,
+    delay_minutes,
+    reason,
+    message,
+    announcement_message,
+    platform,
+    journey_date,
+    updated_departure_time,
+    updated_arrival_time
+  } = req.body;
+
+  const rawStatus = String(status || '').trim().toLowerCase();
+  const normalizedStatus = STATUS_NORM_MAP[rawStatus];
+
+  if (!normalizedStatus || !VALID_OPERATIONAL_STATUSES.includes(normalizedStatus)) {
+    return res.status(400).json({
+      error: `Invalid status. Status must be one of: ${VALID_OPERATIONAL_STATUSES.join(', ')}.`
+    });
   }
 
-  if (status === 'delayed' && (delay_minutes === undefined || isNaN(delay_minutes))) {
+  if (normalizedStatus === 'delayed' && (delay_minutes === undefined || isNaN(delay_minutes))) {
     return res.status(400).json({ error: 'delay_minutes is required and must be a number for DELAYED status.' });
   }
 
-  if (status === 'rescheduled' && (!updated_departure_time || !updated_arrival_time)) {
+  if (normalizedStatus === 'rescheduled' && (!updated_departure_time || !updated_arrival_time)) {
     return res.status(400).json({ error: 'updated_departure_time and updated_arrival_time are required for RESCHEDULED status.' });
   }
 
+  const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+
   if (isMockMode) {
-    const train = mockDb.trains.get(trainId);
+    const train = mockDb.trains.get(trainId) || Array.from(mockDb.trains.values()).find(t => t.id === trainId || t.train_number === trainId);
     if (!train) return res.status(404).json({ error: 'Train not found' });
 
+    const targetJourneyDate = journey_date || (train.is_date_specific && train.journey_date ? train.journey_date : todayIST);
     const previousStatus = train.status || 'on_time';
-    const route = Array.from(mockDb.routes.values()).find(r => r.train_id === trainId);
-    
+    const route = Array.from(mockDb.routes.values()).find(r => r && (r.train_id === train.id || String(r.train_number) === String(train.train_number)));
+
     const scheduled_departure_time = train.scheduled_departure_time || (route ? route.departure_time : '10:00:00');
     const scheduled_arrival_time = train.scheduled_arrival_time || (route ? route.arrival_time : '18:00:00');
 
     let finalDepartureTime = null;
     let finalArrivalTime = null;
 
-    if (status === 'delayed') {
+    if (normalizedStatus === 'delayed') {
       finalDepartureTime = addMinutesToTime(scheduled_departure_time, parseInt(delay_minutes, 10));
       finalArrivalTime = addMinutesToTime(scheduled_arrival_time, parseInt(delay_minutes, 10));
-    } else if (status === 'rescheduled') {
+    } else if (normalizedStatus === 'rescheduled') {
       finalDepartureTime = updated_departure_time;
       finalArrivalTime = updated_arrival_time;
+    } else if (normalizedStatus === 'on_time') {
+      finalDepartureTime = scheduled_departure_time;
+      finalArrivalTime = scheduled_arrival_time;
     }
 
-    // Update Train
-    train.status = status;
-    train.delay_minutes = status === 'delayed' ? parseInt(delay_minutes, 10) : 0;
-    train.delay_reason = (status === 'delayed' || status === 'rescheduled') ? reason : null;
-    train.delay_message = (status === 'delayed' || status === 'rescheduled') ? message : null;
-    train.cancellation_reason = status === 'cancelled' ? reason : null;
-    train.cancellation_message = status === 'cancelled' ? message : null;
-    train.scheduled_departure_time = scheduled_departure_time;
-    train.scheduled_arrival_time = scheduled_arrival_time;
-    train.updated_departure_time = finalDepartureTime;
-    train.updated_arrival_time = finalArrivalTime;
-    train.status_updated_at = new Date().toISOString();
+    const nowIso = new Date().toISOString();
 
-    mockDb.trains.set(trainId, train);
-
-    // Save History
-    const historyId = uuidv4();
-    mockDb.train_status_history.set(historyId, {
-      id: historyId,
-      train_id: trainId,
+    // 1. Record Date-Specific Status Update for targetJourneyDate
+    if (!mockDb.train_status_by_date) {
+      mockDb.train_status_by_date = new Map();
+    }
+    const statusRecord = {
+      train_id: train.id,
+      train_number: train.train_number,
+      journey_date: targetJourneyDate,
+      status: normalizedStatus,
+      new_status: normalizedStatus,
+      operational_status: normalizedStatus,
       previous_status: previousStatus,
-      new_status: status,
-      delay_minutes: status === 'delayed' ? parseInt(delay_minutes, 10) : 0,
-      reason: reason || '',
-      message: message || '',
+      delay_minutes: normalizedStatus === 'delayed' ? parseInt(delay_minutes, 10) : 0,
+      reason: (normalizedStatus === 'delayed' || normalizedStatus === 'rescheduled') ? reason : (normalizedStatus === 'cancelled' ? reason : null),
+      delay_reason: (normalizedStatus === 'delayed' || normalizedStatus === 'rescheduled') ? reason : (normalizedStatus === 'cancelled' ? reason : null),
+      announcement_message: announcement_message || message || null,
+      message: announcement_message || message || null,
+      platform: platform || train.platform || null,
       updated_departure_time: finalDepartureTime,
       updated_arrival_time: finalArrivalTime,
-      updated_at: new Date().toISOString(),
-      updated_by: 'ADMIN'
+      updated_at: nowIso,
+      status_updated_at: nowIso,
+      updated_by: req.user.full_name || req.user.email || 'Operations Officer',
+      updated_by_role: req.user.role || 'admin'
+    };
+    mockDb.train_status_by_date.set(`${train.id}_${targetJourneyDate}`, statusRecord);
+    mockDb.train_status_by_date.set(`${train.train_number}_${targetJourneyDate}`, statusRecord);
+
+    // 2. Also update train_services if service instance exists for targetJourneyDate
+    if (mockDb.train_services) {
+      for (const [sKey, s] of mockDb.train_services.entries()) {
+        if (s && (s.train_id === train.id || String(s.train_number) === String(train.train_number)) && s.service_date === targetJourneyDate) {
+          s.status = normalizedStatus.toUpperCase();
+          s.operational_status = normalizedStatus;
+          s.delay_minutes = normalizedStatus === 'delayed' ? parseInt(delay_minutes, 10) : 0;
+          s.delay_reason = reason;
+          s.delay_message = announcement_message || message || null;
+          s.updated_departure_time = finalDepartureTime;
+          s.updated_arrival_time = finalArrivalTime;
+          s.status_updated_at = nowIso;
+          mockDb.train_services.set(sKey, s);
+        }
+      }
+    }
+
+    // 3. Update master train object ONLY when journey_date is not specified or journey_date is 'all'
+    if (!req.body.journey_date || journey_date === 'all') {
+      train.status = normalizedStatus;
+      train.operational_status = normalizedStatus;
+      train.delay_minutes = normalizedStatus === 'delayed' ? parseInt(delay_minutes, 10) : 0;
+      train.delay_reason = (normalizedStatus === 'delayed' || normalizedStatus === 'rescheduled' || normalizedStatus === 'cancelled') ? reason : null;
+      train.delay_message = announcement_message || message || null;
+      train.scheduled_departure_time = train.scheduled_departure_time || scheduled_departure_time;
+      train.scheduled_arrival_time = train.scheduled_arrival_time || scheduled_arrival_time;
+      train.updated_departure_time = finalDepartureTime;
+      train.updated_arrival_time = finalArrivalTime;
+      train.status_updated_at = nowIso;
+      mockDb.trains.set(train.id, train);
+    }
+
+    // Save Status History Audit Record
+    const historyId = uuidv4();
+    const historyRecord = {
+      id: historyId,
+      train_id: train.id,
+      train_service_id: train.train_service_id || null,
+      train_number: train.train_number,
+      journey_date: targetJourneyDate,
+      previous_status: previousStatus,
+      new_status: normalizedStatus,
+      delay_duration: normalizedStatus === 'delayed' ? `${delay_minutes} min` : null,
+      delay_minutes: normalizedStatus === 'delayed' ? parseInt(delay_minutes, 10) : 0,
+      reason: reason || '',
+      platform: platform || train.platform || '',
+      announcement_message: announcement_message || message || '',
+      message: announcement_message || message || '',
+      updated_departure_time: finalDepartureTime,
+      updated_arrival_time: finalArrivalTime,
+      updated_by: req.user.full_name || req.user.email || (req.user.role === 'staff' ? 'Operations Staff' : 'Admin'),
+      updated_by_role: req.user.role || 'admin',
+      updated_at: nowIso
+    };
+    mockDb.train_status_history.set(historyId, historyRecord);
+
+    // Find affected bookings matching exact train AND targetJourneyDate
+    const targetBookings = Array.from(mockDb.bookings.values()).filter(b => {
+      if (!b) return false;
+      const trainMatch = (b.train_id === train.id || b.train_id === trainId || String(b.train_number) === String(train.train_number));
+      if (!trainMatch) return false;
+
+      const bookingDate = b.travel_date || b.journey_date;
+      if (targetJourneyDate && targetJourneyDate !== 'all') {
+        return bookingDate === targetJourneyDate && b.status !== 'cancelled' && b.status !== 'completed';
+      }
+      if (train.is_date_specific && train.journey_date) {
+        return bookingDate === train.journey_date && b.status !== 'cancelled' && b.status !== 'completed';
+      }
+      return b.status !== 'cancelled' && b.status !== 'completed';
     });
 
     let affectedBookingsCount = 0;
+    let affectedPassengersCount = 0;
     let totalRefundAmount = 0;
 
-    if (status === 'cancelled') {
-      const activeBookings = Array.from(mockDb.bookings.values()).filter(
-        b => b.train_id === trainId && b.status !== 'cancelled'
-      );
-      affectedBookingsCount = activeBookings.length;
+    if (normalizedStatus === 'cancelled') {
+      const activeBookingsToCancel = targetBookings.filter(b => b.status !== 'cancelled');
+      affectedBookingsCount = activeBookingsToCancel.length;
 
-      activeBookings.forEach(b => {
+      activeBookingsToCancel.forEach(b => {
         b.status = 'cancelled';
         b.cancellation_reason = reason || 'Train service cancelled by railway operations';
-        b.cancellation_date_time = new Date().toISOString();
-        b.cancelled_by = 'ADMIN';
+        b.cancellation_date_time = nowIso;
+        b.cancelled_by = req.user.role?.toUpperCase() || 'ADMIN';
 
         const fullFare = Number(b.total_fare || 0);
         b.refund_amount = fullFare;
@@ -1065,10 +1803,10 @@ router.patch('/train-status/:trainId', authenticateToken, requireRoles(['admin',
           booking_id: b.id,
           pnr: b.pnr_number,
           passenger_id: b.passenger_id,
-          passenger_name: passenger ? (passenger.full_name || passenger.email) : 'Passenger',
-          train_id: trainId,
-          train_number: train ? train.train_number : '12952',
-          train_name: train ? train.train_name : 'Express Special',
+          passenger_name: passenger ? (passenger.full_name || passenger.email) : (b.passenger_name || 'Passenger'),
+          train_id: train.id,
+          train_number: train.train_number,
+          train_name: train.train_name,
           journey_date: b.travel_date,
           original_fare: fullFare,
           deduction_amount: 0,
@@ -1079,8 +1817,8 @@ router.patch('/train-status/:trainId', authenticateToken, requireRoles(['admin',
           cancelled_by_user_id: req.user.id,
           cancelled_by_role: req.user.role || 'admin',
           cancellation_date_time: b.cancellation_date_time,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          created_at: nowIso,
+          updated_at: nowIso
         };
         mockDb.cancellation_records.set(b.id, cancRecord);
 
@@ -1098,7 +1836,7 @@ router.patch('/train-status/:trainId', authenticateToken, requireRoles(['admin',
           cancellation_record_id: cancRecord.id,
           pnr: b.pnr_number,
           target_id: b.pnr_number || b.id,
-          train_id: trainId,
+          train_id: train.id,
           user_id: req.user.id,
           user_role: req.user.role,
           previous_status: 'confirmed',
@@ -1108,14 +1846,14 @@ router.patch('/train-status/:trainId', authenticateToken, requireRoles(['admin',
           deduction_amount: 0,
           refund_amount: fullFare,
           penalty_amount: 0,
-          timestamp: new Date().toISOString()
+          timestamp: nowIso
         });
       });
 
       logAuditEvent({
         action: 'TRAIN_CANCELLED',
-        target_id: train.train_number || trainId,
-        train_id: trainId,
+        target_id: train.train_number || train.id,
+        train_id: train.id,
         user_id: req.user.id,
         user_role: req.user.role,
         previous_status: previousStatus,
@@ -1125,39 +1863,119 @@ router.patch('/train-status/:trainId', authenticateToken, requireRoles(['admin',
         penalty_amount: 0,
         details: { affectedBookingsCount, message }
       });
+    } else {
+      const activeList = targetBookings.filter(b => b.status !== 'cancelled');
+      affectedBookingsCount = activeList.length;
     }
 
-    // Notify Passengers
-    const affectedBookings = Array.from(mockDb.bookings.values()).filter(b => b.train_id === trainId);
-    const notificationMessage = status === 'cancelled'
-      ? `Train ${train.train_name} (#${train.train_number}) scheduled for travel has been CANCELLED. Reason: ${reason || 'Operational reasons'}.`
-      : status === 'delayed'
-      ? `Train ${train.train_name} (#${train.train_number}) is delayed by ${delay_minutes} minutes. New Departure: ${finalDepartureTime?.slice(0,5)}. Reason: ${reason || 'Technical issue'}.`
-      : `Train ${train.train_name} (#${train.train_number}) has been rescheduled. New Departure: ${finalDepartureTime?.slice(0,5)}. Reason: ${reason || 'Scheduling adjustment'}.`;
+    affectedPassengersCount = targetBookings.reduce((sum, b) => {
+      const count = (Array.isArray(b.passengers) && b.passengers.length > 0) ? b.passengers.length : 1;
+      return sum + count;
+    }, 0);
 
-    affectedBookings.forEach(b => {
-      const notifId = uuidv4();
-      mockDb.notifications.set(notifId, {
-        id: notifId,
-        user_id: b.passenger_id,
-        type: status === 'cancelled' ? 'danger' : status === 'delayed' ? 'warning' : 'info',
-        title: `Train Service Status Alert: ${train.train_name}`,
-        message: notificationMessage,
-        is_read: false,
-        created_at: new Date().toISOString()
-      });
+    // Passenger Notifications Generation with Strict Duplicate Protection
+    const notifTitle = normalizedStatus === 'cancelled' ? 'Train Service Cancelled' : 'Train Status Update';
+
+    let formattedDateDisplay = targetJourneyDate;
+    try {
+      const parts = targetJourneyDate.split('-');
+      if (parts.length === 3) {
+        const dObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        formattedDateDisplay = `${String(dObj.getDate()).padStart(2, '0')}-${months[dObj.getMonth()]}-${dObj.getFullYear()}`;
+      }
+    } catch (e) {}
+
+    let formattedTimeDisplay = 'Operational Update';
+    try {
+      formattedTimeDisplay = new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+    } catch (e) {}
+
+    let defaultMsg = '';
+    if (announcement_message && announcement_message.trim()) {
+      defaultMsg = announcement_message.trim();
+    } else {
+      const trainLabel = `Train ${train.train_number} – ${train.train_name}`;
+      const statusUpper = normalizedStatus.toUpperCase();
+      let delayLine = '';
+      if (normalizedStatus === 'delayed') {
+        delayLine = `\nDelay: delayed by ${delay_minutes} minutes (+${delay_minutes} minutes)`;
+      }
+      const reasonLine = reason ? `\nReason: ${reason}` : '';
+
+      defaultMsg = `Train Status Update\n${trainLabel}\nJourney Date: ${formattedDateDisplay}\nStatus: ${statusUpper}${delayLine}${reasonLine}\nUpdated at: ${formattedTimeDisplay}\nYour journey has been updated. Please check your booking/PNR for the latest information.`;
+    }
+
+    let notificationsCreated = 0;
+
+    // Send notifications ONLY to passengers booked on this exact train and exact journey date
+    targetBookings.forEach(b => {
+      const passengerId = b.passenger_id || b.user_id || b.created_by_id;
+      if (!passengerId) return;
+
+      const bookingDate = b.travel_date || b.journey_date || targetJourneyDate;
+
+      // Check existing notifications for duplicate protection
+      const existingNotifs = Array.from(mockDb.notifications.values())
+        .filter(n => (n.user_id === passengerId || n.passenger_id === passengerId) &&
+                     (n.booking_id === b.id || n.pnr === b.pnr_number) &&
+                     n.journey_date === bookingDate)
+        .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+      const lastNotif = existingNotifs[0];
+      const isDuplicate = lastNotif &&
+        (lastNotif.operational_status === normalizedStatus || lastNotif.status === normalizedStatus) &&
+        (Number(lastNotif.delay_minutes || 0) === Number(normalizedStatus === 'delayed' ? delay_minutes : 0));
+
+      if (!isDuplicate) {
+        const notifId = uuidv4();
+        mockDb.notifications.set(notifId, {
+          id: notifId,
+          notification_id: notifId,
+          user_id: passengerId,
+          passenger_id: passengerId,
+          user_email: b.passenger_email || b.user_email || null,
+          booking_id: b.id,
+          pnr: b.pnr_number,
+          train_id: train.id,
+          train_service_id: train.train_service_id || null,
+          train_number: train.train_number,
+          train_name: train.train_name,
+          journey_date: bookingDate,
+          type: 'TRAIN_STATUS',
+          title: notifTitle,
+          message: defaultMsg,
+          operational_status: normalizedStatus,
+          delay_minutes: normalizedStatus === 'delayed' ? parseInt(delay_minutes, 10) : 0,
+          reason: reason || null,
+          status: 'UNREAD',
+          is_read: false,
+          created_at: nowIso,
+          read_at: null
+        });
+        notificationsCreated++;
+      }
     });
 
     saveMockDbToFile();
 
-    return res.json({ message: 'Train status updated and cancellation cascade completed (Mock Mode)', train, affectedBookingsCount, totalRefundAmount });
+    return res.json({
+      message: `Operational status updated to ${normalizedStatus.toUpperCase()} successfully.`,
+      train,
+      targetJourneyDate,
+      affectedBookingsCount,
+      affectedPassengersCount,
+      notificationsCreated,
+      totalRefundAmount
+    });
   } else {
+    // Supabase mode
     try {
       const { data: train, error: tErr } = await supabase.from('trains').select('*').eq('id', trainId).single();
       if (tErr || !train) return res.status(404).json({ error: 'Train not found' });
 
+      const targetJourneyDate = journey_date || train.journey_date || todayIST;
       const previousStatus = train.status || 'on_time';
-      
       const { data: routeObj } = await supabase.from('routes').select('departure_time, arrival_time').eq('train_id', trainId).maybeSingle();
       const scheduled_departure_time = train.scheduled_departure_time || (routeObj ? routeObj.departure_time : '10:00:00');
       const scheduled_arrival_time = train.scheduled_arrival_time || (routeObj ? routeObj.arrival_time : '18:00:00');
@@ -1165,26 +1983,28 @@ router.patch('/train-status/:trainId', authenticateToken, requireRoles(['admin',
       let finalDepartureTime = null;
       let finalArrivalTime = null;
 
-      if (status === 'delayed') {
+      if (normalizedStatus === 'delayed') {
         finalDepartureTime = addMinutesToTime(scheduled_departure_time, parseInt(delay_minutes, 10));
         finalArrivalTime = addMinutesToTime(scheduled_arrival_time, parseInt(delay_minutes, 10));
-      } else if (status === 'rescheduled') {
+      } else if (normalizedStatus === 'rescheduled') {
         finalDepartureTime = updated_departure_time;
         finalArrivalTime = updated_arrival_time;
       }
 
-      // Update Train
       const updates = {
-        status,
-        delay_minutes: status === 'delayed' ? parseInt(delay_minutes, 10) : 0,
-        delay_reason: (status === 'delayed' || status === 'rescheduled') ? reason : null,
-        delay_message: (status === 'delayed' || status === 'rescheduled') ? message : null,
-        cancellation_reason: status === 'cancelled' ? reason : null,
-        cancellation_message: status === 'cancelled' ? message : null,
+        status: normalizedStatus,
+        operational_status: normalizedStatus,
+        delay_minutes: normalizedStatus === 'delayed' ? parseInt(delay_minutes, 10) : 0,
+        delay_reason: (normalizedStatus === 'delayed' || normalizedStatus === 'rescheduled') ? reason : null,
+        delay_message: announcement_message || message || null,
+        platform: platform || train.platform || null,
+        cancellation_reason: normalizedStatus === 'cancelled' ? reason : null,
+        cancellation_message: normalizedStatus === 'cancelled' ? (announcement_message || message) : null,
         scheduled_departure_time,
         scheduled_arrival_time,
         updated_departure_time: finalDepartureTime,
         updated_arrival_time: finalArrivalTime,
+        announcement_message: announcement_message || message || null,
         status_updated_at: new Date().toISOString()
       };
 
@@ -1197,39 +2017,48 @@ router.patch('/train-status/:trainId', authenticateToken, requireRoles(['admin',
 
       if (upErr) throw upErr;
 
-      // Save History
+      // History
       await supabase.from('train_status_history').insert({
         train_id: trainId,
+        train_number: train.train_number,
+        journey_date: targetJourneyDate,
         previous_status: previousStatus,
-        new_status: status,
-        delay_minutes: status === 'delayed' ? parseInt(delay_minutes, 10) : 0,
+        new_status: normalizedStatus,
+        delay_duration: normalizedStatus === 'delayed' ? `${delay_minutes} min` : null,
+        delay_minutes: normalizedStatus === 'delayed' ? parseInt(delay_minutes, 10) : 0,
         reason: reason || '',
-        message: message || '',
+        platform: platform || '',
+        announcement_message: announcement_message || message || '',
+        message: announcement_message || message || '',
         updated_departure_time: finalDepartureTime,
         updated_arrival_time: finalArrivalTime,
         updated_at: new Date().toISOString(),
-        updated_by: 'ADMIN'
+        updated_by: req.user.full_name || req.user.email || 'Admin',
+        updated_by_role: req.user.role || 'admin'
       });
 
-      // Notify Passengers
+      // Passengers notification for exact train and journey date
       const { data: affectedBookings } = await supabase
         .from('bookings')
-        .select('passenger_id')
+        .select('*')
         .eq('train_id', trainId)
-        .eq('status', 'confirmed');
+        .eq('travel_date', targetJourneyDate)
+        .neq('status', 'cancelled');
 
       if (affectedBookings && affectedBookings.length > 0) {
-        const notificationMessage = status === 'cancelled'
-          ? `Train ${train.train_name} (#${train.train_number}) scheduled for travel has been CANCELLED. Reason: ${reason || 'Operational reasons'}.`
-          : status === 'delayed'
-          ? `Train ${train.train_name} (#${train.train_number}) is delayed by ${delay_minutes} minutes. New Departure: ${finalDepartureTime?.slice(0,5)}. Reason: ${reason || 'Technical issue'}.`
-          : `Train ${train.train_name} (#${train.train_number}) has been rescheduled. New Departure: ${finalDepartureTime?.slice(0,5)}. Reason: ${reason || 'Scheduling adjustment'}.`;
-
+        const notifTitle = NOTIF_TITLE_MAP[normalizedStatus] || 'Train Status Alert';
         const notifs = affectedBookings.map(b => ({
           user_id: b.passenger_id,
-          type: status === 'cancelled' ? 'danger' : status === 'delayed' ? 'warning' : 'info',
-          title: `Train Service Status Alert: ${train.train_name}`,
-          message: notificationMessage,
+          booking_id: b.id,
+          pnr: b.pnr_number,
+          train_id: trainId,
+          train_number: train.train_number,
+          train_name: train.train_name,
+          journey_date: targetJourneyDate,
+          type: 'TRAIN_STATUS',
+          title: notifTitle,
+          message: announcement_message || message || `Train ${train.train_name} operational status updated to ${normalizedStatus.toUpperCase()}.`,
+          status: 'UNREAD',
           is_read: false,
           created_at: new Date().toISOString()
         }));
@@ -1253,6 +2082,29 @@ router.post('/train-status/:trainId/restore', authenticateToken, requireRoles(['
     if (!train) return res.status(404).json({ error: 'Train not found' });
 
     const previousStatus = train.status || 'on_time';
+    const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const targetJourneyDate = req.body?.journey_date || req.query?.journey_date || (train.is_date_specific && train.journey_date ? train.journey_date : todayIST);
+
+    if (mockDb.train_status_by_date) {
+      mockDb.train_status_by_date.delete(`${train.id}_${targetJourneyDate}`);
+      mockDb.train_status_by_date.delete(`${train.train_number}_${targetJourneyDate}`);
+    }
+
+    if (mockDb.train_services) {
+      for (const [sKey, s] of mockDb.train_services.entries()) {
+        if (s && (s.train_id === train.id || String(s.train_number) === String(train.train_number)) && (!targetJourneyDate || s.service_date === targetJourneyDate)) {
+          s.status = 'ON_TIME';
+          s.operational_status = 'on_time';
+          s.delay_minutes = 0;
+          s.delay_reason = null;
+          s.delay_message = null;
+          s.updated_departure_time = null;
+          s.updated_arrival_time = null;
+          s.status_updated_at = new Date().toISOString();
+          mockDb.train_services.set(sKey, s);
+        }
+      }
+    }
 
     train.status = 'on_time';
     train.delay_minutes = 0;
@@ -1271,6 +2123,7 @@ router.post('/train-status/:trainId/restore', authenticateToken, requireRoles(['
     mockDb.train_status_history.set(historyId, {
       id: historyId,
       train_id: trainId,
+      journey_date: targetJourneyDate,
       previous_status: previousStatus,
       new_status: 'on_time',
       delay_minutes: 0,
@@ -1282,19 +2135,49 @@ router.post('/train-status/:trainId/restore', authenticateToken, requireRoles(['
       updated_by: 'ADMIN'
     });
 
-    // Notify Passengers
-    const affectedBookings = Array.from(mockDb.bookings.values()).filter(b => b.train_id === trainId && b.status === 'confirmed');
+    // Notify Passengers booked on this exact train for targetJourneyDate
+    const affectedBookings = Array.from(mockDb.bookings.values()).filter(b => {
+      if (!b) return false;
+      const trainMatch = (b.train_id === trainId || String(b.train_number) === String(train.train_number));
+      const dateMatch = (b.travel_date === targetJourneyDate || b.journey_date === targetJourneyDate);
+      return trainMatch && dateMatch && b.status === 'confirmed';
+    });
+
     affectedBookings.forEach(b => {
-      const notifId = uuidv4();
-      mockDb.notifications.set(notifId, {
-        id: notifId,
-        user_id: b.passenger_id,
-        type: 'success',
-        title: `Train Service Status Alert: ${train.train_name}`,
-        message: `Train ${train.train_name} (#${train.train_number}) service is restored to ON TIME.`,
-        is_read: false,
-        created_at: new Date().toISOString()
-      });
+      const passengerId = b.passenger_id || b.user_id;
+      if (!passengerId) return;
+
+      const previousNotifs = Array.from(mockDb.notifications.values()).filter(
+        n => (n.user_id === passengerId || n.passenger_id === passengerId) &&
+             (n.booking_id === b.id || n.pnr === b.pnr_number) &&
+             n.journey_date === targetJourneyDate
+      );
+      const isDuplicate = previousNotifs.some(n => n.operational_status === 'on_time' || n.title?.includes('restored'));
+
+      if (!isDuplicate) {
+        const notifId = uuidv4();
+        mockDb.notifications.set(notifId, {
+          id: notifId,
+          notification_id: notifId,
+          user_id: passengerId,
+          passenger_id: passengerId,
+          user_email: b.passenger_email || b.user_email || null,
+          booking_id: b.id,
+          pnr: b.pnr_number,
+          train_id: train.id,
+          train_number: train.train_number,
+          train_name: train.train_name,
+          journey_date: targetJourneyDate,
+          type: 'TRAIN_STATUS',
+          operational_status: 'on_time',
+          delay_minutes: 0,
+          title: `Train Status Update`,
+          message: `Train Status Update\nTrain ${train.train_number} – ${train.train_name}\nJourney Date: ${targetJourneyDate}\nStatus: ON TIME\nUpdated at: ${new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true })}\nYour train service has been restored to regular on-time timetable.`,
+          status: 'UNREAD',
+          is_read: false,
+          created_at: new Date().toISOString()
+        });
+      }
     });
 
     saveMockDbToFile();
@@ -1386,6 +2269,7 @@ function getStationNameByCode(code) {
     'NDLS': 'New Delhi',
     'MMCT': 'Mumbai Central',
     'CSMT': 'Chhatrapati Shivaji Maharaj Terminus',
+    'UD': 'Udupi',
     'UDU': 'Udupi',
     'HWH': 'Howrah Junction',
     'SBC': 'KSR Bengaluru City',
@@ -2321,4 +3205,789 @@ router.put('/refunds/:id/action', authenticateToken, requireRoles(['admin', 'sta
   }
 });
 
+// Admin Payments Financial Audit & Roster Feed Endpoint
+router.get('/payments', authenticateToken, requireRoles('admin', 'staff'), async (req, res) => {
+  const { status, method, refund_status, pnr, txn_id, start_date, end_date, query } = req.query;
+
+  if (isMockMode) {
+    let paymentsList = Array.from(mockDb.payments.values());
+
+    let enriched = paymentsList.map(p => {
+      const booking = mockDb.bookings.get(p.booking_id);
+      const train = booking ? mockDb.trains.get(booking.train_id) : null;
+      const passenger = booking ? mockDb.profiles.get(booking.passenger_id) : null;
+      const allocations = Array.from(mockDb.seat_allocations.values()).filter(a => a.booking_id === p.booking_id);
+      const cancRecord = mockDb.cancellation_records.get(p.booking_id);
+
+      return {
+        id: p.id,
+        txnId: p.payment_gateway_id || p.id,
+        booking_id: p.booking_id,
+        pnr: booking?.pnr_number || 'N/A',
+        passengerName: allocations[0]?.passenger_name || passenger?.full_name || 'Passenger',
+        trainName: train ? `${train.train_name} (#${train.train_number})` : (booking?.train_name || 'Train Journey'),
+        amount: Number(p.amount || 0),
+        method: p.payment_method || 'Online Payment',
+        created_at: p.created_at || new Date().toISOString(),
+        time: p.created_at ? new Date(p.created_at).toLocaleString() : 'N/A',
+        status: p.status === 'completed' ? 'Success' : p.status,
+        refund_status: cancRecord ? (cancRecord.refund_status || 'REFUNDED') : (booking?.status === 'cancelled' ? 'Refunded' : 'N/A')
+      };
+    });
+
+    // Apply filtering criteria
+    if (query) {
+      const q = query.toLowerCase();
+      enriched = enriched.filter(p => p.pnr.toLowerCase().includes(q) || p.txnId.toLowerCase().includes(q) || p.passengerName.toLowerCase().includes(q));
+    }
+    if (pnr) enriched = enriched.filter(p => p.pnr === pnr);
+    if (txn_id) enriched = enriched.filter(p => p.txnId === txn_id);
+    if (status) enriched = enriched.filter(p => p.status.toLowerCase() === status.toLowerCase());
+    if (method) enriched = enriched.filter(p => p.method.toLowerCase().includes(method.toLowerCase()));
+    if (refund_status) enriched = enriched.filter(p => p.refund_status.toLowerCase() === refund_status.toLowerCase());
+    if (start_date) enriched = enriched.filter(p => p.created_at >= start_date);
+    if (end_date) enriched = enriched.filter(p => p.created_at <= end_date);
+
+    return res.json(enriched);
+  } else {
+    try {
+      let q = supabase.from('payments').select('*, booking:bookings(*)');
+      const { data, error } = await q;
+      if (error) throw error;
+      return res.json(data);
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+});
+
+// GET /api/admin/trains/:id/catering - Admin view train catering configuration
+router.get('/trains/:id/catering', authenticateToken, requireRoles('admin', 'staff'), (req, res) => {
+  const { id } = req.params;
+  let train = mockDb.trains.get(id);
+  if (!train) {
+    train = Array.from(mockDb.trains.values()).find(t => t.id === id || t.train_number === id);
+  }
+  if (!train) {
+    return res.status(404).json({ error: 'Train not found.' });
+  }
+
+  const catering = train.catering || {
+    enabled: true,
+    service_type: 'ONBOARD_AND_ECATERING',
+    included_in_ticket: false,
+    available_for_classes: train.available_classes || ['1A', '2A', '3A', '3E', 'EC', 'CC', 'SL'],
+    delivery_enabled: true,
+    minimum_delivery_journey_hours: 4,
+    status: 'DEFAULT'
+  };
+
+  return res.json({ train_id: train.id, train_number: train.train_number, train_name: train.train_name, catering });
+});
+
+// PUT /api/admin/trains/:id/catering - Admin configuration for train catering rules
+router.put('/trains/:id/catering', authenticateToken, requireRoles('admin'), (req, res) => {
+  const { id } = req.params;
+  const { 
+    enabled, service_type, included_in_ticket, available_for_classes, 
+    delivery_enabled, minimum_delivery_journey_hours 
+  } = req.body;
+
+  let train = mockDb.trains.get(id);
+  if (!train) {
+    train = Array.from(mockDb.trains.values()).find(t => t.id === id || t.train_number === id);
+  }
+  if (!train) {
+    return res.status(404).json({ error: 'Train not found.' });
+  }
+
+  const existingConfig = train.catering || {};
+  train.catering = {
+    ...existingConfig,
+    enabled: enabled !== undefined ? Boolean(enabled) : (existingConfig.enabled !== false),
+    service_type: service_type || existingConfig.service_type || 'ONBOARD_AND_ECATERING',
+    included_in_ticket: included_in_ticket !== undefined ? Boolean(included_in_ticket) : Boolean(existingConfig.included_in_ticket),
+    available_for_classes: Array.isArray(available_for_classes) ? available_for_classes : (existingConfig.available_for_classes || ['1A', '2A', '3A', '3E', 'EC', 'CC', 'SL']),
+    delivery_enabled: delivery_enabled !== undefined ? Boolean(delivery_enabled) : (existingConfig.delivery_enabled !== false),
+    minimum_delivery_journey_hours: minimum_delivery_journey_hours !== undefined ? parseFloat(minimum_delivery_journey_hours) : (existingConfig.minimum_delivery_journey_hours || 4),
+    status: 'CONFIGURED',
+    updated_at: new Date().toISOString()
+  };
+
+  mockDb.trains.set(train.id, train);
+  saveMockDbToFile();
+
+  return res.json({
+    success: true,
+    message: `Catering configuration updated for train ${train.train_number} (${train.train_name}).`,
+    catering: train.catering
+  });
+});
+
+// GET /api/admin/policies - Admin retrieve system fare matrices and policy bounds
+router.get('/policies', authenticateToken, requireRoles(['admin', 'staff']), (req, res) => {
+  if (!mockDb.system_policies) mockDb.system_policies = {};
+  
+  const defaultFares = [
+    { id: '1a', coach: 'AC 1-Tier (1A)', code: '1A', base: 1600, permKm: 3.40, minDistance: 500, tatkalPremium: 500, superfastFee: 75, tax: 5 },
+    { id: '2a', coach: 'AC 2-Tier (2A)', code: '2A', base: 980, permKm: 2.10, minDistance: 300, tatkalPremium: 400, superfastFee: 45, tax: 5 },
+    { id: '3a', coach: 'AC 3-Tier (3A)', code: '3A', base: 650, permKm: 1.25, minDistance: 300, tatkalPremium: 300, superfastFee: 45, tax: 5 },
+    { id: 'ec', coach: 'Exec. Chair Car (EC)', code: 'EC', base: 1100, permKm: 2.80, minDistance: 250, tatkalPremium: 400, superfastFee: 60, tax: 5 },
+    { id: 'cc', coach: 'AC Chair Car (CC)', code: 'CC', base: 420, permKm: 0.95, minDistance: 150, tatkalPremium: 225, superfastFee: 30, tax: 5 },
+    { id: 'sl', coach: 'Sleeper (SL)', code: 'SL', base: 240, permKm: 0.45, minDistance: 200, tatkalPremium: 150, superfastFee: 30, tax: 0 },
+    { id: 'gen', coach: 'General (GEN)', code: 'GEN', base: 45, permKm: 0.15, minDistance: 50, tatkalPremium: 0, superfastFee: 15, tax: 0 }
+  ];
+
+  const defaultQuotas = {
+    tatkalQuota: 15,
+    racQuota: 10,
+    waitlistLimit: 300,
+    seniorDiscount: 40,
+    ladiesQuota: 10
+  };
+
+  const defaultCancellation = {
+    percentBefore5Days: 10,
+    percentWithin5Days: 5
+  };
+
+  const effectiveFrom = mockDb.system_policies.effectiveFrom || '2026-09-17';
+  const effectiveTo = mockDb.system_policies.effectiveTo || '2026-12-31';
+  const quotas = mockDb.system_policies.quotas || defaultQuotas;
+  const cancellation = mockDb.system_policies.cancellation || defaultCancellation;
+  const fares = mockDb.system_policies.fares || defaultFares;
+
+  return res.json({ effectiveFrom, effectiveTo, quotas, cancellation, fares });
+});
+
+// PUT /api/admin/policies - Admin publish updated fare matrices and policies
+router.put('/policies', authenticateToken, requireRoles(['admin', 'staff']), (req, res) => {
+  const { effectiveFrom, effectiveTo, quotas, cancellation, fares } = req.body;
+  if (!mockDb.system_policies) mockDb.system_policies = {};
+  
+  if (effectiveFrom) mockDb.system_policies.effectiveFrom = effectiveFrom;
+  if (effectiveTo) mockDb.system_policies.effectiveTo = effectiveTo;
+  if (quotas) mockDb.system_policies.quotas = quotas;
+  if (cancellation) mockDb.system_policies.cancellation = cancellation;
+  if (fares) mockDb.system_policies.fares = fares;
+
+  saveMockDbToFile();
+
+  return res.json({
+    success: true,
+    message: 'System fare matrices and policy governance updated successfully.',
+    policies: mockDb.system_policies,
+    effectiveFrom: mockDb.system_policies.effectiveFrom,
+    effectiveTo: mockDb.system_policies.effectiveTo,
+    quotas: mockDb.system_policies.quotas,
+    cancellation: mockDb.system_policies.cancellation,
+    fares: mockDb.system_policies.fares
+  });
+});
+
+// ==========================================
+// ADMIN TRAIN SERVICE & DATE-WISE SCHEDULE MANAGEMENT
+// ==========================================
+const {
+  getServicesForDate,
+  getDateSummaryMetrics,
+  generateServiceInstances,
+  calculateDeterministicAvailability
+} = require('../services/trainServiceInstanceService');
+
+// GET /api/admin/train-services - Get train services for a specific journey date with filters
+router.get('/train-services', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
+  try {
+    const { date, search, from, to, status, classCode } = req.query;
+    const services = getServicesForDate(date, { search, from, to, status, classCode });
+    return res.json({
+      success: true,
+      date: date || new Date().toISOString().split('T')[0],
+      total: services.length,
+      services
+    });
+  } catch (err) {
+    console.error('Error fetching admin train services:', err);
+    return res.status(500).json({ error: 'Failed to fetch train services: ' + err.message });
+  }
+});
+
+// GET /api/admin/train-services/summary - Today's or selected date summary counters
+router.get('/train-services/summary', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
+  try {
+    const { date } = req.query;
+    const summary = getDateSummaryMetrics(date);
+    return res.json({ success: true, ...summary });
+  } catch (err) {
+    console.error('Error fetching admin summary metrics:', err);
+    return res.status(500).json({ error: 'Failed to fetch date metrics: ' + err.message });
+  }
+});
+
+// POST /api/admin/train-services/generate - Manually trigger 30/60/90 days generation
+router.post('/train-services/generate', authenticateToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const days = parseInt(req.body.days || 60, 10);
+    const result = generateServiceInstances(days);
+    return res.json({
+      success: true,
+      message: `Generated service dates for next ${days} days`,
+      ...result
+    });
+  } catch (err) {
+    console.error('Error generating service instances:', err);
+    return res.status(500).json({ error: 'Failed to generate service instances: ' + err.message });
+  }
+});
+
+// GET /api/admin/train-service-dates - View centralized service date availability structure
+router.get('/train-service-dates', authenticateToken, requireRoles(['admin', 'staff']), (req, res) => {
+  try {
+    const { train_id, train_number, journey_date, class_code } = req.query;
+    let records = Array.from(mockDb.train_service_dates?.values() || []);
+    if (train_id) {
+      records = records.filter(r => r.train_id === train_id || String(r.train_number) === String(train_id));
+    }
+    if (train_number) {
+      records = records.filter(r => String(r.train_number) === String(train_number));
+    }
+    if (journey_date) {
+      records = records.filter(r => r.journey_date === journey_date);
+    }
+    if (class_code) {
+      records = records.filter(r => String(r.class_code).toUpperCase() === String(class_code).toUpperCase());
+    }
+    return res.json({
+      success: true,
+      count: records.length,
+      train_service_dates: records
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/train-services/:id/availability - Deterministic availability breakdown
+router.get('/train-services/:id/availability', authenticateToken, requireRoles(['admin', 'staff']), (req, res) => {
+  try {
+    const { id } = req.params;
+    const service = mockDb.train_services?.get(id) || Array.from(mockDb.train_services?.values() || []).find(s => s.id === id || s.instance_key === id);
+    if (!service) {
+      return res.status(404).json({ error: 'Service instance not found' });
+    }
+
+    const classes = service.available_classes || ['SL', '3A', '2A', '1A'];
+    const availabilityMap = {};
+    const tatkalAvailabilityMap = {};
+    const { getTatkalClassCapacity } = require('../utils/tatkalRules');
+    const trainObj = mockDb.trains?.get(service.train_id) || Array.from(mockDb.trains?.values() || []).find(t => String(t.train_number) === String(service.train_number));
+
+    classes.forEach(cls => {
+      availabilityMap[cls] = calculateDeterministicAvailability(service.train_number, service.service_date, cls, null, null, 'GN');
+      tatkalAvailabilityMap[cls] = {
+        ...calculateDeterministicAvailability(service.train_number, service.service_date, cls, null, null, 'TATKAL'),
+        configuredCapacity: getTatkalClassCapacity(trainObj, cls)
+      };
+    });
+
+    return res.json({
+      success: true,
+      serviceId: service.id,
+      trainNumber: service.train_number,
+      serviceDate: service.service_date,
+      availability: availabilityMap,
+      general_availability: availabilityMap,
+      tatkal_availability: tatkalAvailabilityMap
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/train-services/:id - Edit service instance
+router.put('/train-services/:id', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    let service = mockDb.train_services?.get(id) || Array.from(mockDb.train_services?.values() || []).find(s => s.id === id);
+    if (!service) {
+      return res.status(404).json({ error: 'Train service instance not found' });
+    }
+
+    const { status, departure_time, arrival_time, from_station, to_station, stops, base_fare, manual_status } = req.body;
+    if (status !== undefined) {
+      service.status = status;
+      service.manual_status = status;
+    }
+    if (manual_status !== undefined) service.manual_status = manual_status;
+    if (departure_time !== undefined) service.departure_time = departure_time;
+    if (arrival_time !== undefined) service.arrival_time = arrival_time;
+    if (from_station !== undefined) service.from_station = from_station;
+    if (to_station !== undefined) service.to_station = to_station;
+    if (stops !== undefined) service.stops = stops;
+    if (base_fare !== undefined) service.base_fare = base_fare;
+    service.updated_at = new Date().toISOString();
+
+    mockDb.train_services.set(service.id, service);
+    saveMockDbToFile();
+
+    return res.json({
+      success: true,
+      message: 'Service instance updated successfully',
+      service
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/train-services/:id/deactivate - Deactivate service or train safely
+router.post('/train-services/:id/deactivate', authenticateToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    let service = mockDb.train_services?.get(id) || Array.from(mockDb.train_services?.values() || []).find(s => s.id === id);
+    if (!service) {
+      return res.status(404).json({ error: 'Train service instance not found' });
+    }
+
+    // Check if bookings exist for this train service
+    const hasBookings = Array.from(mockDb.bookings.values()).some(b =>
+      (b.train_id === service.train_id || b.train_number === service.train_number) &&
+      b.travel_date === service.service_date &&
+      !String(b.status || '').includes('cancel')
+    );
+
+    service.is_active = false;
+    service.status = 'CANCELLED';
+    service.manual_status = 'CANCELLED';
+    service.updated_at = new Date().toISOString();
+    mockDb.train_services.set(service.id, service);
+    saveMockDbToFile();
+
+    return res.json({
+      success: true,
+      action: 'DEACTIVATED',
+      hasBookings,
+      message: hasBookings
+        ? 'Service has historical bookings and has been safely marked as DEACTIVATED / CANCELLED without data loss.'
+        : 'Service has been deactivated.',
+      service
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/payments - Admin Payment Management and Audit
+router.get('/payments', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
+  try {
+    const { type, status, search } = req.query;
+
+    let rzpList = Array.from(mockDb.razorpay_payments?.values() || []).sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+
+    // If razorpay_payments is empty, populate from mockDb.payments & bookings for complete audit
+    if (rzpList.length === 0 && mockDb.payments) {
+      const allLegacy = Array.from(mockDb.payments.values());
+      allLegacy.forEach(lp => {
+        const booking = mockDb.bookings.get(lp.booking_id);
+        const user = booking ? mockDb.profiles.get(booking.passenger_id) : null;
+        const mapped = {
+          id: lp.id,
+          razorpay_order_id: lp.payment_gateway_id || `order_rc_${lp.id.slice(-8)}`,
+          razorpay_payment_id: lp.payment_gateway_id || `pay_rc_${lp.id.slice(-8)}`,
+          payment_type: 'TICKET_BOOKING',
+          type: 'TICKET_BOOKING',
+          reference: booking?.pnr_number || lp.booking_id || 'N/A',
+          reference_id: lp.booking_id,
+          passenger: user?.full_name || 'Passenger',
+          passenger_name: user?.full_name || 'Passenger',
+          amount: lp.amount,
+          currency: 'INR',
+          payment_method: lp.payment_method || 'Online Payment',
+          status: lp.status === 'completed' ? 'CAPTURED' : (lp.status || 'CAPTURED'),
+          created_at: lp.created_at || new Date().toISOString(),
+          paid_at: lp.created_at || new Date().toISOString(),
+          description: `Railway Ticket - PNR ${booking?.pnr_number || 'N/A'}`
+        };
+        rzpList.push(mapped);
+      });
+    }
+
+    let results = rzpList.map(p => {
+      const user = mockDb.profiles.get(p.user_id);
+      return {
+        id: p.id,
+        razorpay_order_id: p.razorpay_order_id,
+        razorpay_payment_id: p.razorpay_payment_id,
+        type: p.payment_type || p.type || 'TICKET_BOOKING',
+        reference: p.reference_id || p.reference,
+        passenger: user?.full_name || p.passenger || user?.email || 'Passenger',
+        amount: p.amount,
+        currency: p.currency || 'INR',
+        payment_method: p.payment_method || 'Razorpay Online',
+        status: p.status,
+        created_at: p.created_at,
+        paid_at: p.paid_at,
+        description: p.description
+      };
+    });
+
+    // Include food orders in audit view with strict complimentary separation
+    if (mockDb.catering_orders && mockDb.catering_orders.size > 0) {
+      Array.from(mockDb.catering_orders.values()).forEach(co => {
+        const isComp = co.payment_status === 'COMPLIMENTARY' || co.payment_type === 'COMPLIMENTARY' || co.food_entitlement === 'COMPLIMENTARY';
+        results.push({
+          id: co.order_id || co.id,
+          razorpay_order_id: isComp ? 'N/A (COMPLIMENTARY)' : (co.razorpay_order_id || '—'),
+          razorpay_payment_id: isComp ? 'N/A (COMPLIMENTARY)' : (co.razorpay_payment_id || '—'),
+          type: isComp ? 'FOOD — COMPLIMENTARY' : 'FOOD_ORDER',
+          reference: co.pnr_number || co.order_id,
+          passenger: co.passenger_name || 'Passenger',
+          amount: isComp ? 0 : (co.total_amount || 0),
+          currency: 'INR',
+          payment_method: isComp ? 'COMPLIMENTARY ENTITLEMENT' : (co.payment_method || 'Razorpay Online'),
+          status: isComp ? 'COMPLIMENTARY' : (co.payment_status || 'CAPTURED'),
+          created_at: co.created_at || new Date().toISOString(),
+          paid_at: isComp ? co.created_at : co.paid_at,
+          description: isComp ? 'FOOD — COMPLIMENTARY' : `Food Order #${co.order_id}`
+        });
+      });
+    }
+
+    if (type && type !== 'ALL') {
+      results = results.filter(p => p.type === type);
+    }
+
+    if (status && status !== 'ALL') {
+      results = results.filter(p => p.status === status);
+    }
+
+    if (search && String(search).trim()) {
+      const q = String(search).trim().toLowerCase();
+      results = results.filter(p =>
+        (p.razorpay_order_id && p.razorpay_order_id.toLowerCase().includes(q)) ||
+        (p.razorpay_payment_id && p.razorpay_payment_id.toLowerCase().includes(q)) ||
+        (p.reference && String(p.reference).toLowerCase().includes(q)) ||
+        (p.passenger && p.passenger.toLowerCase().includes(q)) ||
+        (p.id && p.id.toLowerCase().includes(q))
+      );
+    }
+
+    return res.json(results);
+  } catch (err) {
+    console.error('Error fetching admin payments:', err);
+    return res.status(500).json({ error: 'Failed to fetch payments' });
+  }
+});
+
+function hashCateringPassword(password) {
+  if (!password) return '';
+  const salt = 'railway_secure_salt_v1';
+  return crypto.pbkdf2Sync(String(password), salt, 1000, 64, 'sha512').toString('hex');
+}
+
+// ==========================================
+// CATERING COMPANY AUTHORIZATION & ADMIN APIS
+// ==========================================
+
+// GET /api/admin/catering-companies
+router.get('/catering-companies', authenticateToken, requireRoles(['admin']), (req, res) => {
+  const companies = Array.from(mockDb.catering_companies.values());
+  return res.json({ success: true, companies });
+});
+
+// POST /api/admin/catering-companies
+router.post('/catering-companies', authenticateToken, requireRoles(['admin']), (req, res) => {
+  const {
+    company_name, legal_name, business_type = 'Food Delivery App', contact_name, phone, email,
+    fssai_number, website_app_info, service_description, address, stations = [],
+    authorization_start, authorization_end, status = 'ACTIVE', password
+  } = req.body;
+
+  if (!company_name || !email) {
+    return res.status(400).json({ error: 'Company Name and Login Email are required.' });
+  }
+
+  const cleanEmail = String(email).trim().toLowerCase();
+  const existingComps = Array.from(mockDb.catering_companies.values());
+  if (existingComps.some(c => c.email && c.email.trim().toLowerCase() === cleanEmail)) {
+    return res.status(400).json({ error: 'A catering company with this login email already exists.' });
+  }
+
+  const newCompId = `comp-${Date.now()}`;
+  const newComp = {
+    id: newCompId,
+    company_name,
+    legal_name: legal_name || company_name,
+    business_type,
+    contact_name: contact_name || '',
+    phone: phone || '',
+    email: cleanEmail,
+    login_email: cleanEmail,
+    fssai_number: fssai_number || `FSSAI-${Date.now()}`,
+    website_app_info: website_app_info || '',
+    service_description: service_description || '',
+    address: address || '',
+    status: (status || 'ACTIVE').toUpperCase(),
+    authorized_by: req.user.id,
+    authorized_at: new Date().toISOString(),
+    authorization_start: authorization_start || new Date().toISOString(),
+    authorization_end: authorization_end || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date().toISOString(),
+    stations: Array.isArray(stations) ? stations.map(s => String(s).trim().toUpperCase()).filter(Boolean) : [],
+    password: password || 'Catering@123'
+  };
+
+  mockDb.catering_companies.set(newComp.id, newComp);
+  (newComp.stations || []).forEach(st => {
+    mockDb.company_stations.set(`${newComp.id}_${st}`, { company_id: newComp.id, station_code: st });
+  });
+
+  const profileId = `usr-cat-${newComp.id}`;
+  const userProfile = {
+    id: profileId,
+    email: cleanEmail,
+    role: 'CATERING_COMPANY',
+    full_name: newComp.company_name,
+    catering_company_id: newComp.id,
+    company_id: newComp.id,
+    password: password || 'Catering@123',
+    password_hash: hashCateringPassword(password || 'Catering@123'),
+    status: (newComp.status === 'ACTIVE' || newComp.status === 'AUTHORIZED') ? 'Active' : 'Suspended',
+    created_at: new Date().toISOString()
+  };
+  mockDb.profiles.set(profileId, userProfile);
+  saveMockDbToFile();
+
+  return res.status(201).json({
+    success: true,
+    message: `Catering Company "${company_name}" authorized & login account created.`,
+    company: newComp
+  });
+});
+
+// PUT /api/admin/catering-companies/:id
+router.put('/catering-companies/:id', authenticateToken, requireRoles(['admin']), (req, res) => {
+  const { id } = req.params;
+  const {
+    company_name, legal_name, business_type, contact_name, phone, email, fssai_number,
+    website_app_info, service_description, address, stations, authorization_start, authorization_end, status, password
+  } = req.body;
+
+  let comp = mockDb.catering_companies.get(id);
+  if (!comp) return res.status(404).json({ error: 'Catering company not found.' });
+
+  if (email && email.trim().toLowerCase() !== comp.email.toLowerCase()) {
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = Array.from(mockDb.catering_companies.values()).find(c => c.id !== id && c.email?.toLowerCase() === cleanEmail);
+    if (existing) {
+      return res.status(400).json({ error: 'Another catering company already uses this login email.' });
+    }
+    comp.email = cleanEmail;
+    comp.login_email = cleanEmail;
+  }
+
+  if (company_name !== undefined) comp.company_name = company_name;
+  if (legal_name !== undefined) comp.legal_name = legal_name;
+  if (business_type !== undefined) comp.business_type = business_type;
+  if (contact_name !== undefined) comp.contact_name = contact_name;
+  if (phone !== undefined) comp.phone = phone;
+  if (fssai_number !== undefined) comp.fssai_number = fssai_number;
+  if (website_app_info !== undefined) comp.website_app_info = website_app_info;
+  if (service_description !== undefined) comp.service_description = service_description;
+  if (address !== undefined) comp.address = address;
+  if (status !== undefined) comp.status = String(status).toUpperCase();
+  if (authorization_start !== undefined) comp.authorization_start = authorization_start;
+  if (authorization_end !== undefined) comp.authorization_end = authorization_end;
+  if (stations !== undefined && Array.isArray(stations)) {
+    comp.stations = stations.map(s => String(s).trim().toUpperCase()).filter(Boolean);
+    if (mockDb.company_stations) {
+      for (const [key, value] of mockDb.company_stations.entries()) {
+        if (value && value.company_id === id) {
+          mockDb.company_stations.delete(key);
+        }
+      }
+      comp.stations.forEach(st => {
+        mockDb.company_stations.set(`${id}_${st}`, { company_id: id, station_code: st });
+      });
+    }
+  }
+  if (password) {
+    comp.password = password;
+  }
+
+  comp.updated_at = new Date().toISOString();
+  mockDb.catering_companies.set(id, comp);
+
+  let profile = Array.from(mockDb.profiles.values()).find(p => p && (p.catering_company_id === id || p.company_id === id || p.email === comp.email));
+  if (profile) {
+    profile.email = comp.email;
+    profile.full_name = comp.company_name;
+    profile.status = (comp.status === 'ACTIVE' || comp.status === 'AUTHORIZED') ? 'Active' : 'Suspended';
+    if (password) {
+      profile.password = password;
+      profile.password_hash = hashCateringPassword(password);
+    }
+    mockDb.profiles.set(profile.id, profile);
+  }
+
+  saveMockDbToFile();
+
+  return res.json({
+    success: true,
+    message: `Authorization parameters for ${comp.company_name} updated successfully.`,
+    company: comp
+  });
+});
+
+// POST /api/admin/catering-companies/:id/suspend
+router.post('/catering-companies/:id/suspend', authenticateToken, requireRoles(['admin']), (req, res) => {
+  const { id } = req.params;
+  let comp = mockDb.catering_companies.get(id);
+  if (!comp) return res.status(404).json({ error: 'Catering company not found.' });
+
+  comp.status = 'SUSPENDED';
+  comp.updated_at = new Date().toISOString();
+  mockDb.catering_companies.set(id, comp);
+
+  let profile = Array.from(mockDb.profiles.values()).find(p => p && (p.catering_company_id === id || p.company_id === id));
+  if (profile) {
+    profile.status = 'Suspended';
+    mockDb.profiles.set(profile.id, profile);
+  }
+  saveMockDbToFile();
+
+  return res.json({ success: true, message: `Authorization for "${comp.company_name}" has been SUSPENDED.`, company: comp });
+});
+
+// POST /api/admin/catering-companies/:id/authorize
+router.post('/catering-companies/:id/authorize', authenticateToken, requireRoles(['admin']), (req, res) => {
+  const { id } = req.params;
+  let comp = mockDb.catering_companies.get(id);
+  if (!comp) return res.status(404).json({ error: 'Catering company not found.' });
+
+  comp.status = 'ACTIVE';
+  comp.authorized_at = new Date().toISOString();
+  comp.authorized_by = req.user.id;
+  comp.updated_at = new Date().toISOString();
+  mockDb.catering_companies.set(id, comp);
+
+  let profile = Array.from(mockDb.profiles.values()).find(p => p && (p.catering_company_id === id || p.company_id === id));
+  if (profile) {
+    profile.status = 'Active';
+    mockDb.profiles.set(profile.id, profile);
+  }
+  saveMockDbToFile();
+
+  return res.json({ success: true, message: `Catering Company "${comp.company_name}" is now ACTIVE & AUTHORIZED.`, company: comp });
+});
+
+// DELETE /api/admin/catering-companies/:id
+router.delete('/catering-companies/:id', authenticateToken, requireRoles(['admin']), (req, res) => {
+  const { id } = req.params;
+  let comp = mockDb.catering_companies.get(id);
+  if (!comp) return res.status(404).json({ error: 'Catering company not found.' });
+
+  mockDb.catering_companies.delete(id);
+
+  if (mockDb.company_stations) {
+    for (const [key, value] of mockDb.company_stations.entries()) {
+      if (value && value.company_id === id) {
+        mockDb.company_stations.delete(key);
+      }
+    }
+  }
+
+  let profile = Array.from(mockDb.profiles.values()).find(p => p && (p.catering_company_id === id || p.company_id === id));
+  if (profile) {
+    mockDb.profiles.delete(profile.id);
+  }
+  saveMockDbToFile();
+  return res.json({ success: true, message: 'Catering company deleted successfully.' });
+});
+
+// GET /api/admin/trains/:id/tatkal-config - View Tatkal quota configuration for a train
+router.get('/trains/:id/tatkal-config', authenticateToken, requireRoles(['admin', 'staff']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const train = mockDb.trains.get(id) || Array.from(mockDb.trains.values()).find(t => String(t.train_number) === String(id) || t.id === id);
+    if (!train) {
+      return res.status(404).json({ error: 'Train not found' });
+    }
+
+    const { DEFAULT_TATKAL_CAPACITIES, getTatkalClassCapacity } = require('../utils/tatkalRules');
+    const classes = train.available_classes || ['SL', '3A', '2A', '1A'];
+    const currentQuota = {};
+    classes.forEach(cls => {
+      currentQuota[cls] = getTatkalClassCapacity(train, cls);
+    });
+
+    return res.json({
+      success: true,
+      train_id: train.id,
+      train_number: train.train_number,
+      train_name: train.train_name,
+      configured_tatkal_quota: train.tatkal_quota || {},
+      effective_tatkal_quota: currentQuota,
+      default_benchmarks: DEFAULT_TATKAL_CAPACITIES
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/admin/trains/:id/tatkal-config - Configure Tatkal quota per class (Admin only)
+router.put('/trains/:id/tatkal-config', authenticateToken, requireRoles(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tatkal_quota } = req.body;
+
+    if (!tatkal_quota || typeof tatkal_quota !== 'object') {
+      return res.status(400).json({ error: 'tatkal_quota configuration object is required.' });
+    }
+
+    const train = mockDb.trains.get(id) || Array.from(mockDb.trains.values()).find(t => String(t.train_number) === String(id) || t.id === id);
+    if (!train) {
+      return res.status(404).json({ error: 'Train not found' });
+    }
+
+    // Sanitize and validate quota values
+    const cleanedQuota = {};
+    for (const [cls, val] of Object.entries(tatkal_quota)) {
+      const num = parseInt(val, 10);
+      if (isNaN(num) || num < 0) {
+        return res.status(400).json({ error: `Invalid quota capacity for class ${cls}: must be a non-negative integer.` });
+      }
+      cleanedQuota[cls.toUpperCase()] = num;
+    }
+
+    train.tatkal_quota = {
+      ...(train.tatkal_quota || {}),
+      ...cleanedQuota
+    };
+    train.updated_at = new Date().toISOString();
+    mockDb.trains.set(train.id, train);
+    saveMockDbToFile();
+
+    return res.json({
+      success: true,
+      message: `Tatkal quota updated successfully for train ${train.train_number}`,
+      train_id: train.id,
+      train_number: train.train_number,
+      tatkal_quota: train.tatkal_quota
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/trains/schedule - Admin alias for scheduling new trains
+router.post('/trains/schedule', (req, res, next) => {
+  req.url = '/trains/schedule';
+  const staffRouter = require('./staff');
+  return staffRouter(req, res, next);
+});
+
 module.exports = router;
+

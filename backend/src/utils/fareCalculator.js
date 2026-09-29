@@ -4,6 +4,7 @@
  */
 
 const { buildOrderedStationNodes } = require('./routeSearch');
+const { calculateTatkalCharge } = require('./tatkalRules');
 
 // Authoritative Centralized Constants
 const BASE_RATE_PER_KM = 0.45;       // ₹0.45 per km for Sleeper base rate
@@ -14,8 +15,10 @@ const CLASS_MULTIPLIERS = {
   '3A': 1.5,
   '2A': 2.2,
   '1A': 3.5,
+  '3E': 1.35,
   'CC': 1.2,
   'EC': 2.5,
+  '2S': 0.6,
   'GEN': 0.4
 };
 
@@ -158,13 +161,21 @@ const calculateSegmentFare = (arg1, arg2, arg3, arg4) => {
   const baseFareSL = Math.round(rawBaseFare / 5) * 5;
 
   const faresByClass = {};
+  const tatkalChargesByClass = {};
+
   for (const [cls, mult] of Object.entries(CLASS_MULTIPLIERS)) {
-    faresByClass[cls] = Math.max(40, Math.round((baseFareSL * mult) / 5) * 5);
+    const classFare = Math.max(40, Math.round((baseFareSL * mult) / 5) * 5);
+    faresByClass[cls] = classFare;
+    tatkalChargesByClass[cls] = calculateTatkalCharge(cls, classFare);
   }
 
   const selectedClassFare = (classCode && typeof classCode === 'string')
     ? faresByClass[classCode.toUpperCase()] || baseFareSL
     : baseFareSL;
+
+  const selectedTatkalCharge = (classCode && typeof classCode === 'string')
+    ? tatkalChargesByClass[classCode.toUpperCase()] || calculateTatkalCharge(classCode, selectedClassFare)
+    : calculateTatkalCharge('SL', selectedClassFare);
 
   // Developer logging for verification
   if (process.env.NODE_ENV !== 'test') {
@@ -185,9 +196,38 @@ const calculateSegmentFare = (arg1, arg2, arg3, arg4) => {
     base_fare: baseFareSL,
     fares_by_class: faresByClass,
     faresByClass,
+    tatkal_charges_by_class: tatkalChargesByClass,
+    tatkalChargesByClass,
+    tatkal_charge: selectedTatkalCharge,
     class_fare: selectedClassFare
   };
 };
+
+/**
+ * Calculates complete passenger fare breakdown including Tatkal surcharge and catering
+ */
+function calculateFareBreakdown({ baseFare = 500, coachClass = '3A', quota = 'GENERAL', passengersCount = 1, cateringCharge = 0 }) {
+  const normQuota = (quota || 'GENERAL').toUpperCase();
+  const isTatkal = normQuota === 'TQ' || normQuota === 'TATKAL' || normQuota === 'CK';
+  const count = Math.max(1, parseInt(passengersCount, 10) || 1);
+  const tatkalChargePerPassenger = isTatkal ? calculateTatkalCharge(coachClass, baseFare) : 0;
+  const tatkalChargeTotal = tatkalChargePerPassenger * count;
+  const baseFareTotal = baseFare * count;
+  const cateringTotal = (cateringCharge || 0) * count;
+  const totalFare = baseFareTotal + tatkalChargeTotal + cateringTotal;
+
+  return {
+    quota: isTatkal ? 'TATKAL' : 'GENERAL',
+    isTatkal,
+    passengersCount: count,
+    baseFarePerPassenger: baseFare,
+    baseFareTotal,
+    tatkalChargePerPassenger,
+    tatkalChargeTotal,
+    cateringTotal,
+    totalFare
+  };
+}
 
 module.exports = {
   BASE_RATE_PER_KM,
@@ -195,5 +235,7 @@ module.exports = {
   CLASS_MULTIPLIERS,
   getSegmentDurationMinutes,
   getSegmentDistanceKm,
-  calculateSegmentFare
+  calculateSegmentFare,
+  calculateFareBreakdown,
+  calculateTatkalCharge
 };

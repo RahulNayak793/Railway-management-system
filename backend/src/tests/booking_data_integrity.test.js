@@ -148,11 +148,13 @@ async function runDataIntegrityTests() {
     const currentProdStatBefore = fs.statSync(prodDbPath);
     
     // Create a booking in test environment
+    const testIrctcId = 'TEST' + Date.now().toString().slice(-6);
     const testBookingPayload = {
       train_id: 'train-udupi-12345',
       travel_date: '2026-10-01',
       coach_class: '3A',
-      passengers: [{ name: 'Test Passenger', age: 28, gender: 'Female' }],
+      passengers: [{ name: 'Test Passenger', age: 28, gender: 'Female', irctc_id: testIrctcId }],
+      irctc_id: testIrctcId,
       total_fare: 1450
     };
     const testBookRes = await makeRequest('POST', '/api/bookings/book', testBookingPayload, freshPassengerToken);

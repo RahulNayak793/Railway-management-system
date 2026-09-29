@@ -118,11 +118,13 @@ async function runDummyIsolationTests() {
     // TEST A & I: Genuine Booking Creation & Strict Isolation
     // -----------------------------------------------------------------
     console.log('Test A: Creating genuine booking for real passenger...');
+    const realIrctcId = 'REALIRCTC' + Date.now().toString().slice(-5);
     const genuineBookingPayload = {
       train_id: 'train-udupi-12345',
       travel_date: '2026-09-25',
       coach_class: '3A',
-      passengers: [{ name: 'Real Passenger', age: 30, gender: 'Male' }],
+      passengers: [{ name: 'Real Passenger', age: 30, gender: 'Male', irctc_id: realIrctcId }],
+      irctc_id: realIrctcId,
       total_fare: 1450
     };
 

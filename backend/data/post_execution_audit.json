@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-09-20T16:28:07.260Z",
+  "preAuditTimestamp": "2026-09-20T16:00:13.563Z",
+  "countsComparison": {
+    "catering_companies": {
+      "pre": 5,
+      "post": 5,
+      "delta": 0,
+      "status": "PRESERVED/EXPANDED"
+    },
+    "company_stations": {
+      "pre": 32,
+      "post": 32,
+      "delta": 0,
+      "status": "PRESERVED/EXPANDED"
+    },
+    "catering_menu": {
+      "pre": 0,
+      "post": 37,
+      "delta": 37,
+      "status": "PRESERVED/EXPANDED"
+    },
+    "catering_orders": {
+      "pre": 5,
+      "post": 11,
+      "delta": 6,
+      "status": "PRESERVED/EXPANDED"
+    },
+    "bookings": {
+      "pre": 22,
+      "post": 28,
+      "delta": 6,
+      "status": "PRESERVED/EXPANDED"
+    },
+    "trains": {
+      "pre": 108,
+      "post": 108,
+      "delta": 0,
+      "status": "PRESERVED/EXPANDED"
+    },
+    "stations": {
+      "pre": 175,
+      "post": 175,
+      "delta": 0,
+      "status": "PRESERVED/EXPANDED"
+    },
+    "profiles": {
+      "pre": 19,
+      "post": 20,
+      "delta": 1,
+      "status": "PRESERVED/EXPANDED"
+    },
+    "passengers": {
+      "pre": 0,
+      "post": 0,
+      "delta": 0,
+      "status": "PRESERVED/EXPANDED"
+    },
+    "payments": {
+      "pre": 10,
+      "post": 10,
+      "delta": 0,
+      "status": "PRESERVED/EXPANDED"
+    }
+  },
+  "preservedExistingEntities": true,
+  "missingPreExistingCompanies": 0
+}

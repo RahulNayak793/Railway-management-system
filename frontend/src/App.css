@@ -185,3 +185,30 @@
     border-right-color: var(--border);
   }
 }
+
+/* High Contrast Mode CSS */
+html.high-contrast-mode {
+  filter: contrast(125%) saturate(110%);
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+html.high-contrast-mode button,
+html.high-contrast-mode a,
+html.high-contrast-mode input,
+html.high-contrast-mode select {
+  border-width: 2px !important;
+  border-color: #ffffff !important;
+}
+
+/* Accessible focus outlines */
+*:focus-visible {
+  outline: 3px solid #2563eb !important;
+  outline-offset: 2px !important;
+}
+
+/* Smooth live train marker GPS motion */
+.custom-train-pin {
+  transition: transform 1.5s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+}

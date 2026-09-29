@@ -1,0 +1,16 @@
+{
+  "manifest_timestamp": "2026-09-14T15:05:37.283Z",
+  "db_sha256_hash": "e146d7cc3ec5722cf4d16b858ae459dc381ee1dbafc9ee33c2ad5163839d0b24",
+  "deleted_dummy_records": [
+    {
+      "id": "bk-jmtayohzn",
+      "pnr": "9821070744",
+      "train": "Persistence Test Express (90001)",
+      "reason": "Proven test data created in automated test suite backend/src/tests/booking.test.js line 108"
+    }
+  ],
+  "preserved_genuine_records_count": 27,
+  "preserved_uncertain_records_count": 0,
+  "current_passenger_records_count": 19,
+  "other_passenger_records_count": 8
+}

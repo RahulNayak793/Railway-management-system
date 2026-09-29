@@ -32,6 +32,7 @@ lerna-debug.log*
 Thumbs.db
 # Scratch and temporary files
 scratch/
+scratch_*.js
 *.backup*
 *.bak*
 *.tmp*

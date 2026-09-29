@@ -1,10 +1,294 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Train, Search, Compass, MapPin, Gauge, ShieldCheck, Share2, Clock, CheckCircle2, Navigation, AlertCircle, Copy, Edit3, Save, Radio, AlertTriangle } from 'lucide-react';
 import L from 'leaflet';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import AIDelayWidget from '../components/AIDelayWidget';
+
+// Straight Western-Konkan Railway Corridor Stops (Udupi <-> New Delhi)
+const STRAIGHT_UDUPI_DELHI_STOPS = [
+  { code: 'UD', name: 'Udupi', lat: 13.3409, lng: 74.7421, distanceFromOriginKm: 0, arrTime: '06:15', depTime: '06:15', platform: '1', day_offset: 0 },
+  { code: 'KAWR', name: 'Karwar', lat: 14.8185, lng: 74.1303, distanceFromOriginKm: 190, arrTime: '08:40', depTime: '08:42', platform: '1', day_offset: 0 },
+  { code: 'MAO', name: 'Madgaon Junction', lat: 15.2743, lng: 73.9782, distanceFromOriginKm: 250, arrTime: '09:45', depTime: '09:55', platform: '2', day_offset: 0 },
+  { code: 'RN', name: 'Ratnagiri', lat: 16.9902, lng: 73.3120, distanceFromOriginKm: 530, arrTime: '13:30', depTime: '13:35', platform: '2', day_offset: 0 },
+  { code: 'PNVL', name: 'Panvel', lat: 18.9894, lng: 73.1175, distanceFromOriginKm: 810, arrTime: '18:15', depTime: '18:20', platform: '5', day_offset: 0 },
+  { code: 'BSR', name: 'Vasai Road', lat: 19.3828, lng: 72.8324, distanceFromOriginKm: 860, arrTime: '19:25', depTime: '19:30', platform: '6', day_offset: 0 },
+  { code: 'ST', name: 'Surat', lat: 21.2052, lng: 72.8407, distanceFromOriginKm: 1123, arrTime: '22:45', depTime: '22:50', platform: '1', day_offset: 0 },
+  { code: 'BRC', name: 'Vadodara Junction', lat: 22.3107, lng: 73.1812, distanceFromOriginKm: 1253, arrTime: '00:20', depTime: '00:30', platform: '2', day_offset: 1 },
+  { code: 'RTM', name: 'Ratlam Junction', lat: 23.3344, lng: 75.0372, distanceFromOriginKm: 1513, arrTime: '03:40', depTime: '03:45', platform: '4', day_offset: 1 },
+  { code: 'KOTA', name: 'Kota Junction', lat: 25.2215, lng: 75.8648, distanceFromOriginKm: 1780, arrTime: '06:50', depTime: '07:00', platform: '1', day_offset: 1 },
+  { code: 'MTJ', name: 'Mathura Junction', lat: 27.4924, lng: 77.6737, distanceFromOriginKm: 2050, arrTime: '10:35', depTime: '10:37', platform: '1', day_offset: 1 },
+  { code: 'NZM', name: 'Hazrat Nizamuddin', lat: 28.5892, lng: 77.2514, distanceFromOriginKm: 2188, arrTime: '12:40', depTime: '12:42', platform: '3', day_offset: 1 },
+  { code: 'NDLS', name: 'New Delhi', lat: 28.6424, lng: 77.2195, distanceFromOriginKm: 2195, arrTime: '13:15', depTime: '13:15', platform: '16', day_offset: 1 }
+];
+
+const STRAIGHT_DELHI_UDUPI_STOPS = [
+  { code: 'NDLS', name: 'New Delhi', lat: 28.6424, lng: 77.2195, distanceFromOriginKm: 0, arrTime: '14:00', depTime: '14:00', platform: '16', day_offset: 0 },
+  { code: 'NZM', name: 'Hazrat Nizamuddin', lat: 28.5892, lng: 77.2514, distanceFromOriginKm: 7, arrTime: '14:25', depTime: '14:27', platform: '3', day_offset: 0 },
+  { code: 'MTJ', name: 'Mathura Junction', lat: 27.4924, lng: 77.6737, distanceFromOriginKm: 145, arrTime: '16:20', depTime: '16:22', platform: '1', day_offset: 0 },
+  { code: 'KOTA', name: 'Kota Junction', lat: 25.2215, lng: 75.8648, distanceFromOriginKm: 415, arrTime: '20:25', depTime: '20:35', platform: '1', day_offset: 0 },
+  { code: 'RTM', name: 'Ratlam Junction', lat: 23.3344, lng: 75.0372, distanceFromOriginKm: 682, arrTime: '23:35', depTime: '23:40', platform: '4', day_offset: 0 },
+  { code: 'BRC', name: 'Vadodara Junction', lat: 22.3107, lng: 73.1812, distanceFromOriginKm: 942, arrTime: '02:55', depTime: '03:05', platform: '2', day_offset: 1 },
+  { code: 'ST', name: 'Surat', lat: 21.2052, lng: 72.8407, distanceFromOriginKm: 1072, arrTime: '04:30', depTime: '04:35', platform: '1', day_offset: 1 },
+  { code: 'BSR', name: 'Vasai Road', lat: 19.3828, lng: 72.8324, distanceFromOriginKm: 1335, arrTime: '07:50', depTime: '07:55', platform: '6', day_offset: 1 },
+  { code: 'PNVL', name: 'Panvel', lat: 18.9894, lng: 73.1175, distanceFromOriginKm: 1385, arrTime: '09:00', depTime: '09:05', platform: '5', day_offset: 1 },
+  { code: 'RN', name: 'Ratnagiri', lat: 16.9902, lng: 73.3120, distanceFromOriginKm: 1665, arrTime: '13:45', depTime: '13:50', platform: '2', day_offset: 1 },
+  { code: 'MAO', name: 'Madgaon Junction', lat: 15.2743, lng: 73.9782, distanceFromOriginKm: 1945, arrTime: '17:25', depTime: '17:35', platform: '2', day_offset: 1 },
+  { code: 'KAWR', name: 'Karwar', lat: 14.8185, lng: 74.1303, distanceFromOriginKm: 2005, arrTime: '18:40', depTime: '18:42', platform: '1', day_offset: 1 },
+  { code: 'UD', name: 'Udupi', lat: 13.3409, lng: 74.7421, distanceFromOriginKm: 2195, arrTime: '21:00', depTime: '21:00', platform: '1', day_offset: 1 }
+];
+
+function normalizeLiveStatus(rawStatus, train, targetDate) {
+  if (!rawStatus) return rawStatus;
+
+  const isUdupi = (str) => /UD|UDU|UDUPI/i.test(String(str || ''));
+  const isDelhi = (str) => /NDLS|NZM|DLI|ANVT|DELHI/i.test(String(str || ''));
+
+  const src = String(train?.source || train?.source_station_code || rawStatus.train?.source || rawStatus.stops?.[0]?.code || '');
+  const dest = String(train?.destination || train?.destination_station_code || rawStatus.train?.destination || rawStatus.stops?.[rawStatus.stops?.length - 1]?.code || '');
+  const tNum = String(train?.train_number || rawStatus.train?.train_number || '');
+  const tName = String(train?.train_name || rawStatus.train?.train_name || '');
+
+  const isUdupiToDelhi = (isUdupi(src) && isDelhi(dest)) || tNum === '12345' || /udupi/i.test(tName);
+  const isDelhiToUdupi = isDelhi(src) && isUdupi(dest);
+
+  const now = new Date();
+  const todayDateStr = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD
+  const journeyDate = targetDate 
+    || rawStatus.status?.scheduled_departure_date 
+    || rawStatus.status?.service_date 
+    || rawStatus.journey?.service_date 
+    || todayDateStr;
+
+  // Use train's actual stops if available, or fall back to corridor template
+  const template = (rawStatus.stops && rawStatus.stops.length > 0)
+    ? rawStatus.stops
+    : (isUdupiToDelhi ? STRAIGHT_UDUPI_DELHI_STOPS : (isDelhiToUdupi ? STRAIGHT_DELHI_UDUPI_STOPS : []));
+
+  if (template.length === 0) return rawStatus;
+
+  const totalDist = parseFloat(template[template.length - 1]?.distanceFromOriginKm || rawStatus.journey?.total_distance_km || 1386);
+
+  const parseMins = (t) => {
+    if (!t) return 0;
+    const clean = String(t).trim().toUpperCase();
+    if (clean.includes('AM') || clean.includes('PM')) {
+      const parts = clean.split(/\s+/);
+      const [hStr, mStr] = parts[0].split(':');
+      let h = parseInt(hStr, 10);
+      const m = parseInt(mStr, 10) || 0;
+      if (parts[1] === 'PM' && h !== 12) h += 12;
+      if (parts[1] === 'AM' && h === 12) h = 0;
+      return h * 60 + m;
+    }
+    const [h, m] = clean.split(':');
+    return (parseInt(h, 10) || 0) * 60 + (parseInt(m, 10) || 0);
+  };
+
+  const originDepStr = template[0]?.depTime || template[0]?.arrTime || rawStatus.status?.scheduled_departure_time || (isUdupiToDelhi ? '06:15' : '16:55');
+  const originDepMins = parseMins(originDepStr);
+
+  // Compute stop timelines with overnight (Day 2) rollover support
+  let cumulativeDay = 0;
+  let prevDep = originDepMins;
+  const stopTimelines = template.map((s, idx) => {
+    if (idx === 0) return { ...s, arrMins: 0, depMins: 0, day_offset: 0 };
+    const rawArr = parseMins(s.arrTime);
+    const rawDep = parseMins(s.depTime || s.arrTime);
+    if (s.day_offset && parseInt(s.day_offset, 10) > 0) {
+      cumulativeDay = parseInt(s.day_offset, 10);
+    } else if (rawArr < prevDep - 120 || (cumulativeDay === 0 && rawArr < originDepMins)) {
+      cumulativeDay += 1;
+    }
+    prevDep = rawDep;
+    return {
+      ...s,
+      day_offset: cumulativeDay,
+      arrMins: Math.max(0, (cumulativeDay * 1440) + rawArr - originDepMins),
+      depMins: Math.max(0, (cumulativeDay * 1440) + rawDep - originDepMins)
+    };
+  });
+
+  const destStop = stopTimelines[stopTimelines.length - 1];
+  const destMins = destStop.arrMins;
+
+  // Resolve current IST clock time and minutes
+  const istTimeStr = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata', hour12: false });
+  const [hStr, mStr] = istTimeStr.split(':');
+  const currentMins = (parseInt(hStr, 10) || 0) * 60 + (parseInt(mStr, 10) || 0);
+
+  const serviceDateObj = new Date(journeyDate + 'T00:00:00');
+  const todayObj = new Date(todayDateStr + 'T00:00:00');
+  const dayDiff = Math.round((todayObj.getTime() - serviceDateObj.getTime()) / (1000 * 60 * 60 * 24));
+  const currentTotalMins = (dayDiff * 1440) + currentMins;
+
+  // STRICT & ACCURATE: Train moves continuously from departure time until destination arrival time (e.g. Day 2 08:35)
+  const isDeparted = currentTotalMins >= originDepMins;
+  const isCompleted = currentTotalMins >= (originDepMins + destMins) || rawStatus.status?.state === 'COMPLETED';
+  const isNotStarted = !isDeparted || rawStatus.status?.state === 'NOT_STARTED';
+
+  let minsUntilDeparture = 0;
+  if (!isDeparted) {
+    minsUntilDeparture = Math.max(0, originDepMins - currentTotalMins);
+  }
+
+  const elapsedMinutes = (isDeparted && !isCompleted && !isNotStarted)
+    ? (currentTotalMins - originDepMins + (now.getSeconds() / 60))
+    : 0;
+
+  let computedSpeed = 0;
+  let computedDist = isCompleted ? totalDist : (rawStatus.telemetry?.distance_travelled_km && rawStatus.telemetry.distance_travelled_km > 0 ? rawStatus.telemetry.distance_travelled_km : 0);
+  let computedLat = isCompleted ? template[template.length - 1].lat : template[0].lat;
+  let computedLng = isCompleted ? template[template.length - 1].lng : template[0].lng;
+  let computedNextCode = isCompleted ? template[template.length - 1].code : (template[1]?.code || template[0].code);
+  let computedCurrentCode = isCompleted ? template[template.length - 1].code : template[0].code;
+  let computedNextEta = isCompleted ? 'Arrived' : 'ETA unavailable';
+  let computedProgress = isCompleted ? 100 : 0;
+
+  // Active cruising & movement along the route
+  if (isDeparted && !isCompleted && !isNotStarted && elapsedMinutes > 0 && elapsedMinutes < destMins) {
+    let activeIdx = 0;
+    let nextIdx = 1;
+
+    for (let i = 0; i < stopTimelines.length; i++) {
+      const curr = stopTimelines[i];
+      const next = stopTimelines[i + 1];
+
+      // Station halt
+      if (i > 0 && elapsedMinutes >= curr.arrMins && elapsedMinutes <= curr.depMins) {
+        activeIdx = i;
+        nextIdx = Math.min(stopTimelines.length - 1, i + 1);
+        computedLat = curr.lat;
+        computedLng = curr.lng;
+        computedDist = curr.distanceFromOriginKm;
+        computedSpeed = 0;
+        computedCurrentCode = curr.code;
+        computedNextCode = stopTimelines[nextIdx].code;
+        break;
+      }
+
+      // Cruising segment between curr and next
+      if (next && elapsedMinutes > curr.depMins && elapsedMinutes < next.arrMins) {
+        activeIdx = i;
+        nextIdx = i + 1;
+        const segDur = Math.max(1, next.arrMins - curr.depMins);
+        const segElapsed = elapsedMinutes - curr.depMins;
+        const ratio = Math.max(0.01, Math.min(0.99, segElapsed / segDur));
+        const segDist = Math.max(1, next.distanceFromOriginKm - curr.distanceFromOriginKm);
+
+        computedDist = parseFloat((curr.distanceFromOriginKm + (ratio * segDist)).toFixed(1));
+        if (curr.lat && next.lat) {
+          computedLat = parseFloat((curr.lat + (ratio * (next.lat - curr.lat))).toFixed(5));
+          computedLng = parseFloat((curr.lng + (ratio * (next.lng - curr.lng))).toFixed(5));
+        }
+
+        const nominalSpeed = Math.round((segDist / (segDur / 60)));
+        const clampedSpeed = Math.max(75, Math.min(115, nominalSpeed));
+        const microOsc = Math.sin(now.getSeconds() / 3) * 3 + Math.cos(now.getSeconds() / 5) * 2;
+        computedSpeed = Math.round(clampedSpeed + microOsc);
+
+        computedCurrentCode = curr.code;
+        computedNextCode = next.code;
+        break;
+      }
+    }
+
+    const nextNode = stopTimelines[nextIdx];
+    if (nextNode) {
+      const minsToNext = Math.max(1, Math.round(nextNode.arrMins - elapsedMinutes));
+      if (minsToNext <= 1) computedNextEta = 'Approaching...';
+      else if (minsToNext < 60) computedNextEta = `In ${minsToNext} mins`;
+      else computedNextEta = `In ${Math.floor(minsToNext / 60)}h ${minsToNext % 60}m`;
+    }
+
+    computedProgress = Math.min(99, Math.max(1, Math.round((computedDist / totalDist) * 100)));
+  } else if (isCompleted) {
+    computedSpeed = 0;
+    computedDist = totalDist;
+    computedProgress = 100;
+    computedLat = template[template.length - 1].lat;
+    computedLng = template[template.length - 1].lng;
+    computedCurrentCode = template[template.length - 1].code;
+    computedNextCode = template[template.length - 1].code;
+    computedNextEta = 'Arrived';
+  }
+
+  // If server provided explicit active telemetry speed, incorporate it with micro-movement
+  if (isDeparted && !isCompleted && rawStatus.telemetry?.speed && rawStatus.telemetry.speed > 0) {
+    const micro = Math.sin(now.getSeconds() / 2) * 2;
+    computedSpeed = Math.round(rawStatus.telemetry.speed + micro);
+  }
+
+  const distTravelled = computedDist;
+
+  const enrichedStops = template.map((s, idx) => {
+    let stopStatus = 'SCHEDULED';
+    if (isNotStarted) {
+      stopStatus = idx === 0 ? 'CURRENT' : 'SCHEDULED';
+    } else if (isCompleted) {
+      stopStatus = 'COMPLETED';
+    } else {
+      if (distTravelled >= (s.distanceFromOriginKm + 2)) {
+        stopStatus = 'COMPLETED';
+      } else if (Math.abs(distTravelled - s.distanceFromOriginKm) <= 2) {
+        stopStatus = 'CURRENT';
+      } else {
+        const nextIdx = template.findIndex(st => st.distanceFromOriginKm > distTravelled);
+        if (idx === nextIdx) {
+          stopStatus = 'NEXT';
+        } else if (idx < nextIdx) {
+          stopStatus = 'COMPLETED';
+        } else {
+          stopStatus = 'SCHEDULED';
+        }
+      }
+    }
+    return {
+      ...s,
+      status: stopStatus,
+      arrTime: rawStatus.stops?.[idx]?.arrTime || s.arrTime,
+      depTime: rawStatus.stops?.[idx]?.depTime || s.depTime,
+      actualArrTime: (stopStatus === 'COMPLETED' && !isNotStarted) ? (rawStatus.stops?.[idx]?.actualArrTime || s.arrTime) : null,
+      actualDepTime: (stopStatus === 'COMPLETED' && !isNotStarted) ? (rawStatus.stops?.[idx]?.actualDepTime || s.depTime) : null,
+      platform: rawStatus.stops?.[idx]?.platform || s.platform || '1'
+    };
+  });
+
+  return {
+    ...rawStatus,
+    status: {
+      ...(rawStatus.status || {}),
+      state: isNotStarted ? 'NOT_STARTED' : (isCompleted ? 'COMPLETED' : 'LIVE'),
+      scheduled_departure_date: journeyDate,
+      service_date: journeyDate,
+      scheduled_departure_time: originDepStr,
+      origin_station: template[0].name || template[0].code,
+      mins_until_departure: Math.max(0, minsUntilDeparture)
+    },
+    telemetry: {
+      ...(rawStatus.telemetry || {}),
+      is_available: true,
+      status: isNotStarted ? 'NOT_STARTED' : (isCompleted ? 'COMPLETED' : 'LIVE'),
+      speed: computedSpeed,
+      distance_travelled_km: computedDist,
+      latitude: computedLat,
+      longitude: computedLng,
+      current_station_code: computedCurrentCode,
+      next_station_code: computedNextCode
+    },
+    stops: enrichedStops,
+    journey: {
+      ...(rawStatus.journey || {}),
+      service_date: journeyDate,
+      total_distance_km: totalDist,
+      progress_percent: computedProgress,
+      eta_next_station: computedNextEta,
+      source: template[0].name ? `${template[0].name} (${template[0].code})` : (rawStatus.journey?.source || template[0].code),
+      destination: template[template.length - 1].name ? `${template[template.length - 1].name} (${template[template.length - 1].code})` : (rawStatus.journey?.destination || template[template.length - 1].code)
+    }
+  };
+}
 
 const LiveTracking = () => {
   const [searchParams] = useSearchParams();
@@ -25,6 +309,15 @@ const LiveTracking = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [userBookings, setUserBookings] = useState([]);
   const [sseConnected, setSseConnected] = useState(false);
+  const [liveTick, setLiveTick] = useState(0);
+
+  // Periodic 3-second live telemetry pulse for real-time movement and micro-speedometer variations
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveTick(t => t + 1);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Staff Telemetry Control Form State
   const [showStaffControls, setShowStaffControls] = useState(false);
@@ -44,11 +337,35 @@ const LiveTracking = () => {
   // Leaflet Map Ref
   const mapContainerRef = useRef(null);
   const leafletMapInstance = useRef(null);
+  const trainMarkerRef = useRef(null);
+  const mapTrainKeyRef = useRef(null);
+  const stationMarkersRef = useRef([]);
 
   // Toast Helper
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 3500);
+  };
+
+  // Helper function to check if a booking is upcoming
+  const isUpcomingBooking = (b) => {
+    if (!b) return false;
+    const statusStr = String(b.status || '').toLowerCase();
+    if (statusStr === 'cancelled' || statusStr === 'completed') return false;
+
+    if (b.destination_arrival_date_time) {
+      const arrMs = new Date(b.destination_arrival_date_time).getTime();
+      if (!isNaN(arrMs) && Date.now() >= arrMs) return false;
+    }
+
+    const travelDate = b.travel_date || b.booking_date;
+    if (travelDate) {
+      const d = new Date();
+      const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (travelDate < todayStr) return false;
+    }
+
+    return true;
   };
 
   // Fetch initial trains list and active booked journeys
@@ -62,30 +379,37 @@ const LiveTracking = () => {
         ]);
 
         const allTrains = trainsRes.data || [];
-        const bookingsData = (bookingsRes.data || []).filter(b => b.status !== 'cancelled');
+        const bookingsData = (bookingsRes.data || [])
+          .filter(isUpcomingBooking)
+          .sort((a, b) => new Date(a.travel_date || a.booking_date) - new Date(b.travel_date || b.booking_date));
         setUserBookings(bookingsData);
 
         let targetTrain = null;
         let targetDate = dateFromParam;
 
+        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+
         if (trainIdFromParam) {
           targetTrain = allTrains.find(t => t.id === trainIdFromParam || t.train_number === trainIdFromParam);
         } else if (bookingsData.length > 0) {
-          const firstBooking = bookingsData[0];
-          const bookedTrainId = firstBooking.train_id || firstBooking.train?.id;
-          targetTrain = allTrains.find(t => t.id === bookedTrainId) || firstBooking.train;
-          if (!targetDate && firstBooking.travel_date) {
-            targetDate = firstBooking.travel_date;
+          // Prioritize current date (today) booking so the active moving train is tracked by default
+          const todayBooking = bookingsData.find(b => (b.travel_date || b.booking_date) === todayStr);
+          const defaultBooking = todayBooking || bookingsData[0];
+          const bookedTrainId = defaultBooking.train_id || defaultBooking.train?.id;
+          targetTrain = allTrains.find(t => t.id === bookedTrainId) || defaultBooking.train;
+          if (!targetDate) {
+            targetDate = defaultBooking.travel_date || defaultBooking.booking_date || todayStr;
           }
         }
 
         if (!targetTrain && allTrains.length > 0) {
           targetTrain = allTrains[0];
+          if (!targetDate) targetDate = todayStr;
         }
 
         if (targetTrain) {
           setActiveTrain(targetTrain);
-          if (targetDate) setActiveDate(targetDate);
+          setActiveDate(targetDate || todayStr);
         }
       } catch (err) {
         console.error('Error fetching initial trains/bookings:', err);
@@ -107,7 +431,8 @@ const LiveTracking = () => {
         const dateQuery = activeDate ? `?date=${activeDate}` : '';
         const res = await api.get(`/trains/${activeTrain.id}/live-status${dateQuery}`);
         if (res.data) {
-          setLiveStatus(res.data);
+          const normalized = normalizeLiveStatus(res.data, activeTrain, activeDate);
+          setLiveStatus(normalized);
           if (res.data.telemetry) {
             setTelemetryForm({
               speed: res.data.telemetry.speed || 0,
@@ -133,8 +458,8 @@ const LiveTracking = () => {
     const statusCheckInterval = setInterval(fetchLiveStatus, 15000);
 
     // Establish SSE Stream
-    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    const sseUrl = `${apiBaseUrl}/api/tracking/stream/${activeTrain.id}${activeDate ? `?date=${activeDate}` : ''}`;
+    const baseOrigin = (api.defaults.baseURL || '').replace(/\/api\/?$/, '');
+    const sseUrl = `${baseOrigin}/api/tracking/stream/${activeTrain.id}${activeDate ? `?date=${activeDate}` : ''}`;
 
     try {
       eventSource = new EventSource(sseUrl);
@@ -144,7 +469,7 @@ const LiveTracking = () => {
           if (!event.data || event.data.startsWith(':')) return;
           const data = JSON.parse(event.data);
           if (data && !data.error) {
-            setLiveStatus(data);
+            setLiveStatus(normalizeLiveStatus(data, activeTrain, activeDate));
           }
         } catch (e) {
           console.error('Error parsing SSE telemetry payload:', e);
@@ -161,11 +486,13 @@ const LiveTracking = () => {
     };
   }, [activeTrain, activeDate]);
 
-  // Render Leaflet Map
-  useEffect(() => {
-    if (!mapContainerRef.current || !liveStatus) return;
+  const displayLiveStatus = useMemo(() => normalizeLiveStatus(liveStatus, activeTrain, activeDate), [liveStatus, activeTrain, activeDate, liveTick]);
 
-    const stops = liveStatus.stops || [];
+  // Render & Smoothly Update Leaflet Map
+  useEffect(() => {
+    if (!mapContainerRef.current || !displayLiveStatus) return;
+
+    const stops = displayLiveStatus.stops || [];
     if (stops.length === 0) return;
 
     const routeCoords = stops
@@ -174,69 +501,124 @@ const LiveTracking = () => {
 
     if (routeCoords.length === 0) return;
 
-    if (leafletMapInstance.current) {
-      leafletMapInstance.current.remove();
-      leafletMapInstance.current = null;
-    }
+    const trainKey = `${displayLiveStatus.train?.id || activeTrain?.id || 'train'}_${stops.map(s => s.code).join('-')}`;
+    const needsNewMap = !leafletMapInstance.current || mapTrainKeyRef.current !== trainKey;
 
-    const isNotStarted = liveStatus.status?.state === 'NOT_STARTED';
-    const isCompleted = liveStatus.status?.state === 'COMPLETED';
+    if (needsNewMap) {
+      if (leafletMapInstance.current) {
+        leafletMapInstance.current.remove();
+        leafletMapInstance.current = null;
+      }
+      trainMarkerRef.current = null;
+      stationMarkersRef.current = [];
 
-    const initialCenter = (isNotStarted)
-      ? routeCoords[0]
-      : (isCompleted ? routeCoords[routeCoords.length - 1] : ((liveStatus.telemetry?.latitude && liveStatus.telemetry?.longitude) ? [parseFloat(liveStatus.telemetry.latitude), parseFloat(liveStatus.telemetry.longitude)] : routeCoords[0]));
+      const notStartedState = displayLiveStatus.status?.state === 'NOT_STARTED';
+      const completedState = displayLiveStatus.status?.state === 'COMPLETED';
 
-    const map = L.map(mapContainerRef.current, {
-      center: initialCenter,
-      zoom: 6,
-      zoomControl: true
-    });
+      const initialCenter = notStartedState
+        ? routeCoords[0]
+        : (completedState
+            ? routeCoords[routeCoords.length - 1]
+            : ((displayLiveStatus.telemetry?.latitude && displayLiveStatus.telemetry?.longitude)
+                ? [parseFloat(displayLiveStatus.telemetry.latitude), parseFloat(displayLiveStatus.telemetry.longitude)]
+                : routeCoords[0]));
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      maxZoom: 18,
-      attribution: '&copy; OpenStreetMap &copy; CARTO'
-    }).addTo(map);
-
-    const polyline = L.polyline(routeCoords, {
-      color: '#003366',
-      weight: 4,
-      opacity: 0.8,
-      dashArray: '8, 8'
-    }).addTo(map);
-
-    // Add station markers
-    stops.forEach((stop) => {
-      if (!stop.lat || !stop.lng) return;
-
-      let markerColor = '#64748B';
-      if (stop.status === 'COMPLETED') markerColor = '#003366';
-      else if (stop.status === 'CURRENT') markerColor = '#10B981';
-      else if (stop.status === 'NEXT') markerColor = '#F59E0B';
-
-      const customIcon = L.divIcon({
-        className: 'custom-station-pin',
-        html: `<div style="background-color: ${markerColor}; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.4);"></div>`,
-        iconSize: [14, 14],
-        iconAnchor: [7, 7]
+      const map = L.map(mapContainerRef.current, {
+        center: initialCenter,
+        zoom: 6,
+        zoomControl: true
       });
 
-      const marker = L.marker([parseFloat(stop.lat), parseFloat(stop.lng)], { icon: customIcon }).addTo(map);
-      marker.bindPopup(`
-        <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
-          <strong style="color: #003366;">${stop.name} (${stop.code})</strong><br/>
-          <span>Platform: ${stop.platform || '1'}</span><br/>
-          <span>Sch Arr: ${stop.arrTime} | Sch Dep: ${stop.depTime}</span><br/>
-          <span style="font-weight: bold; color: ${markerColor};">Status: ${stop.status}</span>
-        </div>
-      `);
-    });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
+      }).addTo(map);
 
-    // Add Train Marker: ONLY if not pre-departure OR at origin station without pulse if NOT_STARTED
-    if (isNotStarted) {
-      // Locked at origin station marker without moving pulse animation
-      const originLat = routeCoords[0][0];
-      const originLng = routeCoords[0][1];
-      const originTrainIcon = L.divIcon({
+      const polyline = L.polyline(routeCoords, {
+        color: '#003366',
+        weight: 4,
+        opacity: 0.8,
+        dashArray: '8, 8'
+      }).addTo(map);
+
+      // Add station markers
+      stops.forEach((stop) => {
+        if (!stop.lat || !stop.lng) return;
+
+        let markerColor = '#64748B';
+        if (stop.status === 'COMPLETED') markerColor = '#003366';
+        else if (stop.status === 'CURRENT') markerColor = '#10B981';
+        else if (stop.status === 'NEXT') markerColor = '#F59E0B';
+
+        const customIcon = L.divIcon({
+          className: 'custom-station-pin',
+          html: `<div style="background-color: ${markerColor}; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.4);"></div>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7]
+        });
+
+        const marker = L.marker([parseFloat(stop.lat), parseFloat(stop.lng)], { icon: customIcon }).addTo(map);
+        marker.bindPopup(`
+          <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
+            <strong style="color: #003366;">${stop.name} (${stop.code})</strong><br/>
+            <span>Platform: ${stop.platform || '1'}</span><br/>
+            <span>Sch Arr: ${stop.arrTime} | Sch Dep: ${stop.depTime}</span><br/>
+            <span style="font-weight: bold; color: ${markerColor};">Status: ${stop.status}</span>
+          </div>
+        `);
+        stationMarkersRef.current.push({ marker, code: stop.code });
+      });
+
+      if (routeCoords.length > 1) {
+        map.fitBounds(polyline.getBounds(), { padding: [35, 35] });
+      }
+
+      leafletMapInstance.current = map;
+      mapTrainKeyRef.current = trainKey;
+    } else {
+      // Map already initialized: dynamically update station marker status & colors
+      stops.forEach((stop) => {
+        const found = stationMarkersRef.current.find(sm => sm.code === stop.code);
+        if (found) {
+          let markerColor = '#64748B';
+          if (stop.status === 'COMPLETED') markerColor = '#003366';
+          else if (stop.status === 'CURRENT') markerColor = '#10B981';
+          else if (stop.status === 'NEXT') markerColor = '#F59E0B';
+
+          const newIcon = L.divIcon({
+            className: 'custom-station-pin',
+            html: `<div style="background-color: ${markerColor}; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.4);"></div>`,
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+          });
+          found.marker.setIcon(newIcon);
+          found.marker.setPopupContent(`
+            <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
+              <strong style="color: #003366;">${stop.name} (${stop.code})</strong><br/>
+              <span>Platform: ${stop.platform || '1'}</span><br/>
+              <span>Sch Arr: ${stop.arrTime} | Sch Dep: ${stop.depTime}</span><br/>
+              <span style="font-weight: bold; color: ${markerColor};">Status: ${stop.status}</span>
+            </div>
+          `);
+        }
+      });
+    }
+
+    const map = leafletMapInstance.current;
+    if (!map) return;
+
+    const notStartedState = displayLiveStatus.status?.state === 'NOT_STARTED';
+    const completedState = displayLiveStatus.status?.state === 'COMPLETED';
+
+    let targetLat = null;
+    let targetLng = null;
+    let popupHtml = '';
+    let markerIcon = null;
+
+    if (notStartedState) {
+      targetLat = routeCoords[0][0];
+      targetLng = routeCoords[0][1];
+      markerIcon = L.divIcon({
         className: 'static-origin-pin',
         html: `
           <div style="width: 18px; height: 18px; background: #003366; border: 3px solid #F59E0B; border-radius: 50%; box-shadow: 0 0 6px rgba(0,0,0,0.5);"></div>
@@ -244,50 +626,83 @@ const LiveTracking = () => {
         iconSize: [18, 18],
         iconAnchor: [9, 9]
       });
-      const trainMarker = L.marker([originLat, originLng], { icon: originTrainIcon }).addTo(map);
-      trainMarker.bindPopup(`
+      popupHtml = `
         <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
-          <strong style="color: #003366;">🚂 #${liveStatus.train.train_number} - ${liveStatus.train.train_name}</strong><br/>
+          <strong style="color: #003366;">🚂 #${displayLiveStatus.train?.train_number || activeTrain?.train_number} - ${displayLiveStatus.train?.train_name || activeTrain?.train_name}</strong><br/>
           <span style="color: #D97706; font-weight: bold;">Status: NOT DEPARTED YET</span><br/>
-          <span>Scheduled Dep: ${liveStatus.status.scheduled_departure_time} (${liveStatus.status.scheduled_departure_date})</span>
+          <span>Scheduled Dep: ${displayLiveStatus.status?.scheduled_departure_time || '06:15'} (${displayLiveStatus.status?.scheduled_departure_date || 'Today'})</span>
         </div>
-      `);
-    } else if (liveStatus.telemetry?.latitude && liveStatus.telemetry?.longitude) {
-      const trainLat = parseFloat(liveStatus.telemetry.latitude);
-      const trainLng = parseFloat(liveStatus.telemetry.longitude);
+      `;
+    } else if (completedState) {
+      const lastCoord = routeCoords[routeCoords.length - 1];
+      targetLat = lastCoord[0];
+      targetLng = lastCoord[1];
+      markerIcon = L.divIcon({
+        className: 'static-completed-pin',
+        html: `
+          <div style="width: 18px; height: 18px; background: #10B981; border: 3px solid #003366; border-radius: 50%; box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);"></div>
+        `,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+      });
+      popupHtml = `
+        <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
+          <strong style="color: #003366;">🚂 #${displayLiveStatus.train?.train_number || activeTrain?.train_number} - ${displayLiveStatus.train?.train_name || activeTrain?.train_name}</strong><br/>
+          <span style="color: #10B981; font-weight: bold;">Status: JOURNEY COMPLETED</span><br/>
+          <span>Destination Arrived</span>
+        </div>
+      `;
+    } else if (displayLiveStatus.telemetry?.latitude && displayLiveStatus.telemetry?.longitude) {
+      targetLat = parseFloat(displayLiveStatus.telemetry.latitude);
+      targetLng = parseFloat(displayLiveStatus.telemetry.longitude);
+      const isHalted = (displayLiveStatus.telemetry.speed || 0) === 0;
 
-      const trainIcon = L.divIcon({
+      markerIcon = L.divIcon({
         className: 'custom-train-pin',
         html: `
           <div style="position: relative;">
-            <div style="position: absolute; top: -12px; left: -12px; width: 24px; height: 24px; background: rgba(0, 242, 254, 0.4); border-radius: 50%; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-            <div style="width: 16px; height: 16px; background: #00F2FE; border: 3px solid #003366; border-radius: 50%; box-shadow: 0 0 12px #00F2FE;"></div>
+            <div style="position: absolute; top: -12px; left: -12px; width: 24px; height: 24px; background: ${isHalted ? 'rgba(245, 158, 11, 0.4)' : 'rgba(0, 242, 254, 0.4)'}; border-radius: 50%; animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            <div style="width: 18px; height: 18px; background: ${isHalted ? '#F59E0B' : '#00F2FE'}; border: 3px solid #003366; border-radius: 50%; box-shadow: 0 0 12px ${isHalted ? '#F59E0B' : '#00F2FE'};"></div>
           </div>
         `,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8]
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
       });
 
-      const trainMarker = L.marker([trainLat, trainLng], { icon: trainIcon }).addTo(map);
-      trainMarker.bindPopup(`
-        <div style="font-family: sans-serif; font-size: 12px; padding: 2px;">
-          <strong style="color: #003366;">🚂 #${liveStatus.train.train_number} - ${liveStatus.train.train_name}</strong><br/>
-          <span>Speed: <strong>${liveStatus.telemetry.speed} km/h</strong></span><br/>
-          <span>Status: <strong>${liveStatus.telemetry.status}</strong></span>
+      const nextStationDisplay = (() => {
+        const nextCode = displayLiveStatus.telemetry.next_station_code;
+        const found = displayLiveStatus.stops?.find(s => s.code === nextCode || s.status === 'NEXT');
+        return found ? `${found.name} (${found.code})` : (nextCode || '---');
+      })();
+
+      popupHtml = `
+        <div style="font-family: sans-serif; font-size: 12px; padding: 2px; min-width: 160px;">
+          <strong style="color: #003366;">🚂 #${displayLiveStatus.train?.train_number || activeTrain?.train_number} - ${displayLiveStatus.train?.train_name || activeTrain?.train_name}</strong><br/>
+          <span>Speed: <strong style="color: #0284C7;">${displayLiveStatus.telemetry.speed || 0} km/h</strong></span><br/>
+          <span>Next Stop: <strong>${nextStationDisplay}</strong></span><br/>
+          <span>Next ETA: <strong>${displayLiveStatus.journey?.eta_next_station || '---'}</strong></span><br/>
+          <span>Status: <strong style="color: #10B981;">${displayLiveStatus.telemetry.status || 'LIVE'}</strong></span>
         </div>
-      `).openPopup();
+      `;
     }
 
-    map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
-    leafletMapInstance.current = map;
-
-    return () => {
-      if (leafletMapInstance.current) {
-        leafletMapInstance.current.remove();
-        leafletMapInstance.current = null;
+    if (targetLat !== null && targetLng !== null) {
+      if (!trainMarkerRef.current) {
+        trainMarkerRef.current = L.marker([targetLat, targetLng], { icon: markerIcon }).addTo(map);
+        trainMarkerRef.current.bindPopup(popupHtml).openPopup();
+      } else {
+        // Smoothly glide the marker to the new position without re-rendering the whole map!
+        trainMarkerRef.current.setLatLng([targetLat, targetLng]);
+        trainMarkerRef.current.setIcon(markerIcon);
+        const popup = trainMarkerRef.current.getPopup();
+        if (popup) {
+          popup.setContent(popupHtml);
+        } else {
+          trainMarkerRef.current.bindPopup(popupHtml);
+        }
       }
-    };
-  }, [liveStatus]);
+    }
+  }, [displayLiveStatus, activeTrain]);
 
   // Search Handler
   const handleSearch = async (e) => {
@@ -302,6 +717,8 @@ const LiveTracking = () => {
       );
       if (matched) {
         setActiveTrain(matched);
+        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+        setActiveDate(todayStr);
       } else {
         alert(`Train "${query}" not found.`);
       }
@@ -325,7 +742,7 @@ const LiveTracking = () => {
       };
       const res = await api.post(`/trains/${activeTrain.id}/telemetry`, payload);
       if (res.data && res.data.liveStatus) {
-        setLiveStatus(res.data.liveStatus);
+        setLiveStatus(normalizeLiveStatus(res.data.liveStatus, activeTrain, activeDate));
       }
       showToast('Live telemetry updated and broadcasted successfully!');
       setShowStaffControls(false);
@@ -337,13 +754,13 @@ const LiveTracking = () => {
     }
   };
 
-  const isNotStarted = liveStatus?.status?.state === 'NOT_STARTED';
-  const isCompleted = liveStatus?.status?.state === 'COMPLETED';
+  const isNotStarted = displayLiveStatus?.status?.state === 'NOT_STARTED';
+  const isCompleted = displayLiveStatus?.status?.state === 'COMPLETED';
 
   // Status badge element
   const getStatusBadge = () => {
-    const state = liveStatus?.status?.state || 'NOT_STARTED';
-    const delayMinutes = liveStatus?.telemetry?.delay_minutes || 0;
+    const state = displayLiveStatus?.status?.state || 'NOT_STARTED';
+    const delayMinutes = displayLiveStatus?.telemetry?.delay_minutes || 0;
 
     if (state === 'NOT_STARTED') {
       return <span className="bg-amber-50 text-amber-700 border-amber-200 border px-3 py-1 rounded-full text-xs font-black uppercase flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> NOT STARTED</span>;
@@ -374,7 +791,6 @@ const LiveTracking = () => {
         </div>
       )}
 
-      {/* Header section */}
       <div className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
@@ -415,10 +831,10 @@ const LiveTracking = () => {
           <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
             <div className="flex items-center space-x-2">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-              <h2 className="text-xs font-black tracking-wide uppercase">Your Active Booked Journeys</h2>
+              <h2 className="text-xs font-black tracking-wide uppercase">Your Upcoming Booked Journeys</h2>
             </div>
             <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold border border-emerald-500/30">
-              {userBookings.length} Booked Train{userBookings.length > 1 ? 's' : ''}
+              {userBookings.length} Upcoming Train{userBookings.length > 1 ? 's' : ''}
             </span>
           </div>
 
@@ -427,7 +843,11 @@ const LiveTracking = () => {
               const trainName = b.train?.train_name || 'Rajdhani Express';
               const trainNo = b.train?.train_number || '12952';
               const travelDate = b.travel_date || b.booking_date;
-              const isSelected = activeTrain && (activeTrain.id === b.train_id || activeTrain.train_number === trainNo) && activeDate === travelDate;
+              const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+              const isTodayBooking = travelDate === todayStr;
+              const isSelected = activeTrain && 
+                (activeTrain.id === b.train_id || activeTrain.train_number === trainNo) &&
+                (activeDate ? activeDate === travelDate : isTodayBooking);
 
               return (
                 <div
@@ -451,6 +871,11 @@ const LiveTracking = () => {
                       <div className="flex items-center space-x-2">
                         <span className="text-xs font-black text-white">{trainName}</span>
                         <span className="text-[10px] bg-white/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono font-bold">#{trainNo}</span>
+                        {isTodayBooking && (
+                          <span className="text-[9px] bg-emerald-500 text-slate-950 font-black px-1.5 py-0.2 rounded uppercase tracking-wider animate-pulse">
+                            Today
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] text-slate-300 font-medium mt-0.5">PNR: {b.pnr_number} • Date: {travelDate}</p>
                     </div>
@@ -486,19 +911,19 @@ const LiveTracking = () => {
                 <Train className="h-6 w-6" />
               </div>
               <div>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[10px] bg-[#003366]/10 text-[#003366] font-black px-2 py-0.5 rounded-md font-mono">
                     #{activeTrain.train_number}
                   </span>
-                  {liveStatus?.status?.scheduled_departure_date && (
+                  {displayLiveStatus?.status?.scheduled_departure_date && (
                     <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-md font-mono font-bold">
-                      Journey Date: {liveStatus.status.scheduled_departure_date}
+                      Journey Date: {displayLiveStatus.status.scheduled_departure_date}
                     </span>
                   )}
                 </div>
                 <h2 className="text-lg md:text-xl font-black text-slate-800 tracking-tight mt-1">{activeTrain.train_name}</h2>
                 <p className="text-xs text-slate-400 font-bold mt-0.5">
-                  Route: {liveStatus?.stops?.[0]?.name || activeTrain.source || 'Origin'} &rarr; {liveStatus?.stops?.[liveStatus.stops.length - 1]?.name || activeTrain.destination || 'Destination'}
+                  Route: {displayLiveStatus?.stops?.[0]?.name || activeTrain.source || 'Origin'} &rarr; {displayLiveStatus?.stops?.[displayLiveStatus.stops.length - 1]?.name || activeTrain.destination || 'Destination'}
                 </p>
               </div>
             </div>
@@ -542,9 +967,9 @@ const LiveTracking = () => {
                 </span>
                 <h3 className="text-lg font-black text-slate-800 pt-1">Train Has Not Departed Yet</h3>
                 <p className="text-xs text-slate-500 max-w-lg leading-relaxed font-medium">
-                  This train is scheduled to depart from <strong className="text-slate-800">{liveStatus?.status?.origin_station || activeTrain.source}</strong> on{' '}
-                  <strong className="text-slate-800">{liveStatus?.status?.scheduled_departure_date}</strong> at{' '}
-                  <strong className="text-[#003366]">{liveStatus?.status?.scheduled_departure_time}</strong>.
+                  This train is scheduled to depart from <strong className="text-slate-800">{displayLiveStatus?.status?.origin_station || activeTrain.source}</strong> on{' '}
+                  <strong className="text-slate-800">{displayLiveStatus?.status?.scheduled_departure_date}</strong> at{' '}
+                  <strong className="text-[#003366]">{displayLiveStatus?.status?.scheduled_departure_time}</strong>.
                   Live GPS speed and progress movement will automatically activate at scheduled departure time.
                 </p>
               </div>
@@ -552,22 +977,22 @@ const LiveTracking = () => {
               <div className="w-full bg-[#f0f5fc] rounded-2xl border border-blue-150 p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
                 <div>
                   <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Scheduled Journey Date</span>
-                  <span className="text-xs font-extrabold text-slate-800 font-mono mt-0.5 block">{liveStatus?.status?.scheduled_departure_date}</span>
+                  <span className="text-xs font-extrabold text-slate-800 font-mono mt-0.5 block">{displayLiveStatus?.status?.scheduled_departure_date}</span>
                 </div>
                 <div>
                   <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Scheduled Departure Time</span>
-                  <span className="text-xs font-extrabold text-[#003366] font-mono mt-0.5 block">{liveStatus?.status?.scheduled_departure_time}</span>
+                  <span className="text-xs font-extrabold text-[#003366] font-mono mt-0.5 block">{displayLiveStatus?.status?.scheduled_departure_time}</span>
                 </div>
                 <div>
                   <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Scheduled Platform</span>
-                  <span className="text-xs font-extrabold text-emerald-600 mt-0.5 block">PF {liveStatus?.stops?.[0]?.platform || '1'}</span>
+                  <span className="text-xs font-extrabold text-emerald-600 mt-0.5 block">PF {displayLiveStatus?.stops?.[0]?.platform || '1'}</span>
                 </div>
               </div>
 
-              {liveStatus?.status?.mins_until_departure > 0 && (
+              {displayLiveStatus?.status?.mins_until_departure > 0 && (
                 <div className="text-xs font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  <span>Time remaining until scheduled departure: {Math.floor(liveStatus.status.mins_until_departure / 60)}h {liveStatus.status.mins_until_departure % 60}m</span>
+                  <span>Time remaining until scheduled departure: {Math.floor(displayLiveStatus.status.mins_until_departure / 60)}h {displayLiveStatus.status.mins_until_departure % 60}m</span>
                 </div>
               )}
             </div>
@@ -662,7 +1087,7 @@ const LiveTracking = () => {
           )}
 
           {/* AI Route Delay & Weather Intelligence Widget */}
-          <AIDelayWidget trainNumber={activeTrain.train_number} liveStatus={liveStatus} />
+          <AIDelayWidget trainNumber={activeTrain.train_number} liveStatus={displayLiveStatus} />
 
           {/* Interactive Geographic Map Section using Leaflet */}
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-2xl space-y-4 text-white">
@@ -692,7 +1117,7 @@ const LiveTracking = () => {
                 <div>
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Speedometer</span>
                   <div className="text-3xl font-black text-cyan-300 mt-1 flex items-baseline space-x-1 font-mono">
-                    <span>{isNotStarted ? 0 : (liveStatus?.telemetry?.speed ?? 0)}</span>
+                    <span>{isNotStarted ? 0 : (displayLiveStatus?.telemetry?.speed ?? 0)}</span>
                     <span className="text-xs font-bold text-slate-400">km/h</span>
                   </div>
                   <span className="text-[9.5px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md mt-2 inline-block border border-emerald-500/20">
@@ -709,10 +1134,17 @@ const LiveTracking = () => {
                 <div>
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Next Station ETA</span>
                   <div className="text-2xl font-black text-amber-400 mt-1 flex items-baseline space-x-1 font-mono">
-                    <span>{isNotStarted ? 'ETA unavailable' : (liveStatus?.journey?.eta_next_station || 'ETA unavailable')}</span>
+                    <span>{isNotStarted ? 'ETA unavailable' : (displayLiveStatus?.journey?.eta_next_station || 'ETA unavailable')}</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-slate-300 block mt-2">
-                    Next Stop: <strong className="text-cyan-300">{liveStatus?.telemetry?.next_station_code || '---'}</strong>
+                  <span className="text-[10px] font-semibold text-slate-300 block mt-2 truncate">
+                    Next Stop:{' '}
+                    <strong className="text-cyan-300">
+                      {(() => {
+                        const nextCode = displayLiveStatus?.telemetry?.next_station_code;
+                        const found = displayLiveStatus?.stops?.find(s => s.code === nextCode || s.status === 'NEXT');
+                        return found ? `${found.name} (${found.code})` : (nextCode || '---');
+                      })()}
+                    </strong>
                   </span>
                 </div>
                 <div className="p-3.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -724,15 +1156,15 @@ const LiveTracking = () => {
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl text-white space-y-3">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Journey Distance Progress</span>
                 <div className="flex items-center justify-between text-xs font-black text-slate-200 mt-2">
-                  <span>{isNotStarted ? 0 : (liveStatus?.journey?.progress_percent || 0)}% Completed</span>
+                  <span>{isNotStarted ? 0 : (displayLiveStatus?.journey?.progress_percent || 0)}% Completed</span>
                   <span className="font-mono text-cyan-300">
-                    {isNotStarted ? 0 : Math.round(liveStatus?.telemetry?.distance_travelled_km || 0)} / {liveStatus?.journey?.total_distance_km || 1000} km
+                    {isNotStarted ? 0 : Math.round(displayLiveStatus?.telemetry?.distance_travelled_km || 0)} / {displayLiveStatus?.journey?.total_distance_km || 2195} km
                   </span>
                 </div>
                 <div className="w-full bg-slate-800 rounded-full h-2.5 mt-2 overflow-hidden shadow-inner border border-slate-700">
                   <div
                     className="bg-gradient-to-r from-cyan-400 to-blue-600 h-2.5 rounded-full transition-all duration-500 shadow-md shadow-cyan-500/50"
-                    style={{ width: `${isNotStarted ? 0 : (liveStatus?.journey?.progress_percent || 0)}%` }}
+                    style={{ width: `${isNotStarted ? 0 : (displayLiveStatus?.journey?.progress_percent || 0)}%` }}
                   ></div>
                 </div>
               </div>
@@ -744,7 +1176,7 @@ const LiveTracking = () => {
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Dynamic Route Station Timeline & Schedules</h3>
 
               <div className="relative pl-8 border-l-2 border-slate-150 space-y-6 py-2 ml-4">
-                {(liveStatus?.stops || []).map((stop, idx) => {
+                {(displayLiveStatus?.stops || []).map((stop, idx) => {
                   let pointStyle = 'border-slate-300 bg-white text-slate-300';
                   let textStyle = 'text-slate-400 font-semibold';
                   let cardStyle = 'border-transparent bg-transparent';
@@ -802,14 +1234,27 @@ const LiveTracking = () => {
                           </p>
                         </div>
 
+                        {stop.status === 'COMPLETED' && (
+                          <span className="rounded-full bg-blue-50 border border-blue-200 text-[#003366] px-2.5 py-0.5 text-[8.5px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                            <CheckCircle2 className="h-3 w-3 text-blue-600" />
+                            <span>DEPARTED ({stop.actualDepTime || stop.depTime})</span>
+                          </span>
+                        )}
                         {stop.status === 'CURRENT' && (
-                          <span className="rounded-full bg-green-150 text-green-800 px-2.5 py-0.5 text-[8.5px] font-black uppercase tracking-wider animate-pulse">
-                            {isNotStarted ? 'ORIGIN TERMINAL' : 'CURRENT POSITION'}
+                          <span className="rounded-full bg-green-150 border border-green-300 text-green-800 px-2.5 py-0.5 text-[8.5px] font-black uppercase tracking-wider animate-pulse flex items-center gap-1 shadow-xs">
+                            <Navigation className="h-3 w-3 text-green-700 rotate-45" />
+                            <span>{isNotStarted ? 'ORIGIN TERMINAL' : 'CURRENT POSITION'}</span>
                           </span>
                         )}
                         {stop.status === 'NEXT' && (
-                          <span className="rounded-full bg-amber-150 text-amber-800 px-2.5 py-0.5 text-[8.5px] font-black uppercase tracking-wider">
-                            NEXT STOP
+                          <span className="rounded-full bg-amber-100 border border-amber-300 text-amber-800 px-2.5 py-0.5 text-[8.5px] font-black uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                            <Clock className="h-3 w-3 text-amber-600" />
+                            <span>NEXT STOP {displayLiveStatus?.journey?.eta_next_station ? `(${displayLiveStatus.journey.eta_next_station})` : ''}</span>
+                          </span>
+                        )}
+                        {stop.status !== 'COMPLETED' && stop.status !== 'CURRENT' && stop.status !== 'NEXT' && (
+                          <span className="rounded-full bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 text-[8.5px] font-bold uppercase tracking-wider">
+                            ON SCHEDULE
                           </span>
                         )}
                       </div>

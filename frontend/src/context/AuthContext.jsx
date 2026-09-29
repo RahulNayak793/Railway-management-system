@@ -2,11 +2,28 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../services/api';
 
-const AuthContext = createContext(null);
+const defaultAuthValue = {
+  user: null,
+  setUser: () => {},
+  token: null,
+  loading: false,
+  error: null,
+  login: async () => ({ success: false }),
+  cateringLogin: async () => ({ success: false }),
+  signup: async () => ({ success: false }),
+  logout: () => {},
+  setError: () => {},
+  passengerUser: null,
+  adminUser: null,
+  staffUser: null,
+  cateringUser: null,
+  cateringToken: null
+};
+
+const AuthContext = createContext(defaultAuthValue);
 
 export const AuthProvider = ({ children }) => {
   const location = useLocation();
-  const isAdminPath = location.pathname.startsWith('/admin');
 
   const [passengerUser, setPassengerUser] = useState(() => {
     try {
@@ -24,7 +41,7 @@ export const AuthProvider = ({ children }) => {
       if (!saved) return null;
       const parsed = JSON.parse(saved);
       const r = (parsed?.role || '').toLowerCase();
-      if (r === 'admin' || r === 'staff') return parsed;
+      if (r === 'admin') return parsed;
       return null;
     } catch {
       return null;
@@ -32,157 +49,222 @@ export const AuthProvider = ({ children }) => {
   });
   const [adminToken, setAdminToken] = useState(() => localStorage.getItem('admin_token') || null);
 
+  const [staffUser, setStaffUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('staff_user');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      const r = (parsed?.role || '').toLowerCase();
+      if (r === 'staff' || r === 'admin') return parsed;
+      return null;
+    } catch {
+      return null;
+    }
+  });
+  const [staffToken, setStaffToken] = useState(() => localStorage.getItem('staff_token') || null);
+
+  const [cateringUser, setCateringUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('catering_user');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      const r = (parsed?.role || '').toUpperCase();
+      if (r === 'CATERING_COMPANY') return parsed;
+      return null;
+    } catch {
+      return null;
+    }
+  });
+  const [cateringToken, setCateringToken] = useState(() => localStorage.getItem('catering_token') || null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const user = isAdminPath ? adminUser : passengerUser;
-  const token = isAdminPath ? adminToken : passengerToken;
+  // Sync state across browser tabs when localStorage is updated
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (!e.key || e.key === 'passenger_user' || e.key === 'passenger_token') {
+        try {
+          const pUser = localStorage.getItem('passenger_user');
+          setPassengerUser(pUser ? JSON.parse(pUser) : null);
+        } catch { setPassengerUser(null); }
+        setPassengerToken(localStorage.getItem('passenger_token') || null);
+      }
+      if (!e.key || e.key === 'admin_user' || e.key === 'admin_token') {
+        try {
+          const aUser = localStorage.getItem('admin_user');
+          setAdminUser(aUser ? JSON.parse(aUser) : null);
+        } catch { setAdminUser(null); }
+        setAdminToken(localStorage.getItem('admin_token') || null);
+      }
+      if (!e.key || e.key === 'staff_user' || e.key === 'staff_token') {
+        try {
+          const sUser = localStorage.getItem('staff_user');
+          setStaffUser(sUser ? JSON.parse(sUser) : null);
+        } catch { setStaffUser(null); }
+        setStaffToken(localStorage.getItem('staff_token') || null);
+      }
+      if (!e.key || e.key === 'catering_user' || e.key === 'catering_token') {
+        try {
+          const cUser = localStorage.getItem('catering_user');
+          setCateringUser(cUser ? JSON.parse(cUser) : null);
+        } catch { setCateringUser(null); }
+        setCateringToken(localStorage.getItem('catering_token') || null);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const path = location.pathname;
+  let user = passengerUser;
+  let token = passengerToken;
+
+  if (path.startsWith('/admin')) {
+    user = adminUser;
+    token = adminToken;
+  } else if (path.startsWith('/staff')) {
+    user = staffUser;
+    token = staffToken;
+  } else if (path.startsWith('/passenger')) {
+    user = passengerUser;
+    token = passengerToken;
+  } else if (path.startsWith('/catering')) {
+    user = cateringUser;
+    token = cateringToken;
+  } else if (path === '/login' || path === '/login/' || path === '/catering/login') {
+    user = null;
+    token = null;
+  } else {
+    user = passengerUser || staffUser || adminUser || cateringUser;
+    token = passengerToken || staffToken || adminToken || cateringToken;
+  }
 
   const customSetUser = (u) => {
-    if (isAdminPath) {
+    const role = (u?.role || '').toUpperCase();
+    if (role === 'CATERING_COMPANY' || path.startsWith('/catering')) {
+      setCateringUser(u);
+      if (u) localStorage.setItem('catering_user', JSON.stringify(u));
+      else localStorage.removeItem('catering_user');
+    } else if (role === 'ADMIN' || path.startsWith('/admin')) {
       setAdminUser(u);
-      if (u) {
-        localStorage.setItem('admin_user', JSON.stringify(u));
-      } else {
-        localStorage.removeItem('admin_user');
-      }
+      if (u) localStorage.setItem('admin_user', JSON.stringify(u));
+      else localStorage.removeItem('admin_user');
+    } else if (role === 'STAFF' || path.startsWith('/staff')) {
+      setStaffUser(u);
+      if (u) localStorage.setItem('staff_user', JSON.stringify(u));
+      else localStorage.removeItem('staff_user');
     } else {
       setPassengerUser(u);
-      if (u) {
-        localStorage.setItem('passenger_user', JSON.stringify(u));
-      } else {
-        localStorage.removeItem('passenger_user');
-      }
+      if (u) localStorage.setItem('passenger_user', JSON.stringify(u));
+      else localStorage.removeItem('passenger_user');
     }
   };
 
   useEffect(() => {
     const fetchUser = async () => {
-      const activeToken = isAdminPath ? adminToken : passengerToken;
+      let activeToken = null;
+      let activeRole = 'passenger';
+
+      if (path.startsWith('/admin')) {
+        activeToken = adminToken;
+        activeRole = 'admin';
+      } else if (path.startsWith('/staff')) {
+        activeToken = staffToken;
+        activeRole = 'staff';
+      } else if (path.startsWith('/passenger')) {
+        activeToken = passengerToken;
+        activeRole = 'passenger';
+      } else if (path.startsWith('/catering')) {
+        activeToken = cateringToken;
+        activeRole = 'catering_company';
+      }
+
       if (activeToken) {
         try {
-          const res = await api.get('/auth/me');
-          if (res.data && res.data.user) {
+          const endpoint = activeRole === 'catering_company' ? '/catering/company/me' : '/auth/me';
+          const res = await api.get(endpoint, {
+            headers: { Authorization: `Bearer ${activeToken}` }
+          });
+          if (activeRole === 'catering_company') {
+            const fetched = res.data?.company || res.data?.user;
+            if (fetched) {
+              const fullCatering = {
+                ...(res.data.user || {}),
+                ...(res.data.company || {}),
+                role: 'CATERING_COMPANY'
+              };
+              setCateringUser(fullCatering);
+              localStorage.setItem('catering_user', JSON.stringify(fullCatering));
+            }
+          } else if (res.data && res.data.user) {
             const fetchedUser = res.data.user;
-            if (isAdminPath) {
+            const r = (fetchedUser.role || activeRole).toLowerCase();
+            if (r === 'admin') {
               setAdminUser(fetchedUser);
               localStorage.setItem('admin_user', JSON.stringify(fetchedUser));
+            } else if (r === 'staff') {
+              setStaffUser(fetchedUser);
+              localStorage.setItem('staff_user', JSON.stringify(fetchedUser));
             } else {
               setPassengerUser(fetchedUser);
               localStorage.setItem('passenger_user', JSON.stringify(fetchedUser));
             }
           }
         } catch (err) {
-          console.warn('Could not refresh session from backend, preserving local session:', err);
+          console.warn('Could not refresh session from backend:', err);
         }
       }
       setLoading(false);
     };
     fetchUser();
-  }, [location.pathname, isAdminPath, adminToken, passengerToken]);
+  }, [location.pathname, adminToken, staffToken, passengerToken, cateringToken]);
 
-  const login = async (email, password, targetRole) => {
+  const login = async (email, password, portal) => {
     setError(null);
     setLoading(true);
-    const cleanEmail = email ? email.trim().toLowerCase() : '';
-
-    const getApprovedAdmins = () => {
-      try {
-        const storedMembers = JSON.parse(localStorage.getItem('added_staff_members') || '[]');
-        return new Set([
-          'admin@railway.com',
-          'shiva@gmail.com',
-          ...storedMembers.map(s => (s && s.email) ? s.email.trim().toLowerCase() : '')
-        ]);
-      } catch {
-        return new Set(['admin@railway.com', 'shiva@gmail.com']);
-      }
-    };
-
-    const isUserAdmin = cleanEmail === 'admin@railway.com' || cleanEmail.includes('admin') || getApprovedAdmins().has(cleanEmail);
-
-    // Enforce Strict Role Isolation
-    if ((isAdminPath || targetRole === 'admin') && !isUserAdmin) {
-      setLoading(false);
-      throw new Error('Access Denied: Only Administrator accounts can log in on the Admin Portal. Passengers must use the Passenger Login page at /login.');
-    }
-
-    if (!isAdminPath && targetRole !== 'admin' && isUserAdmin) {
-      setLoading(false);
-      throw new Error('Access Denied: Admin accounts cannot log in on the Passenger Login page. Please use the Admin Login page at /admin/login.');
-    }
-
-    const userRole = isUserAdmin ? 'admin' : 'passenger';
 
     try {
-      const res = await api.post('/auth/login', { email, password, role: userRole });
+      const res = await api.post('/auth/login', { email, password, portal });
       const { session, user: loggedUser } = res.data;
       
       const jwtToken = session?.access_token || res.data?.token || res.data?.access_token;
       if (jwtToken && loggedUser) {
-        loggedUser.role = userRole;
+        const userRole = (loggedUser.role || portal || 'passenger').toLowerCase();
         
         if (userRole === 'admin') {
           localStorage.setItem('admin_token', jwtToken);
           localStorage.setItem('admin_user', JSON.stringify(loggedUser));
           setAdminToken(jwtToken);
           setAdminUser(loggedUser);
+        } else if (userRole === 'staff') {
+          localStorage.setItem('staff_token', jwtToken);
+          localStorage.setItem('staff_user', JSON.stringify(loggedUser));
+          setStaffToken(jwtToken);
+          setStaffUser(loggedUser);
         } else {
           localStorage.setItem('passenger_token', jwtToken);
           localStorage.setItem('passenger_user', JSON.stringify(loggedUser));
           setPassengerToken(jwtToken);
           setPassengerUser(loggedUser);
         }
-        
-        localStorage.setItem('token', jwtToken);
-        localStorage.setItem('user', JSON.stringify(loggedUser));
 
         setLoading(false);
         return loggedUser;
       }
+      throw new Error('Authentication failed. Invalid server response.');
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.error) {
-        setLoading(false);
-        throw new Error(err.response.data.error);
-      }
-      console.warn('Backend API login request failed, engaging high-availability local session fallback:', err);
+      setLoading(false);
+      const errorMsg = err.response?.data?.error || err.message || 'Authentication failed. Please verify credentials.';
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
-
-    // High-availability local session fallback
-    const fallbackUser = {
-      id: 'usr-client-' + Math.random().toString(36).substr(2, 8),
-      email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@railway.com`,
-      role: userRole,
-      full_name: (cleanEmail.split('@')[0] || 'User').toUpperCase(),
-      phone: '+91 9876543210',
-      created_at: new Date().toISOString()
-    };
-    const fallbackToken = 'mock-base64-' + btoa(unescape(encodeURIComponent(JSON.stringify(fallbackUser))));
-
-    if (userRole === 'admin') {
-      localStorage.setItem('admin_token', fallbackToken);
-      localStorage.setItem('admin_user', JSON.stringify(fallbackUser));
-      setAdminToken(fallbackToken);
-      setAdminUser(fallbackUser);
-    } else {
-      localStorage.setItem('passenger_token', fallbackToken);
-      localStorage.setItem('passenger_user', JSON.stringify(fallbackUser));
-      setPassengerToken(fallbackToken);
-      setPassengerUser(fallbackUser);
-    }
-
-    localStorage.setItem('token', fallbackToken);
-    localStorage.setItem('user', JSON.stringify(fallbackUser));
-
-    setLoading(false);
-    return fallbackUser;
   };
 
   const signup = async ({ email, password, full_name, role, phone }) => {
     setError(null);
     setLoading(true);
-    const cleanEmail = email ? email.trim().toLowerCase() : '';
-    const userRole = role || 'passenger';
+    const userRole = (role || 'passenger').toLowerCase();
 
     try {
       const res = await api.post('/auth/signup', { email, password, full_name, role: userRole, phone });
@@ -195,67 +277,84 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('admin_user', JSON.stringify(newUser));
           setAdminToken(jwtToken);
           setAdminUser(newUser);
+        } else if (userRole === 'staff') {
+          localStorage.setItem('staff_token', jwtToken);
+          localStorage.setItem('staff_user', JSON.stringify(newUser));
+          setStaffToken(jwtToken);
+          setStaffUser(newUser);
         } else {
           localStorage.setItem('passenger_token', jwtToken);
           localStorage.setItem('passenger_user', JSON.stringify(newUser));
           setPassengerToken(jwtToken);
           setPassengerUser(newUser);
         }
-        
-        localStorage.setItem('token', jwtToken);
-        localStorage.setItem('user', JSON.stringify(newUser));
 
         setLoading(false);
         return newUser;
       }
     } catch (err) {
-      console.warn('Backend signup API failed, engaging local session fallback:', err);
+      setLoading(false);
+      const msg = err.response?.data?.error || err.message || 'Registration failed.';
+      setError(msg);
+      throw new Error(msg);
     }
-
-    const fallbackUser = {
-      id: 'usr-client-' + Math.random().toString(36).substr(2, 8),
-      email: cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@railway.com`,
-      role: userRole,
-      full_name: full_name || 'Railway User',
-      phone: phone || '+91 9876543210',
-      created_at: new Date().toISOString()
-    };
-    const fallbackToken = 'mock-base64-' + btoa(unescape(encodeURIComponent(JSON.stringify(fallbackUser))));
-
-    if (userRole === 'admin') {
-      localStorage.setItem('admin_token', fallbackToken);
-      localStorage.setItem('admin_user', JSON.stringify(fallbackUser));
-      setAdminToken(fallbackToken);
-      setAdminUser(fallbackUser);
-    } else {
-      localStorage.setItem('passenger_token', fallbackToken);
-      localStorage.setItem('passenger_user', JSON.stringify(fallbackUser));
-      setPassengerToken(fallbackToken);
-      setPassengerUser(fallbackUser);
-    }
-
-    localStorage.setItem('token', fallbackToken);
-    localStorage.setItem('user', JSON.stringify(fallbackUser));
-
-    setLoading(false);
-    return fallbackUser;
   };
 
-  const logout = () => {
-    if (isAdminPath) {
+  const cateringLogin = async (email, password) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await api.post('/catering/auth/login', { email, password });
+      const { token: jwtToken, user: loggedUser } = res.data;
+      if (jwtToken && loggedUser) {
+        localStorage.setItem('catering_token', jwtToken);
+        localStorage.setItem('catering_user', JSON.stringify(loggedUser));
+        setCateringToken(jwtToken);
+        setCateringUser(loggedUser);
+        setLoading(false);
+        return loggedUser;
+      }
+      throw new Error('Authentication failed. Invalid server response.');
+    } catch (err) {
+      setLoading(false);
+      const errorMsg = err.response?.data?.error || err.message || 'Authentication failed. Please verify credentials.';
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+  };
+
+  const logout = (targetRole) => {
+    let activeRole = (targetRole || '').toLowerCase();
+
+    if (!activeRole) {
+      if (path.startsWith('/admin')) activeRole = 'admin';
+      else if (path.startsWith('/staff')) activeRole = 'staff';
+      else if (path.startsWith('/passenger')) activeRole = 'passenger';
+      else if (path.startsWith('/catering')) activeRole = 'catering_company';
+      else activeRole = (user?.role || 'passenger').toLowerCase();
+    }
+
+    if (activeRole === 'catering_company' || activeRole === 'catering') {
+      localStorage.removeItem('catering_token');
+      localStorage.removeItem('catering_user');
+      setCateringToken(null);
+      setCateringUser(null);
+    } else if (activeRole === 'admin') {
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_user');
       setAdminToken(null);
       setAdminUser(null);
+    } else if (activeRole === 'staff') {
+      localStorage.removeItem('staff_token');
+      localStorage.removeItem('staff_user');
+      setStaffToken(null);
+      setStaffUser(null);
     } else {
       localStorage.removeItem('passenger_token');
       localStorage.removeItem('passenger_user');
       setPassengerToken(null);
       setPassengerUser(null);
     }
-    
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
   };
 
   const value = {
@@ -265,14 +364,21 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     login,
+    cateringLogin,
     signup,
     logout,
-    setError
+    setError,
+    passengerUser,
+    adminUser,
+    staffUser,
+    cateringUser,
+    cateringToken
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const ctx = useContext(AuthContext);
+  return ctx || defaultAuthValue;
 };

@@ -1,12 +1,19 @@
-import React, { useState, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { App as CapApp } from '@capacitor/app';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { Network } from '@capacitor/network';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { CurrencyProvider } from './context/CurrencyContext';
+import { LanguageProvider } from './context/LanguageContext';
+import { AccessibilityProvider } from './context/AccessibilityContext';
 
 // Components & Layouts
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+import Footer from './components/Footer';
 import ChatbotWidget from './components/ChatbotWidget';
 import EmergencySOSModal from './components/EmergencySOSModal';
 import { Radio, ShieldAlert } from 'lucide-react';
@@ -14,6 +21,10 @@ import { Radio, ShieldAlert } from 'lucide-react';
 // Core Pages - Imported statically to ensure instant load on Vercel host
 import Login from './pages/Login';
 import Register from './pages/Register';
+import PassengerLogin from './pages/PassengerLogin';
+import PassengerRegister from './pages/PassengerRegister';
+import PassengerForgotPassword from './pages/PassengerForgotPassword';
+import PassengerResetPassword from './pages/PassengerResetPassword';
 import PassengerDashboard from './pages/PassengerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 
@@ -47,6 +58,7 @@ const PassengerCancelTicket = lazyWithRetry(() => import('./pages/PassengerCance
 const PassengerPayments = lazyWithRetry(() => import('./pages/PassengerPayments'));
 const PassengerNotifications = lazyWithRetry(() => import('./pages/PassengerNotifications'));
 const PassengerPNRStatus = lazyWithRetry(() => import('./pages/PassengerPNRStatus'));
+const StationSchedule = lazyWithRetry(() => import('./pages/StationSchedule'));
 const ProfileSettings = lazyWithRetry(() => import('./pages/ProfileSettings'));
 const PassengerWallet = lazyWithRetry(() => import('./pages/PassengerWallet'));
 const PassengerCatering = lazyWithRetry(() => import('./pages/PassengerCatering'));
@@ -64,11 +76,33 @@ const AdminPayments = lazyWithRetry(() => import('./pages/AdminPayments'));
 const AdminTrainStatus = lazyWithRetry(() => import('./pages/AdminTrainStatus'));
 const AdminPolicies = lazyWithRetry(() => import('./pages/AdminPolicies'));
 const AdminCatering = lazyWithRetry(() => import('./pages/AdminCatering'));
-const CompanyCatering = lazyWithRetry(() => import('./pages/CompanyCatering'));
+const CateringLogin = lazyWithRetry(() => import('./pages/CateringLogin'));
+const CateringDashboard = lazyWithRetry(() => import('./pages/CateringDashboard'));
 const StaffBookings = lazyWithRetry(() => import('./pages/StaffBookings'));
 const StaffRefunds = lazyWithRetry(() => import('./pages/StaffRefunds'));
 const AdminDiagnostics = lazyWithRetry(() => import('./pages/AdminDiagnostics'));
 const AdminReports = lazyWithRetry(() => import('./pages/AdminReports'));
+
+const AdminStaffManagement = lazyWithRetry(() => import('./pages/AdminStaffManagement'));
+const AdminStaffRoster = lazyWithRetry(() => import('./pages/AdminStaffRoster'));
+const AdminStaffDuties = lazyWithRetry(() => import('./pages/AdminStaffDuties'));
+const AdminStaffReports = lazyWithRetry(() => import('./pages/AdminStaffReports'));
+const AdminStaffControlDetail = lazyWithRetry(() => import('./pages/AdminStaffControlDetail'));
+const StaffDashboard = lazyWithRetry(() => import('./pages/StaffDashboard'));
+const StaffTrains = lazyWithRetry(() => import('./pages/StaffTrains'));
+const StaffTrainStatus = lazyWithRetry(() => import('./pages/StaffTrainStatus'));
+const StaffManifest = lazyWithRetry(() => import('./pages/StaffManifest'));
+const StaffVerify = lazyWithRetry(() => import('./pages/StaffVerify'));
+const StaffIncidents = lazyWithRetry(() => import('./pages/StaffIncidents'));
+const StaffDailyReport = lazyWithRetry(() => import('./pages/StaffDailyReport'));
+const StaffInquiries = lazyWithRetry(() => import('./pages/StaffInquiries'));
+const StaffTasks = lazyWithRetry(() => import('./pages/StaffTasks'));
+const AdminReservations = lazyWithRetry(() => import('./pages/AdminReservations'));
+const StaffReservations = lazyWithRetry(() => import('./pages/StaffReservations'));
+const StaffSchedules = lazyWithRetry(() => import('./pages/StaffSchedules'));
+const StaffPassengers = lazyWithRetry(() => import('./pages/StaffPassengers'));
+const StaffReports = lazyWithRetry(() => import('./pages/StaffReports'));
+const StaffAnnouncements = lazyWithRetry(() => import('./pages/StaffAnnouncements'));
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -79,10 +113,6 @@ class ErrorBoundary extends React.Component {
   static getDerivedStateFromError(error) {
     const pathname = window.location.pathname;
     if (pathname === '/login' || pathname === '/') {
-      try {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      } catch (e) { }
       return { hasError: false, error: null };
     }
     return { hasError: true, error };
@@ -109,19 +139,34 @@ class ErrorBoundary extends React.Component {
             <p className="text-xs text-slate-500 font-medium leading-relaxed">
               Your session workspace encountered a minor display update. Click below to return to the sign in page.
             </p>
+            {this.state.error && (
+              <div className="text-[11px] text-red-600 bg-red-50 p-3 rounded-xl max-h-48 overflow-auto text-left font-mono border border-red-100">
+                <strong>Error:</strong> {this.state.error.message || String(this.state.error)}
+                {this.state.error.stack && (
+                  <pre className="text-[9px] text-slate-600 mt-2 whitespace-pre-wrap">
+                    {this.state.error.stack}
+                  </pre>
+                )}
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
               <button
                 onClick={() => {
-                  try {
-                    localStorage.clear();
-                    sessionStorage.clear();
-                  } catch (e) { }
                   this.setState({ hasError: false, error: null });
-                  window.location.href = '/login';
+                  window.location.reload();
                 }}
                 className="w-full rounded-xl bg-blue-600 text-white min-h-[44px] py-3 text-xs font-black hover:bg-blue-700 transition-all shadow-md shadow-blue-500/20 active:scale-95"
               >
-                Return to Sign In Page
+                Reload Application
+              </button>
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.href = '/login';
+                }}
+                className="w-full rounded-xl bg-slate-100 text-slate-700 min-h-[44px] py-3 text-xs font-bold hover:bg-slate-200 transition-all active:scale-95 border border-slate-200"
+              >
+                Sign In Page
               </button>
             </div>
           </div>
@@ -152,22 +197,22 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (!user) {
-    const isAdminPath = window.location.pathname.startsWith('/admin');
-    return <Navigate to={isAdminPath ? "/admin/login" : "/login"} replace />;
+    if (window.location.pathname.startsWith('/catering/company') || window.location.pathname.startsWith('/catering/login')) {
+      return <Navigate to="/login" replace />;
+    }
+    const isStaffOrAdminPath = window.location.pathname.startsWith('/staff') || window.location.pathname.startsWith('/admin');
+    return <Navigate to={isStaffOrAdminPath ? "/login" : "/passenger/login"} replace />;
   }
 
-  // Normalize: treat 'staff' as 'admin' everywhere
-  const userRole = (user.role || 'passenger').toLowerCase() === 'staff' ? 'admin' : (user.role || 'passenger').toLowerCase();
+  const userRole = (user.role || 'passenger').toLowerCase();
 
   if (allowedRoles && allowedRoles.length > 0) {
     const normalizedAllowed = allowedRoles.map(r => r.toLowerCase());
     const isAllowed = normalizedAllowed.includes(userRole);
     if (!isAllowed) {
-      const isTargetingAdmin = window.location.pathname.startsWith('/admin');
-      if (isTargetingAdmin) {
-        return <Navigate to="/admin/login" replace />;
-      }
-      if (userRole === 'admin') return <Navigate to="/admin" replace />;
+      if (userRole === 'catering_company') return <Navigate to="/login" replace />;
+      if (userRole === 'admin') return <Navigate to="/admin/dashboard" replace />;
+      if (userRole === 'staff') return <Navigate to="/staff/dashboard" replace />;
       return <Navigate to="/passenger" replace />;
     }
   }
@@ -189,10 +234,11 @@ const PassengerLayout = ({ children }) => {
           />
         )}
         <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
-        <main className="flex-1 p-3 sm:p-5 md:p-6 overflow-y-auto w-full">
-          <div className="max-w-7xl mx-auto space-y-6">
+        <main className="flex-1 p-3 sm:p-5 md:p-6 overflow-y-auto w-full flex flex-col justify-between">
+          <div className="max-w-7xl mx-auto space-y-6 w-full">
             {children}
           </div>
+          <Footer />
         </main>
       </div>
 
@@ -201,7 +247,28 @@ const PassengerLayout = ({ children }) => {
   );
 };
 
-
+const StaffLayout = ({ children }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  return (
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
+      <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="flex flex-1 overflow-hidden relative">
+        {sidebarOpen && (
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-30 transition-opacity"
+          />
+        )}
+        <Sidebar mobileOpen={sidebarOpen} onCloseMobile={() => setSidebarOpen(false)} />
+        <main className="flex-1 p-3 sm:p-5 md:p-6 overflow-y-auto w-full">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
 
 const AdminLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -222,7 +289,6 @@ const AdminLayout = ({ children }) => {
           </div>
         </main>
       </div>
-      <ChatbotWidget />
     </div>
   );
 };
@@ -231,10 +297,94 @@ const AdminLayout = ({ children }) => {
 const RootRedirect = () => {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'admin' || user.role === 'staff') return <Navigate to="/admin" replace />;
+  if (!user) return <Navigate to="/passenger/login" replace />;
+  const userRole = (user.role || '').toLowerCase();
+  if (userRole === 'catering_company') return <Navigate to="/login" replace />;
+  if (userRole === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  if (userRole === 'staff') return <Navigate to="/staff/dashboard" replace />;
   return <Navigate to="/passenger" replace />;
 };
+
+// Mobile Capacitor Integration Services (Back Button, Splash, Network Status)
+function CapacitorMobileServices() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform()) {
+      SplashScreen.hide().catch(() => {});
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: '#0F172A' }).catch(() => {});
+    }
+
+    let networkListener;
+    const initNetwork = async () => {
+      try {
+        const status = await Network.getStatus();
+        setIsOffline(!status.connected);
+
+        networkListener = await Network.addListener('networkStatusChange', (status) => {
+          setIsOffline(!status.connected);
+        });
+      } catch (e) {
+        const handleOffline = () => setIsOffline(true);
+        const handleOnline = () => setIsOffline(false);
+        window.addEventListener('offline', handleOffline);
+        window.addEventListener('online', handleOnline);
+      }
+    };
+    initNetwork();
+
+    return () => {
+      if (networkListener && networkListener.remove) {
+        networkListener.remove();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    let backHandler;
+    const initBackButton = async () => {
+      if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform()) {
+        backHandler = await CapApp.addListener('backButton', ({ canGoBack }) => {
+          const path = location.pathname;
+          if (
+            path === '/passenger' ||
+            path === '/passenger/login' ||
+            path === '/' ||
+            path === '/login' ||
+            path === '/staff/dashboard' ||
+            path === '/admin/dashboard'
+          ) {
+            CapApp.exitApp();
+          } else if (canGoBack) {
+            navigate(-1);
+          } else {
+            CapApp.exitApp();
+          }
+        });
+      }
+    };
+    initBackButton();
+
+    return () => {
+      if (backHandler && backHandler.remove) {
+        backHandler.remove();
+      }
+    };
+  }, [location.pathname, navigate]);
+
+  return (
+    <>
+      {isOffline && (
+        <div className="fixed top-0 left-0 right-0 z-[9999] bg-red-600 text-white text-xs font-semibold py-2.5 px-4 text-center shadow-lg flex items-center justify-center space-x-2">
+          <span>⚠️ Unable to connect to Railway server. Please check your network connection and try again.</span>
+        </div>
+      )}
+    </>
+  );
+}
 
 function App() {
   return (
@@ -242,14 +392,23 @@ function App() {
       <Router>
         <AuthProvider>
           <CurrencyProvider>
-            <ToastProvider>
-              <div className="min-h-screen bg-slate-50">
+            <LanguageProvider>
+              <AccessibilityProvider>
+                <ToastProvider>
+                  <CapacitorMobileServices />
+                  <div className="min-h-screen bg-slate-50">
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
-                    {/* Dedicated Separate Login Pages */}
-                    <Route path="/login" element={<Login mode="passenger" />} />
+                    {/* Dedicated Separate Login & Auth Pages */}
+                    <Route path="/login" element={<Login mode="staff" />} />
                     <Route path="/admin/login" element={<Login mode="admin" />} />
-                    <Route path="/register" element={<Register />} />
+                    <Route path="/passenger/login" element={<PassengerLogin />} />
+                    <Route path="/passenger/register" element={<PassengerRegister />} />
+                    <Route path="/passenger/forgot-password" element={<PassengerForgotPassword />} />
+                    <Route path="/passenger/reset-password" element={<PassengerResetPassword />} />
+                    <Route path="/login/passenger" element={<Navigate to="/passenger/login" replace />} />
+                    <Route path="/register" element={<Navigate to="/passenger/register" replace />} />
+                    <Route path="/catering/login" element={<Navigate to="/login" replace />} />
 
                     {/* Passenger Dashboard Flow */}
                     <Route path="/passenger" element={
@@ -263,6 +422,20 @@ function App() {
                       <ProtectedRoute allowedRoles={['passenger']}>
                         <PassengerLayout>
                           <SearchTrainResults />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/passenger/search-trains" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <SearchTrainResults />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/seat-selection/:trainId" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <SeatSelection />
                         </PassengerLayout>
                       </ProtectedRoute>
                     } />
@@ -329,6 +502,13 @@ function App() {
                         </PassengerLayout>
                       </ProtectedRoute>
                     } />
+                    <Route path="/passenger/station-schedule" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
+                        <PassengerLayout>
+                          <StationSchedule />
+                        </PassengerLayout>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/passenger/track" element={
                       <ProtectedRoute allowedRoles={['passenger']}>
                         <PassengerLayout>
@@ -343,20 +523,20 @@ function App() {
                         </PassengerLayout>
                       </ProtectedRoute>
                     } />
-                    <Route path="/catering/company" element={
-                      <ProtectedRoute allowedRoles={['staff', 'admin', 'catering_company']}>
+                    <Route path="/passenger/meal" element={
+                      <ProtectedRoute allowedRoles={['passenger']}>
                         <PassengerLayout>
-                          <CompanyCatering />
+                          <PassengerCatering />
                         </PassengerLayout>
                       </ProtectedRoute>
                     } />
-                    <Route path="/vendor/catering" element={
-                      <ProtectedRoute allowedRoles={['staff', 'admin', 'catering_company']}>
-                        <PassengerLayout>
-                          <CompanyCatering />
-                        </PassengerLayout>
-                      </ProtectedRoute>
-                    } />
+                    <Route path="/passenger/meals" element={<Navigate to="/passenger/catering" replace />} />
+                    <Route path="/passenger/ecatering" element={<Navigate to="/passenger/catering" replace />} />
+                    <Route path="/passenger/e-catering" element={<Navigate to="/passenger/catering" replace />} />
+                    <Route path="/catering/login" element={<Navigate to="/login" replace />} />
+                    <Route path="/catering/company" element={<Navigate to="/login" replace />} />
+                    <Route path="/catering/company/*" element={<Navigate to="/login" replace />} />
+                    <Route path="/vendor/catering" element={<Navigate to="/login" replace />} />
                     <Route path="/passenger/support" element={
                       <ProtectedRoute allowedRoles={['passenger']}>
                         <PassengerLayout>
@@ -393,19 +573,272 @@ function App() {
                       </ProtectedRoute>
                     } />
 
-                    {/* Legacy /staff route redirect to unified /admin */}
-                    <Route path="/staff/*" element={<Navigate to="/admin" replace />} />
+                    {/* Staff Operations Center Routes */}
+                    <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
+                    <Route path="/staff/dashboard" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffDashboard />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/schedules" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffSchedules />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/trains" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffTrains />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/bookings" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffBookings />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/bookings-management" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffBookings />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/passengers" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <AdminUsers />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/users" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <AdminUsers />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/cancellation" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffRefunds />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/cancellations" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffRefunds />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/refunds" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffRefunds />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/ticket-checking" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <AdminTicketChecking />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/checking" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <AdminTicketChecking />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/manifest" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffManifest />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/verify" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffVerify />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/tickets" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffVerify />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/pnr" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffVerify />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/rac" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <AdminRACWaiting />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/rac-waiting" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <AdminRACWaiting />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/seats" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffManifest />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/reservations" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffReservations />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/station-ops" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffTrains />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/stations" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffTrains />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/status" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffTrainStatus />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/train-status" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffTrainStatus />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/tasks" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffTasks />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/duties" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffTasks />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/assigned-tasks" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffTasks />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/notifications" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <PassengerNotifications />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/daily-report" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffDailyReport />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/submit-task" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffDailyReport />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/reports" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffReports />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/announcements" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffAnnouncements />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/service-requests" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffInquiries />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/inquiries" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <StaffInquiries />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/staff/profile" element={
+                      <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                        <StaffLayout>
+                          <ProfileSettings />
+                        </StaffLayout>
+                      </ProtectedRoute>
+                    } />
 
-                    {/* Admin Dashboard Flow (Unified Admin & Operations Module) */}
+                    <Route path="/admin/profile" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <ProfileSettings />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+
+                    {/* Admin Dashboard Flow */}
                     <Route path="/admin" element={
-                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                      <ProtectedRoute allowedRoles={['admin']}>
                         <AdminLayout>
                           <AdminDashboard />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/trains" element={
-                      <ProtectedRoute allowedRoles={['admin', 'staff']}>
+                      <ProtectedRoute allowedRoles={['admin']}>
                         <AdminLayout>
                           <AdminSchedules />
                         </AdminLayout>
@@ -453,7 +886,62 @@ function App() {
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
-                     <Route path="/admin/staff" element={<Navigate to="/admin/dashboard" replace />} />
+                    <Route path="/admin/staff" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminStaffRoster />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/staff/duties" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminStaffDuties />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/tasks" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminStaffDuties />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/assigned-tasks" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminStaffDuties />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/staff/reports" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminStaffReports />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/submit-task" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminStaffReports />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/daily-report" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminStaffReports />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/staff/control/:staffId" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminStaffControlDetail />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
                       <Route path="/admin/dashboard" element={
                         <ProtectedRoute allowedRoles={['admin', 'staff']}>
                           <AdminLayout>
@@ -479,6 +967,13 @@ function App() {
                       <ProtectedRoute allowedRoles={['admin']}>
                         <AdminLayout>
                           <AdminRACWaiting />
+                        </AdminLayout>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/reservations" element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AdminLayout>
+                          <AdminReservations />
                         </AdminLayout>
                       </ProtectedRoute>
                     } />
@@ -569,9 +1064,6 @@ function App() {
                     } />
                     <Route path="/admin/settings" element={<Navigate to="/admin/policies" replace />} />
 
-                    {/* Legacy /staff route redirects to unified /admin */}
-                    <Route path="/staff/*" element={<Navigate to="/admin" replace />} />
-
                     {/* Default Route redirect */}
                     <Route path="/" element={<RootRedirect />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
@@ -579,8 +1071,10 @@ function App() {
                 </Suspense>
               </div>
             </ToastProvider>
-          </CurrencyProvider>
-        </AuthProvider>
+          </AccessibilityProvider>
+        </LanguageProvider>
+      </CurrencyProvider>
+    </AuthProvider>
       </Router>
     </ErrorBoundary>
   );

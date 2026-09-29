@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RailControl</string>
+    <string name="title_activity_main">RailControl</string>
+    <string name="package_name">com.railcontrol.app</string>
+    <string name="custom_url_scheme">com.railcontrol.app</string>
+</resources>

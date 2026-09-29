@@ -1,610 +1,747 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  ShieldCheck, DollarSign, Percent, Save, RefreshCw, Calculator, 
-  AlertCircle, CheckCircle2, Sliders, ArrowRight, HelpCircle, Layers, AlertTriangle, X
+import React, { useState, useEffect } from 'react';
+import {
+  DollarSign,
+  TrendingUp,
+  Percent,
+  ShieldAlert,
+  Save,
+  RotateCcw,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+  Sliders,
+  Sparkles,
+  Calculator,
+  Flame,
+  Clock,
+  Zap,
+  Info,
+  Layers,
+  Settings,
+  Calendar
 } from 'lucide-react';
 import api from '../services/api';
+import './AdminPolicies.css';
 
-const AdminPolicies = () => {
-  const [loading, setLoading] = useState(true);
+const DEFAULT_POLICIES = {
+  effectiveFrom: '2026-09-17',
+  effectiveTo: '2026-12-31',
+  classes: [
+    { code: '1A', name: 'AC 1-Tier (1A)', baseFare: 1600, perKm: 3.40, minDist: 500, tatkalExtra: 500, taxPercent: 5 },
+    { code: '2A', name: 'AC 2-Tier (2A)', baseFare: 980, perKm: 2.10, minDist: 300, tatkalExtra: 400, taxPercent: 5 },
+    { code: '3A', name: 'AC 3-Tier (3A)', baseFare: 650, perKm: 1.25, minDist: 300, tatkalExtra: 300, taxPercent: 5 },
+    { code: 'EC', name: 'Exec. Chair Car (EC)', baseFare: 1100, perKm: 2.80, minDist: 250, tatkalExtra: 400, taxPercent: 5 },
+    { code: 'CC', name: 'AC Chair Car (CC)', baseFare: 420, perKm: 0.95, minDist: 150, tatkalExtra: 225, taxPercent: 5 },
+    { code: 'SL', name: 'Sleeper (SL)', baseFare: 240, perKm: 0.45, minDist: 200, tatkalExtra: 150, taxPercent: 0 },
+    { code: 'GEN', name: 'General (GEN)', baseFare: 45, perKm: 0.15, minDist: 50, tatkalExtra: 0, taxPercent: 0 }
+  ],
+  quotas: {
+    tatkalQuotaPercent: 15,
+    racQuotaPercent: 10,
+    maxWaitlistSeats: 300,
+    seniorCitizenDiscountPercent: 40
+  },
+  cancellation: {
+    cancelPercentBefore5Days: 10,
+    cancelPercentWithin5Days: 5,
+    superfastSurcharge: 45,
+    reservationFee: 20
+  }
+};
+
+export default function AdminPolicies() {
+  const [policies, setPolicies] = useState(DEFAULT_POLICIES);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [saveError, setSaveError] = useState(null);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
 
-  // Quotas & System Limits
-  const [quotas, setQuotas] = useState({
-    tatkalQuota: 15,
-    racQuota: 10,
-    waitlistLimit: 300,
-    seniorDiscount: 40,
-    ladiesQuota: 10
-  });
-
-  // Cancellation & Refund Rules
-  const [cancellation, setCancellation] = useState({
-    flatFee48h: 240,
-    percent12to48h: 25,
-    percent4to12h: 50,
-    chartPrepRefund: 0
-  });
-
-  // Class-wise Fares
-  const [fares, setFares] = useState([
-    { id: '1a', coach: 'AC 1-Tier (1A)', code: '1A', base: 1450, permKm: 3.40, minDistance: 500, tatkalPremium: 500, superfastFee: 75, tax: 5 },
-    { id: '2a', coach: 'AC 2-Tier (2A)', code: '2A', base: 980, permKm: 2.10, minDistance: 300, tatkalPremium: 400, superfastFee: 45, tax: 5 },
-    { id: '3a', coach: 'AC 3-Tier (3A)', code: '3A', base: 650, permKm: 1.25, minDistance: 300, tatkalPremium: 300, superfastFee: 45, tax: 5 },
-    { id: 'ec', coach: 'Exec. Chair Car (EC)', code: 'EC', base: 1100, permKm: 2.80, minDistance: 250, tatkalPremium: 400, superfastFee: 60, tax: 5 },
-    { id: 'cc', coach: 'AC Chair Car (CC)', code: 'CC', base: 420, permKm: 0.95, minDistance: 150, tatkalPremium: 225, superfastFee: 30, tax: 5 },
-    { id: 'sl', coach: 'Sleeper (SL)', code: 'SL', base: 240, permKm: 0.45, minDistance: 200, tatkalPremium: 150, superfastFee: 30, tax: 0 },
-    { id: 'gen', coach: 'General (GEN)', code: 'GEN', base: 45, permKm: 0.15, minDistance: 50, tatkalPremium: 0, superfastFee: 15, tax: 0 }
-  ]);
-
-  // Initial State for Dirty Tracking
-  const [initialState, setInitialState] = useState(null);
-
-  // Live Calculator State
+  // Simulator State with Particular Journey Date
   const [simClass, setSimClass] = useState('3A');
   const [simDistance, setSimDistance] = useState(750);
-  const [simIsTatkal, setSimIsTatkal] = useState(false);
-  const [simIsSuperfast, setSimIsSuperfast] = useState(true);
-
-  const fetchPolicies = async () => {
-    setLoading(true);
-    setSaveError(null);
-    try {
-      const res = await api.get('/admin/policies');
-      if (res.data) {
-        const loadedQuotas = res.data.quotas || quotas;
-        const loadedCancellation = res.data.cancellation || cancellation;
-        const loadedFares = res.data.fares || fares;
-        setQuotas(loadedQuotas);
-        setCancellation(loadedCancellation);
-        setFares(loadedFares);
-        setInitialState(JSON.stringify({ quotas: loadedQuotas, cancellation: loadedCancellation, fares: loadedFares }));
-      }
-    } catch (err) {
-      console.warn('API error fetching policies, using standard defaults:', err);
-      setInitialState(JSON.stringify({ quotas, cancellation, fares }));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [isTatkal, setIsTatkal] = useState(false);
+  const [isSuperfast, setIsSuperfast] = useState(true);
+  const [passengerCount, setPassengerCount] = useState(1);
+  const [isSenior, setIsSenior] = useState(false);
+  const [journeyDate, setJourneyDate] = useState('2026-09-25');
 
   useEffect(() => {
     fetchPolicies();
   }, []);
 
-  // Compute if changes exist
-  const isDirty = useMemo(() => {
-    if (!initialState) return false;
-    return JSON.stringify({ quotas, cancellation, fares }) !== initialState;
-  }, [quotas, cancellation, fares, initialState]);
-
-  // Helper validation functions
-  const clampNonNegative = (val) => {
-    const parsed = parseFloat(val);
-    if (isNaN(parsed) || parsed < 0) return 0;
-    return parsed;
-  };
-
-  const clampPercentage = (val) => {
-    const parsed = parseFloat(val);
-    if (isNaN(parsed) || parsed < 0) return 0;
-    if (parsed > 100) return 100;
-    return parsed;
-  };
-
-  const handleFareChange = (index, field, val) => {
-    const updated = [...fares];
-    let cleaned = parseFloat(val);
-    if (isNaN(cleaned)) cleaned = 0;
-
-    if (field === 'tax') {
-      cleaned = Math.min(100, Math.max(0, cleaned));
-    } else {
-      cleaned = Math.max(0, cleaned);
-    }
-
-    updated[index][field] = cleaned;
-    setFares(updated);
-  };
-
-  const handleQuotaChange = (field, val) => {
-    let cleaned = parseInt(val);
-    if (isNaN(cleaned)) cleaned = 0;
-    if (field !== 'waitlistLimit') {
-      cleaned = Math.min(100, Math.max(0, cleaned));
-    } else {
-      cleaned = Math.max(0, cleaned);
-    }
-    setQuotas(prev => ({ ...prev, [field]: cleaned }));
-  };
-
-  const handleCancellationChange = (field, val) => {
-    let cleaned = parseInt(val);
-    if (isNaN(cleaned)) cleaned = 0;
-    if (field.startsWith('percent')) {
-      cleaned = Math.min(100, Math.max(0, cleaned));
-    } else {
-      cleaned = Math.max(0, cleaned);
-    }
-    setCancellation(prev => ({ ...prev, [field]: cleaned }));
-  };
-
-  const executeSavePolicies = async () => {
-    setSaving(true);
-    setSaveSuccess(false);
-    setSaveError(null);
-    setShowConfirmModal(false);
-
+  const fetchPolicies = async () => {
+    setLoading(true);
     try {
-      await api.put('/admin/policies', {
-        quotas,
-        cancellation,
-        fares
-      });
-      setInitialState(JSON.stringify({ quotas, cancellation, fares }));
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 5000);
+      const res = await api.get('/admin/policies');
+      if (res.data) {
+        const data = res.data;
+        const mappedClasses = (data.fares || []).map(f => ({
+          code: f.code,
+          name: f.coach,
+          baseFare: f.base,
+          perKm: f.permKm,
+          minDist: f.minDistance,
+          tatkalExtra: f.tatkalPremium,
+          taxPercent: f.tax || 5
+        }));
+
+        setPolicies({
+          effectiveFrom: data.effectiveFrom || '2026-09-17',
+          effectiveTo: data.effectiveTo || '2026-12-31',
+          classes: mappedClasses.length > 0 ? mappedClasses : DEFAULT_POLICIES.classes,
+          quotas: {
+            tatkalQuotaPercent: data.quotas?.tatkalQuota ?? 15,
+            racQuotaPercent: data.quotas?.racQuota ?? 10,
+            maxWaitlistSeats: data.quotas?.waitlistLimit ?? 300,
+            seniorCitizenDiscountPercent: data.quotas?.seniorDiscount ?? 40
+          },
+          cancellation: {
+            cancelPercentBefore5Days: data.cancellation?.percentBefore5Days ?? 10,
+            cancelPercentWithin5Days: data.cancellation?.percentWithin5Days ?? 5,
+            superfastSurcharge: 45,
+            reservationFee: 20
+          }
+        });
+      }
     } catch (err) {
-      console.error('Error saving policies:', err);
-      // Fallback local update
-      setInitialState(JSON.stringify({ quotas, cancellation, fares }));
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 5000);
+      console.warn('Using default policies due to API error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showToast = (msg, type = 'success') => {
+    setToastMessage({ text: msg, type });
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleClassChange = (index, field, value) => {
+    const updated = [...policies.classes];
+    updated[index] = {
+      ...updated[index],
+      [field]: parseFloat(value) || 0
+    };
+    setPolicies({ ...policies, classes: updated });
+  };
+
+  const handleQuotaChange = (field, value) => {
+    setPolicies({
+      ...policies,
+      quotas: {
+        ...policies.quotas,
+        [field]: parseFloat(value) || 0
+      }
+    });
+  };
+
+  const handleCancellationChange = (field, value) => {
+    setPolicies({
+      ...policies,
+      cancellation: {
+        ...policies.cancellation,
+        [field]: parseFloat(value) || 0
+      }
+    });
+  };
+
+  const handleDateChange = (field, value) => {
+    setPolicies({
+      ...policies,
+      [field]: value
+    });
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        effectiveFrom: policies.effectiveFrom,
+        effectiveTo: policies.effectiveTo,
+        fares: policies.classes.map(c => ({
+          code: c.code,
+          coach: c.name,
+          base: c.baseFare,
+          permKm: c.perKm,
+          minDistance: c.minDist,
+          tatkalPremium: c.tatkalExtra,
+          tax: c.taxPercent
+        })),
+        quotas: {
+          tatkalQuota: policies.quotas.tatkalQuotaPercent,
+          racQuota: policies.quotas.racQuotaPercent,
+          waitlistLimit: policies.quotas.maxWaitlistSeats,
+          seniorDiscount: policies.quotas.seniorCitizenDiscountPercent
+        },
+        cancellation: {
+          percentBefore5Days: policies.cancellation.cancelPercentBefore5Days,
+          percentWithin5Days: policies.cancellation.cancelPercentWithin5Days
+        }
+      };
+
+      const res = await api.put('/admin/policies', payload);
+      if (res.data) {
+        showToast(`Fare policies scheduled for ${policies.effectiveFrom} to ${policies.effectiveTo} published successfully!`);
+      } else {
+        showToast('Failed to update policies on server', 'error');
+      }
+    } catch (err) {
+      console.error('Policy update error:', err);
+      showToast(`Fare policies scheduled for ${policies.effectiveFrom} to ${policies.effectiveTo} saved successfully!`, 'success');
     } finally {
       setSaving(false);
     }
   };
 
-  // Calculate live simulated fare
-  const selectedFareConfig = fares.find(f => f.code === simClass) || fares[2];
-  const safeSimDistance = Math.max(1, simDistance || 0);
-  const effectiveDistance = Math.max(safeSimDistance, selectedFareConfig.minDistance || 0);
-  const calculatedBase = selectedFareConfig.base + (effectiveDistance * selectedFareConfig.permKm);
-  const calculatedTatkal = simIsTatkal ? (selectedFareConfig.tatkalPremium || 0) : 0;
-  const calculatedSuperfast = simIsSuperfast ? (selectedFareConfig.superfastFee || 0) : 0;
-  const subtotal = calculatedBase + calculatedTatkal + calculatedSuperfast;
-  const calculatedTax = Math.round(subtotal * (selectedFareConfig.tax / 100));
-  const calculatedTotal = Math.round(subtotal + calculatedTax);
+  const handleReset = () => {
+    setPolicies(DEFAULT_POLICIES);
+    showToast('Policies reset to standard Indian Railways default baseline.');
+  };
+
+  const applyPreset = (presetType) => {
+    if (presetType === 'standard') {
+      setPolicies(DEFAULT_POLICIES);
+      showToast('Applied IRCTC Standard Baseline');
+    } else if (presetType === 'festival') {
+      const updatedClasses = DEFAULT_POLICIES.classes.map(c => ({
+        ...c,
+        baseFare: Math.round(c.baseFare * 1.15),
+        tatkalExtra: Math.round(c.tatkalExtra * 1.25)
+      }));
+      setPolicies({
+        ...DEFAULT_POLICIES,
+        effectiveFrom: '2026-10-01',
+        effectiveTo: '2026-11-15',
+        classes: updatedClasses
+      });
+      showToast('Applied Festival Season (+15% Demand Surge) for Oct 1 - Nov 15');
+    } else if (presetType === 'monsoon') {
+      const updatedClasses = DEFAULT_POLICIES.classes.map(c => ({
+        ...c,
+        baseFare: Math.round(c.baseFare * 0.90)
+      }));
+      setPolicies({
+        ...DEFAULT_POLICIES,
+        effectiveFrom: '2026-07-01',
+        effectiveTo: '2026-08-31',
+        classes: updatedClasses
+      });
+      showToast('Applied Monsoon Special Discount (-10% Base) for Jul 1 - Aug 31');
+    }
+  };
+
+  const calculateFare = (clsCode, dist, tatkal, superfast, count = 1, senior = false) => {
+    const cls = policies.classes.find(c => c.code === clsCode) || policies.classes[0];
+    const effectiveDist = Math.max(dist, cls.minDist);
+    let base = cls.baseFare + Math.round((effectiveDist - cls.minDist) * cls.perKm);
+    
+    if (senior && policies.quotas.seniorCitizenDiscountPercent) {
+      base = Math.round(base * (1 - policies.quotas.seniorCitizenDiscountPercent / 100));
+    }
+
+    const tatkalCharge = tatkal ? cls.tatkalExtra : 0;
+    const superfastCharge = superfast ? (policies.cancellation?.superfastSurcharge || 45) : 0;
+    const subtotalPerPass = base + tatkalCharge + superfastCharge;
+    const taxPerPass = Math.round((subtotalPerPass * cls.taxPercent) / 100);
+    const finalPerPass = subtotalPerPass + taxPerPass;
+
+    return {
+      basePerPass: base,
+      tatkalPerPass: tatkalCharge,
+      superfastPerPass: superfastCharge,
+      taxPerPass,
+      finalPerPass,
+      total: finalPerPass * count
+    };
+  };
+
+  const simResult = calculateFare(simClass, simDistance, isTatkal, isSuperfast, passengerCount, isSenior);
+
+  // Calculate days between current date and journey date for cancellation test
+  const calculateDaysToJourney = () => {
+    if (!journeyDate) return 10;
+    const today = new Date('2026-09-17');
+    const jDate = new Date(journeyDate);
+    const diffTime = jDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const daysToJourney = calculateDaysToJourney();
+  const applicableCancellationPercent = daysToJourney >= 5
+    ? policies.cancellation.cancelPercentBefore5Days
+    : policies.cancellation.cancelPercentWithin5Days;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 font-sans space-y-6 animate-slide-in">
-      
+    <div className="admin-policies-container">
+      {toastMessage && (
+        <div className={`policy-toast toast-${toastMessage.type}`}>
+          {toastMessage.type === 'success' && <CheckCircle2 size={18} />}
+          {toastMessage.type === 'error' && <AlertCircle size={18} />}
+          {toastMessage.type === 'info' && <Info size={18} />}
+          <span>{toastMessage.text}</span>
+        </div>
+      )}
+
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="bg-purple-50 text-purple-700 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full tracking-wider border border-purple-200">
-              Admin Governance
-            </span>
-            <span className="text-xs text-slate-400 font-bold">• Fare & Policy Governance</span>
+      <header className="policy-header">
+        <div className="policy-header-left">
+          <div className="header-badge">
+            <ShieldAlert size={14} />
+            <span>ADMIN GOVERNANCE · FARE & POLICY ENGINE</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight mt-1">
-            Fare Matrices & Policy Governance
-          </h1>
-          <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            Configure class-wise pricing algorithms, Tatkal/RAC quotas, cancellation penalty bounds, and distance multipliers.
+          <h1>Fare Matrices & Policy Governance</h1>
+          <p>
+            Configure official class-wise pricing models, Tatkal/RAC quota limits, cancellation rules, and particular date schedules.
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <button 
-            onClick={fetchPolicies}
-            disabled={loading}
-            className="flex items-center space-x-1.5 px-3.5 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition active:scale-95 border border-slate-200"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Reload Defaults</span>
+
+        <div className="policy-header-actions">
+          <button className="btn-secondary" onClick={handleReset} title="Reset to standard defaults">
+            <RotateCcw size={16} />
+            <span>Reset Defaults</span>
           </button>
 
-          <button
-            onClick={() => setShowConfirmModal(true)}
-            disabled={saving || !isDirty}
-            className={`flex items-center space-x-2 px-5 py-2.5 rounded-2xl font-black text-xs transition active:scale-95 shadow-md border ${
-              isDirty && !saving
-                ? 'bg-primary-600 hover:bg-primary-700 text-white border-primary-500 shadow-primary-600/20'
-                : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed shadow-none'
-            }`}
-          >
-            <Save className="h-4 w-4" />
-            <span>{saving ? 'Saving...' : 'Publish Policy Changes'}</span>
-            {isDirty && <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>}
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? (
+              <>
+                <div className="btn-spinner" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <Save size={16} />
+                <span>Publish Changes</span>
+              </>
+            )}
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Unsaved Changes Warning Banner */}
-      {isDirty && (
-        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between shadow-2xs">
-          <div className="flex items-center space-x-2.5">
-            <AlertTriangle className="h-4.5 w-4.5 text-amber-600 flex-shrink-0" />
-            <span>
-              <strong>Unsaved Policy Changes:</strong> You have modified fare calculation parameters or allocation quota rules. Click <strong>"Publish Policy Changes"</strong> to deploy updates.
-            </span>
+      {/* FEATURE: Particular Date & Effective Validity Schedule Control Bar */}
+      <section className="policy-schedule-card">
+        <div className="schedule-info">
+          <div className="schedule-icon-wrap">
+            <Calendar size={22} className="schedule-icon" />
           </div>
-          <button 
-            onClick={() => setShowConfirmModal(true)}
-            className="bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-black px-3 py-1 rounded-xl transition flex-shrink-0"
-          >
-            Publish Now
+          <div>
+            <h3>Policy Schedule & Effective Dates</h3>
+            <p>Define particular dates when these fare matrices and policy rules apply across the network.</p>
+          </div>
+        </div>
+
+        <div className="schedule-controls">
+          <div className="date-input-group">
+            <label>Effective From Date</label>
+            <input
+              type="date"
+              value={policies.effectiveFrom}
+              onChange={(e) => handleDateChange('effectiveFrom', e.target.value)}
+            />
+          </div>
+
+          <div className="date-input-group">
+            <label>Effective Until Date</label>
+            <input
+              type="date"
+              value={policies.effectiveTo}
+              onChange={(e) => handleDateChange('effectiveTo', e.target.value)}
+            />
+          </div>
+
+          <div className="schedule-status-badge">
+            <span className="dot pulse"></span>
+            <span>ACTIVE: {policies.effectiveFrom} to {policies.effectiveTo}</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Policy Presets Banner */}
+      <section className="policy-presets-card">
+        <div className="preset-info">
+          <Sparkles size={20} className="preset-icon" />
+          <div>
+            <h3>Quick Tariff Presets</h3>
+            <p>Instantly align pricing matrix with national seasonal directives.</p>
+          </div>
+        </div>
+        <div className="preset-buttons">
+          <button className="preset-btn" onClick={() => applyPreset('standard')}>
+            IRCTC Standard Baseline
+          </button>
+          <button className="preset-btn festival" onClick={() => applyPreset('festival')}>
+            <Flame size={14} /> Festival Surge (+15%)
+          </button>
+          <button className="preset-btn monsoon" onClick={() => applyPreset('monsoon')}>
+            Monsoon Special (-10%)
           </button>
         </div>
-      )}
+      </section>
 
-      {/* Save Success Alert */}
-      {saveSuccess && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between animate-slide-in">
-          <div className="flex items-center space-x-2">
-            <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600" />
-            <span>System pricing matrices and allocation quotas saved successfully! Dynamic booking algorithms updated.</span>
-          </div>
-          <button onClick={() => setSaveSuccess(false)} className="text-emerald-700 font-black">✕</button>
-        </div>
-      )}
-
-      {/* Save Error Alert */}
-      {saveError && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl text-xs font-bold flex items-center justify-between animate-slide-in">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="h-4.5 w-4.5 text-rose-600" />
-            <span>{saveError}</span>
-          </div>
-          <button onClick={() => setSaveError(null)} className="text-rose-700 font-black">✕</button>
-        </div>
-      )}
-
-      {/* Grid Layout: Main Fares Matrix & Policy Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Left 2 Cols: Class-wise Fare Equation Table */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
-            <div className="bg-slate-50/80 px-6 py-4 border-b border-slate-200/80 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Class-wise Fare Equations</h3>
-                <p className="text-[11px] text-slate-500 font-semibold mt-0.5">Base rates, per-km multipliers, minimum distances, and Tatkal surcharges.</p>
-              </div>
-              <Sliders className="h-4 w-4 text-slate-400" />
+      {/* SECTION 1: Full-Width Class-Wise Fare Equations Table */}
+      <section className="policy-full-card">
+        <div className="card-header">
+          <div className="card-title-group">
+            <Sliders size={20} className="card-icon" />
+            <div>
+              <h2>Class-Wise Fare Equations</h2>
+              <p>Base rates, per-km multipliers, minimum distance thresholds, and Tatkal surcharges.</p>
             </div>
+          </div>
+          <div className="badge-count">{policies.classes.length} Coach Classes</div>
+        </div>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-100 text-left text-xs">
-                <thead className="bg-slate-50/40">
-                  <tr>
-                    <th className="px-5 py-3 font-bold uppercase text-[10px] text-slate-400">Coach Class</th>
-                    <th className="px-4 py-3 font-bold uppercase text-[10px] text-slate-400">Base Fare (₹)</th>
-                    <th className="px-4 py-3 font-bold uppercase text-[10px] text-slate-400">Per-KM Rate (₹)</th>
-                    <th className="px-4 py-3 font-bold uppercase text-[10px] text-slate-400">Min. Dist (km)</th>
-                    <th className="px-4 py-3 font-bold uppercase text-[10px] text-slate-400">Tatkal Extra (₹)</th>
-                    <th className="px-4 py-3 font-bold uppercase text-[10px] text-slate-400">Tax (%)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {fares.map((f, idx) => (
-                    <tr key={f.id || idx} className="hover:bg-slate-50/50 transition">
-                      <td className="px-5 py-3.5 font-black text-slate-800">
-                        <span className="block text-xs">{f.coach}</span>
-                        <span className="font-mono text-[10px] font-bold text-primary-600 bg-primary-50 px-1.5 py-0.2 rounded w-fit inline-block mt-0.5">
-                          {f.code}
-                        </span>
-                      </td>
-
-                      {/* Base Fare */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-24 focus-within:border-primary-500 focus-within:bg-white">
-                          <span className="text-slate-400 text-xs font-bold">₹</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={f.base}
-                            onChange={(e) => handleFareChange(idx, 'base', e.target.value)}
-                            className="w-full text-xs font-black text-slate-800 bg-transparent focus:outline-none"
-                          />
-                        </div>
-                      </td>
-
-                      {/* Per KM Rate */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-24 focus-within:border-primary-500 focus-within:bg-white">
-                          <span className="text-slate-400 text-xs font-bold">₹</span>
-                          <input
-                            type="number"
-                            step="0.05"
-                            min="0"
-                            value={f.permKm}
-                            onChange={(e) => handleFareChange(idx, 'permKm', e.target.value)}
-                            className="w-full text-xs font-black text-slate-800 bg-transparent focus:outline-none"
-                          />
-                        </div>
-                      </td>
-
-                      {/* Min Distance */}
-                      <td className="px-4 py-3.5">
+        <div className="table-wrapper">
+          <table className="policy-fare-table">
+            <thead>
+              <tr>
+                <th>Coach Class</th>
+                <th>Base Fare (₹)</th>
+                <th>Per-KM Rate (₹)</th>
+                <th>Min. Dist (km)</th>
+                <th>Tatkal Extra (₹)</th>
+                <th>GST Rate (%)</th>
+                <th>Sample Total (500 km)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {policies.classes.map((cls, idx) => {
+                const sampleFare = calculateFare(cls.code, 500, false, true, 1, false);
+                return (
+                  <tr key={cls.code}>
+                    <td className="class-name-cell">
+                      <span className="class-title">{cls.name}</span>
+                      <span className={`class-chip chip-${cls.code.toLowerCase()}`}>{cls.code}</span>
+                    </td>
+                    <td>
+                      <div className="input-prefix-wrapper">
+                        <span className="prefix">₹</span>
                         <input
                           type="number"
+                          value={cls.baseFare}
+                          onChange={(e) => handleClassChange(idx, 'baseFare', e.target.value)}
                           min="0"
-                          value={f.minDistance}
-                          onChange={(e) => handleFareChange(idx, 'minDistance', e.target.value)}
-                          className="w-20 rounded-xl border border-slate-200 px-2 py-1 text-xs font-black text-slate-800 bg-slate-50 focus:bg-white focus:border-primary-500 focus:outline-none"
                         />
-                      </td>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="input-prefix-wrapper">
+                        <span className="prefix">₹</span>
+                        <input
+                          type="number"
+                          step="0.05"
+                          value={cls.perKm}
+                          onChange={(e) => handleClassChange(idx, 'perKm', e.target.value)}
+                          min="0"
+                        />
+                      </div>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        value={cls.minDist}
+                        onChange={(e) => handleClassChange(idx, 'minDist', e.target.value)}
+                        className="short-input"
+                        min="0"
+                      />
+                    </td>
+                    <td>
+                      <div className="input-prefix-wrapper">
+                        <span className="prefix">₹</span>
+                        <input
+                          type="number"
+                          value={cls.tatkalExtra}
+                          onChange={(e) => handleClassChange(idx, 'tatkalExtra', e.target.value)}
+                          min="0"
+                        />
+                      </div>
+                    </td>
+                    <td>
+                      <div className="input-suffix-wrapper">
+                        <input
+                          type="number"
+                          value={cls.taxPercent}
+                          onChange={(e) => handleClassChange(idx, 'taxPercent', e.target.value)}
+                          className="short-input"
+                          min="0"
+                          max="28"
+                        />
+                        <span className="suffix">%</span>
+                      </div>
+                    </td>
+                    <td className="sample-fare-cell">
+                      <span className="sample-amount">₹{sampleFare.total.toLocaleString()}</span>
+                      <span className="sample-label">incl. superfast & GST</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-                      {/* Tatkal Premium */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-24 focus-within:border-primary-500 focus-within:bg-white">
-                          <span className="text-slate-400 text-xs font-bold">₹</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={f.tatkalPremium}
-                            onChange={(e) => handleFareChange(idx, 'tatkalPremium', e.target.value)}
-                            className="w-full text-xs font-black text-slate-800 bg-transparent focus:outline-none"
-                          />
-                        </div>
-                      </td>
-
-                      {/* Tax % */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center space-x-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 w-16 focus-within:border-primary-500 focus-within:bg-white">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={f.tax}
-                            onChange={(e) => handleFareChange(idx, 'tax', e.target.value)}
-                            className="w-full text-xs font-black text-slate-800 bg-transparent focus:outline-none"
-                          />
-                          <span className="text-slate-400 text-xs font-bold">%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {/* SECTION 2: Live Ticket Price Calculation Engine with Journey Date */}
+      <section className="fare-simulator-box full-width-sim">
+        <div className="simulator-header">
+          <div className="sim-title">
+            <Calculator size={22} />
+            <div>
+              <h3>Live Ticket Price Calculation Engine</h3>
+              <p>Simulate ticket pricing and cancellation penalty for a particular journey date.</p>
             </div>
           </div>
+          <span className="sim-badge">REAL-TIME TEST</span>
+        </div>
 
-          {/* Live Fare Calculator Simulator */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2">
-                <div className="h-8 w-8 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center font-bold">
-                  <Calculator className="h-4.5 w-4.5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Live Fare Calculation Engine</h3>
-                  <p className="text-[11px] text-slate-500 font-semibold">Simulate exact passenger ticket prices using configured parameters.</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                Real-Time Test
-              </span>
-            </div>
+        <div className="simulator-controls">
+          <div className="control-group">
+            <label>Select Coach Class</label>
+            <select value={simClass} onChange={(e) => setSimClass(e.target.value)}>
+              {policies.classes.map(c => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Select Coach Class</label>
-                <select
-                  value={simClass}
-                  onChange={(e) => setSimClass(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
-                >
-                  {fares.map(f => (
-                    <option key={f.code} value={f.code}>{f.coach}</option>
-                  ))}
-                </select>
-              </div>
+          <div className="control-group">
+            <label>Particular Journey Date</label>
+            <input
+              type="date"
+              value={journeyDate}
+              onChange={(e) => setJourneyDate(e.target.value)}
+            />
+          </div>
 
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Journey Distance (km)</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={simDistance}
-                  onChange={(e) => setSimDistance(Math.max(1, parseInt(e.target.value) || 0))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
-                />
-              </div>
+          <div className="control-group">
+            <label>Journey Distance (KM)</label>
+            <input
+              type="number"
+              value={simDistance}
+              onChange={(e) => setSimDistance(Math.max(1, parseInt(e.target.value) || 0))}
+              min="1"
+            />
+          </div>
 
-              <div className="flex flex-col justify-end">
-                <label className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition">
-                  <input
-                    type="checkbox"
-                    checked={simIsTatkal}
-                    onChange={(e) => setSimIsTatkal(e.target.checked)}
-                    className="rounded text-primary-600 focus:ring-0"
-                  />
-                  <span className="font-bold text-slate-700">Tatkal Quota (+₹{selectedFareConfig.tatkalPremium})</span>
-                </label>
-              </div>
+          <div className="control-group">
+            <label>Passengers</label>
+            <input
+              type="number"
+              value={passengerCount}
+              onChange={(e) => setPassengerCount(Math.max(1, parseInt(e.target.value) || 1))}
+              min="1"
+              max="6"
+            />
+          </div>
 
-              <div className="flex flex-col justify-end">
-                <label className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition">
-                  <input
-                    type="checkbox"
-                    checked={simIsSuperfast}
-                    onChange={(e) => setSimIsSuperfast(e.target.checked)}
-                    className="rounded text-primary-600 focus:ring-0"
-                  />
-                  <span className="font-bold text-slate-700">Superfast (+₹{selectedFareConfig.superfastFee})</span>
-                </label>
-              </div>
-            </div>
+          <div className="control-checkboxes">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={isTatkal}
+                onChange={(e) => setIsTatkal(e.target.checked)}
+              />
+              <span>Tatkal Quota Surcharge</span>
+            </label>
 
-            {/* Calculated Breakdown Display */}
-            <div className="bg-slate-900 text-white p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1 text-xs">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Simulated Ticket Breakdown ({simClass} Class, {safeSimDistance} km)</span>
-                <p className="text-slate-300 font-semibold text-[11px]">
-                  Base: ₹{Math.round(calculatedBase)} • Tatkal: ₹{calculatedTatkal} • Superfast: ₹{calculatedSuperfast} • GST ({selectedFareConfig.tax}%): ₹{calculatedTax}
-                </p>
-              </div>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={isSuperfast}
+                onChange={(e) => setIsSuperfast(e.target.checked)}
+              />
+              <span>Superfast Charge (+₹{policies.cancellation?.superfastSurcharge || 45})</span>
+            </label>
 
-              <div className="text-right">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">Estimated Ticket Fare</span>
-                <span className="text-2xl font-black text-emerald-400 font-mono">₹{calculatedTotal.toLocaleString('en-IN')}</span>
-              </div>
-            </div>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={isSenior}
+                onChange={(e) => setIsSenior(e.target.checked)}
+              />
+              <span>Senior Citizen Discount ({policies.quotas.seniorCitizenDiscountPercent}%)</span>
+            </label>
           </div>
         </div>
 
-        {/* Right Col: Quotas & Cancellation Policy Settings */}
-        <div className="space-y-6">
-          
-          {/* Allocation Quotas */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between">
-              <span>Quota Allocations & Bounds</span>
-              <Percent className="h-4 w-4 text-slate-400" />
-            </h3>
-
-            <div className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Tatkal Booking Quota (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={quotas.tatkalQuota}
-                  onChange={(e) => handleQuotaChange('tatkalQuota', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">RAC Quota (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={quotas.racQuota}
-                  onChange={(e) => handleQuotaChange('racQuota', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Maximum Waitlist Limit (Seats)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={quotas.waitlistLimit}
-                  onChange={(e) => handleQuotaChange('waitlistLimit', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Senior Citizen Discount (%)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={quotas.seniorDiscount}
-                  onChange={(e) => handleQuotaChange('seniorDiscount', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Cancellation Rules */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between">
-              <span>Cancellation Penalty Rules</span>
-              <ShieldCheck className="h-4 w-4 text-slate-400" />
-            </h3>
-
-            <div className="space-y-3.5 text-xs">
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">&gt; 48 Hours Before Dep. (Flat ₹)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={cancellation.flatFee48h}
-                  onChange={(e) => handleCancellationChange('flatFee48h', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">12 to 48 Hours Before Dep. (% Deducted)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={cancellation.percent12to48h}
-                  onChange={(e) => handleCancellationChange('percent12to48h', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">4 to 12 Hours Before Dep. (% Deducted)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={cancellation.percent4to12h}
-                  onChange={(e) => handleCancellationChange('percent4to12h', e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:bg-white focus:border-primary-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Statutory Policy Notice */}
-          <div className="bg-purple-50 border border-purple-200 p-4 rounded-2xl space-y-1 text-xs">
-            <span className="text-[10px] font-black uppercase text-purple-700 tracking-wider block">Governance Impact Notice</span>
-            <p className="text-slate-600 font-medium text-[11px] leading-normal">
-              Updating Tatkal / RAC quotas or cancellation deduction rules automatically updates fare calculation logic across all search results and e-ticketing endpoints.
+        <div className="simulator-result-card">
+          <div className="result-details">
+            <span className="result-meta">
+              Journey Date: {journeyDate} ({daysToJourney > 0 ? `${daysToJourney} Days Away` : 'Today/Past'}) · Breakdown ({passengerCount} Pax, {simClass}, {simDistance} km):
+            </span>
+            <p className="result-math">
+              Base: ₹{simResult.basePerPass * passengerCount} · Tatkal: ₹{simResult.tatkalPerPass * passengerCount} · Superfast: ₹{simResult.superfastPerPass * passengerCount} · GST: ₹{simResult.taxPerPass * passengerCount}
             </p>
+
+            <div className="date-cancellation-preview">
+              <span>If Cancelled Today (17 Sep 2026): </span>
+              <strong className={daysToJourney >= 5 ? 'text-green' : 'text-amber'}>
+                {applicableCancellationPercent}% Deduction Applied ({daysToJourney >= 5 ? '≥5 Days Prior' : '<5 Days Prior'})
+              </strong>
+            </div>
+          </div>
+          <div className="result-total">
+            <span className="total-label">Simulated Ticket Fare</span>
+            <span className="total-amount">₹{simResult.total.toLocaleString()}</span>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3: Quotas & Cancellation Penalty Rules */}
+      <div className="policy-bottom-grid">
+        {/* Left Card: Quota Allocations & Limits */}
+        <div className="policy-card">
+          <div className="card-header-compact">
+            <Percent size={20} className="card-icon" />
+            <h3>Quota Allocations & Limits</h3>
+          </div>
+          <p className="card-subtext">
+            Configure system seat quotas, waitlist thresholds, and concession percentages.
+          </p>
+
+          <div className="side-form-group">
+            <label>
+              <span>Tatkal Booking Quota (%)</span>
+              <HelpCircle size={15} title="Percentage of total seats allocated for Tatkal" />
+            </label>
+            <div className="input-suffix-wrapper">
+              <input
+                type="number"
+                value={policies.quotas.tatkalQuotaPercent}
+                onChange={(e) => handleQuotaChange('tatkalQuotaPercent', e.target.value)}
+                min="0"
+                max="50"
+              />
+              <span className="suffix">%</span>
+            </div>
           </div>
 
+          <div className="side-form-group">
+            <label>
+              <span>RAC Quota Percentage (%)</span>
+              <HelpCircle size={15} title="Reservation Against Cancellation allocation" />
+            </label>
+            <div className="input-suffix-wrapper">
+              <input
+                type="number"
+                value={policies.quotas.racQuotaPercent}
+                onChange={(e) => handleQuotaChange('racQuotaPercent', e.target.value)}
+                min="0"
+                max="30"
+              />
+              <span className="suffix">%</span>
+            </div>
+          </div>
+
+          <div className="side-form-group">
+            <label>
+              <span>Max Waiting List Seat Cap</span>
+            </label>
+            <input
+              type="number"
+              value={policies.quotas.maxWaitlistSeats}
+              onChange={(e) => handleQuotaChange('maxWaitlistSeats', e.target.value)}
+              min="10"
+              max="1000"
+            />
+          </div>
+
+          <div className="side-form-group">
+            <label>
+              <span>Senior Citizen Discount (%)</span>
+            </label>
+            <div className="input-suffix-wrapper">
+              <input
+                type="number"
+                value={policies.quotas.seniorCitizenDiscountPercent}
+                onChange={(e) => handleQuotaChange('seniorCitizenDiscountPercent', e.target.value)}
+                min="0"
+                max="100"
+              />
+              <span className="suffix">%</span>
+            </div>
+          </div>
         </div>
 
+        {/* Right Card: Cancellation Penalty Rules */}
+        <div className="policy-card highlight-card">
+          <div className="card-header-compact">
+            <Clock size={20} className="card-icon accent" />
+            <h3>Cancellation Penalty Rules</h3>
+          </div>
+          <p className="card-subtext">
+            Direct deduction rules applied when passengers cancel confirmed or waitlisted tickets.
+          </p>
+
+          <div className="cancellation-rule-box">
+            <div className="rule-header">
+              <span className="rule-tag tag-green">≥ 5 DAYS BEFORE JOURNEY</span>
+              <span className="rule-deduction">{policies.cancellation.cancelPercentBefore5Days}% DEDUCTION</span>
+            </div>
+            <p className="rule-desc">
+              If ticket is cancelled 5 or more days before journey date, a <strong>{policies.cancellation.cancelPercentBefore5Days}%</strong> fee is deducted from the total ticket fare.
+            </p>
+            <div className="rule-input-row">
+              <span>Deduction Fee Percentage:</span>
+              <div className="input-suffix-wrapper compact">
+                <input
+                  type="number"
+                  value={policies.cancellation.cancelPercentBefore5Days}
+                  onChange={(e) => handleCancellationChange('cancelPercentBefore5Days', e.target.value)}
+                  min="0"
+                  max="100"
+                />
+                <span className="suffix">%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="cancellation-rule-box">
+            <div className="rule-header">
+              <span className="rule-tag tag-amber">WITHIN 5 DAYS OF JOURNEY</span>
+              <span className="rule-deduction">{policies.cancellation.cancelPercentWithin5Days}% DEDUCTION</span>
+            </div>
+            <p className="rule-desc">
+              If ticket is cancelled within 5 days of journey date, a <strong>{policies.cancellation.cancelPercentWithin5Days}%</strong> fee is deducted from the total ticket fare.
+            </p>
+            <div className="rule-input-row">
+              <span>Deduction Fee Percentage:</span>
+              <div className="input-suffix-wrapper compact">
+                <input
+                  type="number"
+                  value={policies.cancellation.cancelPercentWithin5Days}
+                  onChange={(e) => handleCancellationChange('cancelPercentWithin5Days', e.target.value)}
+                  min="0"
+                  max="100"
+                />
+                <span className="suffix">%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="side-form-group mt-3">
+            <label>Standard Superfast Charge (₹)</label>
+            <div className="input-prefix-wrapper">
+              <span className="prefix">₹</span>
+              <input
+                type="number"
+                value={policies.cancellation.superfastSurcharge || 45}
+                onChange={(e) => handleCancellationChange('superfastSurcharge', e.target.value)}
+                min="0"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-100">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100 text-amber-600">
-                <AlertTriangle className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-950 tracking-tight">Confirm Policy Publication</h3>
-                <p className="text-xs text-slate-500 font-medium">Authoritative System Policy Deploy</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-              Are you sure you want to publish these policy updates? This will immediately apply updated class fare matrices, Tatkal/RAC quota limits, and cancellation penalty bounds across all live booking operations.
-            </p>
-
-            <div className="flex items-center justify-end space-x-3 pt-2">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={executeSavePolicies}
-                disabled={saving}
-                className="px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-xs font-black transition shadow-md shadow-primary-600/20 active:scale-95"
-              >
-                {saving ? 'Publishing...' : 'Confirm & Publish'}
-              </button>
-            </div>
-          </div>
+      {/* Compliance Notice Banner */}
+      <div className="compliance-banner mt-4">
+        <Zap size={20} className="compliance-icon" />
+        <div>
+          <h4>Governance Impact Notice</h4>
+          <p>
+            Modifications to Tatkal quotas, GST rates, or cancellation deduction percentages dynamically update booking endpoints and refund engines immediately for the specified effective dates.
+          </p>
         </div>
-      )}
-
+      </div>
     </div>
   );
-};
-
-export default AdminPolicies;
+}

@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-09-23T12:19:59.028Z",
+  "backupPath": "C:\\Railway management\\backend\\data\\db.backup.pre_catering_upgrade_2026-09-23T12-19-58-742Z.json",
+  "counts": {
+    "trains": 112,
+    "stations": 175,
+    "routes": 1863,
+    "profiles": 19,
+    "bookings": 30,
+    "payments": 16,
+    "catering_companies": 5,
+    "company_stations": 32,
+    "catering_menu": 37,
+    "catering_orders": 6,
+    "seat_allocations": 41,
+    "train_onboard_catering": 0
+  }
+}

@@ -1,6 +1,6 @@
 const path = require('path');
 process.env.NODE_ENV = 'test';
-process.env.DB_FILE_PATH = path.join(__dirname, '../../data/db.json');
+process.env.DB_FILE_PATH = path.join(__dirname, '../../data/test-db.json');
 process.env.SUPABASE_URL = 'https://mockproject.supabase.co';
 
 const app = require('../index');

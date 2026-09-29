@@ -34,8 +34,12 @@ const StaffRefunds = () => {
 
       const normalized = rawRecords.map(r => {
         const passName = r.passenger_name || r.passenger || r.passengerName || r.passenger?.full_name || r.passenger?.name || r.user?.full_name || r.user?.name || (r.pnr ? `Passenger (${r.pnr})` : 'Unknown Passenger');
+        const trainStr = typeof r.train === 'object' && r.train !== null
+          ? (r.train.train_name ? `${r.train.train_number || ''} ${r.train.train_name}`.trim() : (r.train.train_number || 'Express Special'))
+          : String(r.train || r.train_name || r.train_number || 'Express Special');
         return {
           ...r,
+          train: trainStr,
           passenger: passName,
           passenger_name: passName,
           passengerName: passName
@@ -297,7 +301,9 @@ const StaffRefunds = () => {
                     </td>
                     <td className="px-6 py-4 text-xs font-black text-slate-800">{r.passenger}</td>
                     <td className="px-6 py-4 text-xs text-slate-600 font-semibold">
-                      <span className="block font-bold text-slate-800">{r.train}</span>
+                      <span className="block font-bold text-slate-800">
+                        {typeof r.train === 'object' && r.train !== null ? (r.train.train_name || r.train.train_number || 'Express Special') : String(r.train || 'Express Special')}
+                      </span>
                       <span className="text-[10px] text-slate-400 font-normal">Travel: {r.journeyDate}</span>
                     </td>
                     <td className="px-6 py-4 text-xs font-mono font-bold text-slate-800">₹{Number(r.originalFare).toLocaleString()}</td>

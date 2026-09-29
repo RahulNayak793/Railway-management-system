@@ -1,0 +1,87 @@
+{
+  "timestamp": "2026-09-22T01:54:07.827Z",
+  "backupPath": "C:\\Railway management\\backend\\data\\db.backup.railcontrol_meal_integration.2026-09-22T01-54-07-577Z.json",
+  "counts": {
+    "bookings": 26,
+    "trains": 112,
+    "profiles": 19,
+    "catering_companies": 5,
+    "catering_menu": 37,
+    "catering_orders": 6,
+    "payments": 12,
+    "seat_allocations": 33
+  },
+  "sample_bookings": [
+    {
+      "id": "bk-rxx0xfjpx",
+      "pnr": "2123097314",
+      "user_id": "usr-demo-passenger",
+      "date": "2026-08-26",
+      "status": "cancelled"
+    },
+    {
+      "id": "bk-gyvcw78lp",
+      "pnr": "5213102530",
+      "user_id": "usr-demo-passenger",
+      "date": "2026-08-25",
+      "status": "completed"
+    },
+    {
+      "id": "bk-jagg5ufwq",
+      "pnr": "7067757887",
+      "user_id": "usr-demo-passenger",
+      "date": "2026-08-28",
+      "status": "cancelled"
+    },
+    {
+      "id": "bk-9wc7pwbgp",
+      "pnr": "9179609270",
+      "user_id": "usr-demo-passenger",
+      "date": "2026-08-27",
+      "status": "cancelled"
+    },
+    {
+      "id": "bk-afijvx743",
+      "pnr": "6052394918",
+      "user_id": "usr-demo-passenger",
+      "date": "2026-08-28",
+      "status": "cancelled"
+    }
+  ],
+  "sample_orders": [
+    {
+      "order_id": "ORD-98421",
+      "pnr": "2345678901",
+      "total": 480,
+      "status": "DELIVERED"
+    },
+    {
+      "order_id": "ORD-17215",
+      "pnr": "1484310489",
+      "passenger_id": "usr-demo-passenger",
+      "total": 140,
+      "status": "PREPARING"
+    },
+    {
+      "order_id": "ORD-67207",
+      "pnr": "1484310489",
+      "passenger_id": "usr-demo-passenger",
+      "total": 140,
+      "status": "PREPARING"
+    },
+    {
+      "order_id": "ORD-86765",
+      "pnr": "1484310489",
+      "passenger_id": "usr-demo-passenger",
+      "total": 140,
+      "status": "PENDING_PAYMENT"
+    },
+    {
+      "order_id": "ORD-40455",
+      "pnr": "1484310489",
+      "passenger_id": "usr-demo-passenger",
+      "total": 140,
+      "status": "PENDING_PAYMENT"
+    }
+  ]
+}

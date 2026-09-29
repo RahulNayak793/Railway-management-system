@@ -1,0 +1,148 @@
+{
+  "restored_at": "2026-09-14T14:28:56.338Z",
+  "hash_before": "4d479becafd319a71925f4f5547e93e1e76621099a3657cf0bb2da0f5e497d30",
+  "restored_bookings_count": 14,
+  "restored_bookings": [
+    {
+      "booking_id": "bk-8qqztwkso",
+      "pnr": "6222939872",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-08-20",
+      "total_fare": 413,
+      "status": "cancelled",
+      "restored_from": "db.json.bak.master_fix"
+    },
+    {
+      "booking_id": "bk-dxbilbfsx",
+      "pnr": "8025589298",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-08-26",
+      "total_fare": 693,
+      "status": "cancelled",
+      "restored_from": "db.json.bak.master_fix"
+    },
+    {
+      "booking_id": "bk-v4f6abkmj",
+      "pnr": "5251193063",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-08-26",
+      "total_fare": 693,
+      "status": "cancelled",
+      "restored_from": "db.json.bak.master_fix"
+    },
+    {
+      "booking_id": "bk-7zt2f0zgi",
+      "pnr": "6884684569",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-08-25",
+      "total_fare": 588,
+      "status": "confirmed",
+      "restored_from": "db.json.bak.master_fix"
+    },
+    {
+      "booking_id": "bk-elnrxsgxv",
+      "pnr": "6830165983",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-09-15",
+      "total_fare": 1550,
+      "status": "confirmed",
+      "restored_from": "db.json.bak.master_fix"
+    },
+    {
+      "booking_id": "bk-zk3mqr6xx",
+      "pnr": "7399808108",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-09-15",
+      "total_fare": 1550,
+      "status": "cancelled",
+      "restored_from": "db.json.bak.master_fix"
+    },
+    {
+      "booking_id": "bk-meygocfpx",
+      "pnr": "9173527146",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-09-15",
+      "total_fare": 1550,
+      "status": "cancelled",
+      "restored_from": "db.json.bak.master_fix"
+    },
+    {
+      "booking_id": "bk-jmtayohzn",
+      "pnr": "9821070744",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-09-15",
+      "total_fare": 1550,
+      "status": "cancelled",
+      "restored_from": "db.json.bak.master_fix"
+    },
+    {
+      "booking_id": "bk-xsjdmp0jv",
+      "pnr": "1893224365",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-08-28",
+      "total_fare": 200,
+      "status": "completed",
+      "restored_from": "db.json.final_audit_backup"
+    },
+    {
+      "booking_id": "bk-lgu8uwr84",
+      "pnr": "5870209087",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-09-09",
+      "total_fare": 475,
+      "status": "completed",
+      "restored_from": "db.json.final_audit_backup"
+    },
+    {
+      "booking_id": "bk-w4mvfjo2g",
+      "pnr": "6943080559",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-09-15",
+      "total_fare": 535,
+      "status": "cancelled",
+      "restored_from": "db.json.backup_before_passenger_history_ownership_fix"
+    },
+    {
+      "booking_id": "bk-3fpzmtc51",
+      "pnr": "8258728092",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-09-15",
+      "total_fare": 535,
+      "status": "cancelled",
+      "restored_from": "db.json.backup_before_passenger_history_ownership_fix"
+    },
+    {
+      "booking_id": "bk-z7zy7h8xb",
+      "pnr": "6927700362",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-09-15",
+      "total_fare": 535,
+      "status": "cancelled",
+      "restored_from": "db.json.backup_before_passenger_history_ownership_fix"
+    },
+    {
+      "booking_id": "bk-t8cash6dm",
+      "pnr": "3812808839",
+      "passenger_id": "usr-demo-passenger",
+      "passenger_email": "rahulpatakar92@gmail.com",
+      "travel_date": "2026-09-15",
+      "total_fare": 535,
+      "status": "cancelled",
+      "restored_from": "db.json.backup_before_passenger_history_ownership_fix"
+    }
+  ],
+  "hash_after": "9d12381d1dfbee0a64ae4d8bbaacd63b649651013b48f2cec1406ed95842bb45"
+}

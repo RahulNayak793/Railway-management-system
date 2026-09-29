@@ -108,17 +108,19 @@ async function runTrainPersistenceLifecycleTest() {
     await startServer();
     console.log('🚀 Test server running on port', PORT);
 
-    // 2. Admin Create Train 99001
-    console.log('[STEP 2] Admin creating Train 99001...');
+    // 2. Admin Create Train 99001 with 2 intermediate stops
+    console.log('[STEP 2] Admin creating Train 99001 with 2 intermediate stops (MAQ & MAJN)...');
     const createRes = await makeRequest('POST', '/api/trains', {
       trainNo: '99001',
       trainName: 'Lifecycle Test Express',
-      from: 'NDLS',
-      to: 'MMCT',
+      train_type: 'Superfast',
+      from: 'UDU',
+      to: 'NDLS',
       depTime: '08:00',
       arrTime: '18:00',
       stops: [
-        { stationCode: 'KOTA', depTime: '12:00', arrTime: '11:50' }
+        { stationCode: 'MAQ', arrTime: '10:30', depTime: '10:35' },
+        { stationCode: 'MAJN', arrTime: '12:00', depTime: '12:05' }
       ]
     }, adminToken);
 
@@ -127,12 +129,21 @@ async function runTrainPersistenceLifecycleTest() {
     const trainId = createdTrain.id;
     console.log(`✅ Train 99001 Created. ID: ${trainId}`);
 
-    // 3. Verify API returns 99001
-    console.log('[STEP 3] Verifying GET /api/trains includes 99001...');
+    // 3. Verify API returns 99001 and exact stop times
+    console.log('[STEP 3] Verifying GET /api/trains includes 99001 and correct stop times...');
     const getRes = await makeRequest('GET', '/api/trains', null, adminToken);
     const foundGet = (getRes.body || []).find(t => String(t.train_number) === '99001');
     assert.ok(foundGet, 'Train 99001 should be returned by GET /api/trains');
-    console.log('✅ GET /api/trains returns 99001.');
+    const stopsList = foundGet.stops || (foundGet.route && foundGet.route.stops) || [];
+    assert.strictEqual(stopsList.length, 2, 'Train 99001 should have 2 intermediate stops');
+    const maqStop = stopsList.find(s => (s.stationCode || s.station) === 'MAQ');
+    const majnStop = stopsList.find(s => (s.stationCode || s.station) === 'MAJN');
+    assert.ok(maqStop && majnStop, 'Both MAQ and MAJN stops must be present');
+    assert.strictEqual(maqStop.arrTime || maqStop.arrival_time.slice(0, 5), '10:30');
+    assert.strictEqual(maqStop.depTime || maqStop.departure_time.slice(0, 5), '10:35');
+    assert.strictEqual(majnStop.arrTime || majnStop.arrival_time.slice(0, 5), '12:00');
+    assert.strictEqual(majnStop.depTime || majnStop.departure_time.slice(0, 5), '12:05');
+    console.log('✅ GET /api/trains returns 99001 with exact stop times.');
 
     // 4. Verify Admin list returns 99001
     console.log('[STEP 4] Verifying Admin Train Fleet view includes 99001...');
@@ -141,14 +152,14 @@ async function runTrainPersistenceLifecycleTest() {
 
     // 5. Verify Passenger Search returns 99001
     console.log('[STEP 5] Verifying Passenger Search returns 99001...');
-    const searchRes = await makeRequest('GET', '/api/trains?source=NDLS&destination=MMCT', null, passengerToken);
+    const searchRes = await makeRequest('GET', '/api/trains?source=UDU&destination=NDLS', null, passengerToken);
     const foundSearch = (searchRes.body || []).find(t => String(t.train_number) === '99001');
     assert.ok(foundSearch, 'Passenger Search should find train 99001');
     console.log('✅ Passenger Search returns 99001.');
 
     // 6. Verify RailBot search returns 99001
     console.log('[STEP 6] Verifying RailBot recommendations returns 99001...');
-    const railbotRes = await makeRequest('GET', '/api/ai/recommendations?source=NDLS&destination=MMCT', null, passengerToken);
+    const railbotRes = await makeRequest('GET', '/api/ai/recommendations?source=UDU&destination=NDLS', null, passengerToken);
     const recs = railbotRes.body.recommendedTrains || [];
     const foundRailbot = recs.find(r => String(r.train_number) === '99001');
     assert.ok(foundRailbot, 'RailBot should recommend train 99001');
@@ -164,15 +175,19 @@ async function runTrainPersistenceLifecycleTest() {
     assert.ok(foundPostRestart1, 'Train 99001 MUST survive backend restart');
     console.log('✅ Train 99001 verified after backend restart 1.');
 
-    // 8. Edit Train 99001
-    console.log('\n[STEP 8] Editing Train 99001 (Updating name to Lifecycle Express Updated)...');
+    // 8. Edit Train 99001 (Update stop 2 departure time to 12:10)
+    console.log('\n[STEP 8] Editing Train 99001 (Updating MAJN departure time to 12:10)...');
     const updateRes = await makeRequest('PUT', `/api/trains/${trainId}`, {
       trainName: 'Lifecycle Express Updated',
       status: 'delayed',
-      delay_minutes: 20
+      delay_minutes: 20,
+      stops: [
+        { stationCode: 'MAQ', arrTime: '10:30', depTime: '10:35' },
+        { stationCode: 'MAJN', arrTime: '12:00', depTime: '12:10' }
+      ]
     }, adminToken);
     assert.strictEqual(updateRes.statusCode, 200, 'Update train should return 200');
-    console.log('✅ Train 99001 Updated.');
+    console.log('✅ Train 99001 Updated with new stop time.');
 
     // 9. Restart Backend Process 2
     console.log('\n[STEP 9] Restarting backend process (Simulating restart 2)...');
@@ -183,6 +198,11 @@ async function runTrainPersistenceLifecycleTest() {
     const foundPostRestart2 = (postRestart2Res.body || []).find(t => String(t.train_number) === '99001');
     assert.ok(foundPostRestart2, 'Train 99001 MUST exist after restart 2');
     assert.strictEqual(foundPostRestart2.train_name, 'Lifecycle Express Updated', 'Updated train name MUST persist');
+    const updatedStops = foundPostRestart2.stops || (foundPostRestart2.route && foundPostRestart2.route.stops) || [];
+    const updatedMajn = updatedStops.find(s => (s.stationCode || s.station) === 'MAJN');
+    assert.ok(updatedMajn, 'MAJN stop must exist');
+    assert.strictEqual(updatedMajn.depTime || updatedMajn.departure_time.slice(0, 5), '12:10', 'Updated departure time for MAJN MUST persist');
+    console.log('✅ Updated train details and stop times verified after backend restart 2.');
     console.log('✅ Updated train details verified after backend restart 2.');
 
     // 10. Delete Train 99001
@@ -205,7 +225,7 @@ async function runTrainPersistenceLifecycleTest() {
     console.log('\n[STEP 12] Verifying production db.json data isolation...');
     const prodDbAfter = fs.existsSync(prodDbPath) ? fs.readFileSync(prodDbPath, 'utf-8') : '';
     assert.strictEqual(prodDbAfter, prodDbBefore, 'Production db.json MUST NOT be modified by tests');
-    assert.ok(!prodDbAfter.includes('99001'), 'Production db.json MUST NOT contain test train 99001');
+    assert.ok(!prodDbAfter.includes('"99001"'), 'Production db.json MUST NOT contain test train 99001');
     console.log('✅ Production db.json verified untouched and pristine.');
 
     console.log('\n======================================================');

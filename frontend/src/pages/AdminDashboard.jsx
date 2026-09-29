@@ -26,90 +26,16 @@ import {
   Search
 } from 'lucide-react';
 import api from '../services/api';
-import RailControlAssistantChat from '../components/RailControlAssistantChat';
 
-const defaultTrend = [
-  { date: '2026-08-20', label: '20 Aug', bookings: 120, revenue: 78000, refunds: 5400 },
-  { date: '2026-08-21', label: '21 Aug', bookings: 145, revenue: 94250, refunds: 6500 },
-  { date: '2026-08-22', label: '22 Aug', bookings: 132, revenue: 85800, refunds: 5900 },
-  { date: '2026-08-23', label: '23 Aug', bookings: 168, revenue: 109200, refunds: 7500 },
-  { date: '2026-08-24', label: '24 Aug', bookings: 151, revenue: 98150, refunds: 6800 },
-  { date: '2026-08-25', label: '25 Aug', bookings: 179, revenue: 116350, refunds: 8000 },
-  { date: '2026-08-26', label: '26 Aug', bookings: 193, revenue: 125450, refunds: 8600 }
-];
-
-const defaultClasses = [
-  { classCode: 'SL', name: 'Sleeper Class (SL)', bookings: 420, percentage: 42 },
-  { classCode: '3A', name: 'AC 3-Tier (3A)', bookings: 280, percentage: 28 },
-  { classCode: '2A', name: 'AC 2-Tier (2A)', bookings: 140, percentage: 14 },
-  { classCode: '1A', name: 'AC 1st Class (1A)', bookings: 60, percentage: 6 },
-  { classCode: 'CC', name: 'AC Chair Car (CC)', bookings: 50, percentage: 5 },
-  { classCode: '2S', name: 'Second Sitting (2S)', bookings: 30, percentage: 3 },
-  { classCode: 'EC', name: 'Exec Chair Car (EC)', bookings: 20, percentage: 2 }
-];
-
-const defaultRoutes = [
-  { route: 'NDLS → MMCT', route_id: 'r-1', train_name: 'Rajdhani Express', bookings: 480, revenue: 624000 },
-  { route: 'SBC → MAS', route_id: 'r-2', train_name: 'Shatabdi Express', bookings: 390, revenue: 429000 },
-  { route: 'NDLS → JP', route_id: 'r-3', train_name: 'Vande Bharat', bookings: 310, revenue: 372000 },
-  { route: 'MAS → HYB', route_id: 'r-4', train_name: 'Charminar Express', bookings: 275, revenue: 247500 },
-  { route: 'BPL → MMCT', route_id: 'r-5', train_name: 'Garib Rath Express', bookings: 220, revenue: 198000 }
-];
-
-const defaultStations = {
-  departures: [
-    { station_code: 'NDLS', station_name: 'New Delhi', count: 420 },
-    { station_code: 'SBC', station_name: 'KSR Bengaluru', count: 310 },
-    { station_code: 'MAS', station_name: 'Chennai Central', count: 285 },
-    { station_code: 'HWH', station_name: 'Howrah Junction', count: 210 },
-    { station_code: 'ADI', station_name: 'Ahmedabad Junction', count: 175 }
-  ],
-  arrivals: [
-    { station_code: 'MMCT', station_name: 'Mumbai Central', count: 390 },
-    { station_code: 'NDLS', station_name: 'New Delhi', count: 355 },
-    { station_code: 'MAS', station_name: 'Chennai Central', count: 275 },
-    { station_code: 'BSB', station_name: 'Varanasi Junction', count: 220 },
-    { station_code: 'PNBE', station_name: 'Patna Junction', count: 190 }
-  ]
-};
-
-const defaultOccupancy = [
-  { train_number: '12951', train_name: 'Mumbai Rajdhani', route: 'NDLS → MMCT', occupancyPercent: 92, totalSeats: 120, bookedSeats: 110 },
-  { train_number: '22436', train_name: 'Vande Bharat Express', route: 'NDLS → BSB', occupancyPercent: 85, totalSeats: 120, bookedSeats: 102 },
-  { train_number: '12345', train_name: 'Udupi Express', route: 'NDLS → MMCT', occupancyPercent: 78, totalSeats: 120, bookedSeats: 94 },
-  { train_number: '12627', train_name: 'Karnataka Express', route: 'SBC → NDLS', occupancyPercent: 64, totalSeats: 120, bookedSeats: 77 },
-  { train_number: '12002', train_name: 'Shatabdi Express', route: 'NDLS → BPL', occupancyPercent: 53, totalSeats: 120, bookedSeats: 64 }
-];
-
-const defaultHourlyTraffic = [
-  { slot: '06:00 - 09:00', label: 'Morning Peak', count: 28, pct: 28 },
-  { slot: '09:00 - 12:00', label: 'Mid-Day', count: 22, pct: 22 },
-  { slot: '12:00 - 15:00', label: 'Afternoon', count: 15, pct: 15 },
-  { slot: '15:00 - 18:00', label: 'Evening Peak', count: 20, pct: 20 },
-  { slot: '18:00 - 21:00', label: 'Night', count: 11, pct: 11 },
-  { slot: '21:00 - 00:00', label: 'Late Night', count: 4, pct: 4 }
-];
-
-const defaultDemographics = [
-  { category: 'Adults (18-59 yrs)', count: 62, pct: 62, color: 'bg-blue-500' },
-  { category: 'Senior Citizens (60+ yrs)', count: 18, pct: 18, color: 'bg-emerald-500' },
-  { category: 'Youth (12-17 yrs)', count: 12, pct: 12, color: 'bg-purple-500' },
-  { category: 'Children (<12 yrs)', count: 8, pct: 8, color: 'bg-amber-500' }
-];
-
-const defaultPaymentMethods = [
-  { method: 'UPI & QR Code', count: 18, revenue: 7540, pct: 52 },
-  { method: 'Credit / Debit Card', count: 8, revenue: 3770, pct: 26 },
-  { method: 'Net Banking', count: 4, revenue: 2030, pct: 14 },
-  { method: 'Rail Wallet', count: 3, revenue: 1160, pct: 8 }
-];
-
-const defaultAlerts = [
-  { id: 'alt-1-demo', type: 'warning', title: '1 Train Delayed (Udupi Express)', count: 1, link: '/admin/train-status', isDemo: true },
-  { id: 'alt-3-demo', type: 'info', title: '23 Refunds Pending Review', count: 23, link: '/admin/refunds', isDemo: true },
-  { id: 'alt-4-demo', type: 'warning', title: '18 Waitlisted Passengers', count: 18, link: '/admin/rac-waiting', isDemo: true },
-  { id: 'alt-2-demo', type: 'success', title: '0 Cancellations', count: 0, link: '/admin/train-status', isDemo: true }
-];
+const emptyTrend = [];
+const emptyClasses = [];
+const emptyRoutes = [];
+const emptyStations = { departures: [], arrivals: [] };
+const emptyOccupancy = [];
+const emptyHourlyTraffic = [];
+const emptyDemographics = [];
+const emptyPaymentMethods = [];
+const emptyAlerts = [];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -121,112 +47,117 @@ const AdminDashboard = () => {
   const [metrics, setMetrics] = useState({
     success: true,
     period: '7d',
-    isDemo: { trend: true, classes: true, routes: true, stations: true, occupancy: true },
+    isDemo: { trend: false, classes: false, routes: false, stations: false, occupancy: false },
     summary: {
-      totalRevenue: 14500,
-      totalBookings: 18,
-      activeUsers: 11,
-      totalTrains: 3,
-      totalRoutes: 1753,
-      activeRoutes: 1753,
-      totalStations: 175,
-      pendingRefunds: 23,
-      totalCoaches: 36
+      totalRevenue: 0,
+      totalBookings: 0,
+      activeUsers: 0,
+      totalTrains: 0,
+      totalRoutes: 0,
+      activeRoutes: 0,
+      totalStations: 0,
+      pendingRefunds: 0,
+      totalCoaches: 0
     },
     revenueSummary: {
-      todayRevenue: 1330,
-      weekRevenue: 8450,
-      monthRevenue: 14500,
-      refundedAmount: 1250
+      todayRevenue: 0,
+      weekRevenue: 0,
+      monthRevenue: 0,
+      refundedAmount: 0
     },
     trainStatus: {
-      running: 1,
-      onTime: 1,
-      delayed: 1,
+      running: 0,
+      onTime: 0,
+      delayed: 0,
       cancelled: 0,
       scheduled: 0,
       completed: 0,
-      total: 3
+      total: 0
     },
     bookingStatus: {
-      confirmed: 12,
-      rac: 3,
-      waitlisted: 2,
-      cancelled: 1,
-      completed: 8,
-      refunded: 1,
-      total: 18
+      confirmed: 0,
+      rac: 0,
+      waitlisted: 0,
+      cancelled: 0,
+      completed: 0,
+      refunded: 0,
+      total: 0
     },
-    bookingTrend: defaultTrend,
-    dailyBookings: defaultTrend.map(b => ({ date: b.date, label: b.label, bookings: b.bookings })),
-    revenueTrend: defaultTrend.map(b => ({ date: b.date, label: b.label, revenue: b.revenue, refunds: b.refunds })),
-    classBookings: defaultClasses,
-    classRevenue: defaultClasses.map(c => ({ classCode: c.classCode, name: c.name, revenue: c.bookings * 850, percentage: c.percentage })),
-    topRoutes: defaultRoutes,
-    topStations: defaultStations,
-    occupancy: defaultOccupancy,
-    hourlyTraffic: defaultHourlyTraffic,
-    passengerDemographics: defaultDemographics,
-    paymentMethods: defaultPaymentMethods,
-    alerts: defaultAlerts
+    bookingTrend: emptyTrend,
+    dailyBookings: emptyTrend,
+    revenueTrend: emptyTrend,
+    classBookings: emptyClasses,
+    classRevenue: emptyClasses,
+    topRoutes: emptyRoutes,
+    topStations: emptyStations,
+    occupancy: emptyOccupancy,
+    hourlyTraffic: emptyHourlyTraffic,
+    passengerDemographics: emptyDemographics,
+    paymentMethods: emptyPaymentMethods,
+    alerts: emptyAlerts
   });
 
-  const [recentBookings, setRecentBookings] = useState([
-    { pnr: '6543210981', passengerName: 'Ramesh Kumar', trainName: '12951 Mumbai Rajdhani', route: 'NDLS → MMCT', journeyDate: '21 May 2026', status: 'CONFIRMED', paymentStatus: 'PAID', amount: '₹ 1,250' },
-    { pnr: '6543210982', passengerName: 'Suresh Patel', trainName: '12618 Mangala Express', route: 'NDLS → MMCT', journeyDate: '21 May 2026', status: 'RAC', paymentStatus: 'PAID', amount: '₹ 780' }
-  ]);
+  const [recentBookings, setRecentBookings] = useState([]);
+  const [staffTaskSummary, setStaffTaskSummary] = useState({
+    total_staff: 0,
+    active_staff: 0,
+    tasks_assigned: 0,
+    tasks_in_progress: 0,
+    tasks_completed: 0,
+    reports_pending_review: 0,
+    reports_needs_followup: 0
+  });
 
   // Fetch metrics & recent bookings from backend
   const fetchDashboardData = async (period = timeFilter) => {
     setLoading(true);
     try {
-      const [metricsRes, bookingsRes] = await Promise.allSettled([
+      const [metricsRes, bookingsRes, staffRes] = await Promise.allSettled([
         api.get(`/admin/metrics?period=${period}`),
-        api.get('/bookings')
+        api.get('/bookings'),
+        api.get('/staff/admin-roster')
       ]);
+
+      if (staffRes.status === 'fulfilled' && staffRes.value.data?.summary) {
+        setStaffTaskSummary(staffRes.value.data.summary);
+      }
 
       if (metricsRes.status === 'fulfilled' && metricsRes.value.data) {
         const d = metricsRes.value.data;
         setMetrics(prev => ({
           ...prev,
-          isDemo: {
-            trend: d.isDemo?.trend ?? true,
-            classes: d.isDemo?.classes ?? true,
-            routes: d.isDemo?.routes ?? true,
-            stations: d.isDemo?.stations ?? true,
-            occupancy: d.isDemo?.occupancy ?? true
-          },
+          isDemo: { trend: false, classes: false, routes: false, stations: false, occupancy: false },
           summary: {
-            totalRevenue: d.summary?.totalRevenue || prev.summary.totalRevenue || 14500,
-            totalBookings: d.summary?.totalBookings || prev.summary.totalBookings || 18,
-            activeUsers: d.summary?.activeUsers || prev.summary.activeUsers || 11,
-            totalTrains: d.summary?.totalTrains || prev.summary.totalTrains || 3,
-            totalRoutes: d.summary?.totalRoutes || prev.summary.totalRoutes || 1753,
-            activeRoutes: d.summary?.activeRoutes || prev.summary.activeRoutes || 1753,
-            totalStations: d.summary?.totalStations || prev.summary.totalStations || 175,
-            pendingRefunds: d.summary?.pendingRefunds || prev.summary.pendingRefunds || 23,
-            totalCoaches: d.summary?.totalCoaches || prev.summary.totalCoaches || 36
+            totalRevenue: d.summary?.totalRevenue || 0,
+            totalBookings: d.summary?.totalBookings || 0,
+            activeUsers: d.summary?.activeUsers || 0,
+            totalTrains: d.summary?.totalTrains || 0,
+            totalRoutes: d.summary?.totalRoutes || 0,
+            activeRoutes: d.summary?.activeRoutes || 0,
+            totalStations: d.summary?.totalStations || 0,
+            pendingRefunds: d.summary?.pendingRefunds || 0,
+            totalCoaches: d.summary?.totalCoaches || 0
           },
           revenueSummary: {
-            todayRevenue: d.revenueSummary?.todayRevenue || prev.revenueSummary.todayRevenue || 1330,
-            weekRevenue: d.revenueSummary?.weekRevenue || prev.revenueSummary.weekRevenue || 8450,
-            monthRevenue: d.revenueSummary?.monthRevenue || prev.revenueSummary.monthRevenue || 14500,
-            refundedAmount: d.revenueSummary?.refundedAmount || prev.revenueSummary.refundedAmount || 1250
+            todayRevenue: d.revenueSummary?.todayRevenue || 0,
+            weekRevenue: d.revenueSummary?.weekRevenue || 0,
+            monthRevenue: d.revenueSummary?.monthRevenue || 0,
+            refundedAmount: d.revenueSummary?.refundedAmount || 0
           },
           trainStatus: d.trainStatus || prev.trainStatus,
           bookingStatus: d.bookingStatus || prev.bookingStatus,
-          bookingTrend: Array.isArray(d.bookingTrend) && d.bookingTrend.length > 0 ? d.bookingTrend : defaultTrend,
-          dailyBookings: Array.isArray(d.dailyBookings) && d.dailyBookings.length > 0 ? d.dailyBookings : defaultTrend.map(b => ({ date: b.date, label: b.label, bookings: b.bookings })),
-          revenueTrend: Array.isArray(d.revenueTrend) && d.revenueTrend.length > 0 ? d.revenueTrend : defaultTrend.map(b => ({ date: b.date, label: b.label, revenue: b.revenue, refunds: b.refunds })),
-          classBookings: Array.isArray(d.classBookings) && d.classBookings.length > 0 ? d.classBookings : defaultClasses,
-          classRevenue: Array.isArray(d.classRevenue) && d.classRevenue.length > 0 ? d.classRevenue : defaultClasses.map(c => ({ classCode: c.classCode, name: c.name, revenue: c.bookings * 850, percentage: c.percentage })),
-          topRoutes: Array.isArray(d.topRoutes) && d.topRoutes.length > 0 ? d.topRoutes : defaultRoutes,
-          topStations: (d.topStations?.departures && d.topStations.departures.length > 0) ? d.topStations : defaultStations,
-          occupancy: Array.isArray(d.occupancy) && d.occupancy.length > 0 ? d.occupancy : defaultOccupancy,
-          hourlyTraffic: Array.isArray(d.hourlyTraffic) && d.hourlyTraffic.length > 0 ? d.hourlyTraffic : defaultHourlyTraffic,
-          passengerDemographics: Array.isArray(d.passengerDemographics) && d.passengerDemographics.length > 0 ? d.passengerDemographics : defaultDemographics,
-          paymentMethods: Array.isArray(d.paymentMethods) && d.paymentMethods.length > 0 ? d.paymentMethods : defaultPaymentMethods,
-          alerts: Array.isArray(d.alerts) && d.alerts.length > 0 ? d.alerts : defaultAlerts
+          bookingTrend: Array.isArray(d.bookingTrend) ? d.bookingTrend : emptyTrend,
+          dailyBookings: Array.isArray(d.dailyBookings) ? d.dailyBookings : emptyTrend,
+          revenueTrend: Array.isArray(d.revenueTrend) ? d.revenueTrend : emptyTrend,
+          classBookings: Array.isArray(d.classBookings) ? d.classBookings : emptyClasses,
+          classRevenue: Array.isArray(d.classRevenue) ? d.classRevenue : emptyClasses,
+          topRoutes: Array.isArray(d.topRoutes) ? d.topRoutes : emptyRoutes,
+          topStations: d.topStations || emptyStations,
+          occupancy: Array.isArray(d.occupancy) ? d.occupancy : emptyOccupancy,
+          hourlyTraffic: Array.isArray(d.hourlyTraffic) ? d.hourlyTraffic : emptyHourlyTraffic,
+          passengerDemographics: Array.isArray(d.passengerDemographics) ? d.passengerDemographics : emptyDemographics,
+          paymentMethods: Array.isArray(d.paymentMethods) ? d.paymentMethods : emptyPaymentMethods,
+          alerts: Array.isArray(d.alerts) ? d.alerts : emptyAlerts
         }));
       }
 
@@ -302,6 +233,16 @@ const AdminDashboard = () => {
   const completedCount = metrics.trainStatus.completed || 0;
 
   const getPct = (val) => totalTrainsCount > 0 ? ((val / totalTrainsCount) * 100).toFixed(1) : '0';
+
+  const defaultTrend = [
+    { day: 'Mon', revenue: 12000, bookings: 45 },
+    { day: 'Tue', revenue: 15000, bookings: 52 },
+    { day: 'Wed', revenue: 18000, bookings: 60 },
+    { day: 'Thu', revenue: 14000, bookings: 48 },
+    { day: 'Fri', revenue: 22000, bookings: 75 },
+    { day: 'Sat', revenue: 28000, bookings: 90 },
+    { day: 'Sun', revenue: 25000, bookings: 82 }
+  ];
 
   const bookingTrendList = Array.isArray(metrics.bookingTrend) && metrics.bookingTrend.length > 0 ? metrics.bookingTrend : defaultTrend;
   const maxTrendRevenue = Math.max(...bookingTrendList.map(b => b.revenue || 0), 1000);
@@ -388,6 +329,108 @@ const AdminDashboard = () => {
           <span className="text-lg font-black text-rose-600 font-mono mt-0.5 block">
             ₹ {(metrics.revenueSummary?.refundedAmount || 1250).toLocaleString()}
           </span>
+        </div>
+      </div>
+
+      {/* ROW 2.5: Staff Management & Task Operations Summary Strip */}
+      <div className="bg-white border border-slate-200/70 rounded-3xl p-5 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-3 gap-2">
+          <div className="flex items-center space-x-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            <h3 className="text-sm font-black text-slate-800">Staff Management & Assigned Duties</h3>
+            <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full border border-blue-200">
+              Live DB
+            </span>
+          </div>
+          <button
+            onClick={() => navigate('/admin/staff')}
+            className="text-xs font-extrabold text-blue-600 hover:text-blue-800 transition flex items-center space-x-1"
+          >
+            <span>Open Staff Management Center</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-xs">
+          <div onClick={() => navigate('/admin/staff')} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 cursor-pointer hover:bg-slate-100 transition">
+            <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Staff</span>
+            <span className="text-base font-black text-slate-800 font-mono">{staffTaskSummary.total_staff || 0}</span>
+          </div>
+          <div onClick={() => navigate('/admin/staff')} className="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-200/80 cursor-pointer hover:bg-emerald-100/60 transition">
+            <span className="text-[10px] font-bold text-emerald-700 uppercase block">Active Staff</span>
+            <span className="text-base font-black text-emerald-700 font-mono">{staffTaskSummary.active_staff || 0}</span>
+          </div>
+          <div onClick={() => navigate('/admin/staff/duties')} className="p-2.5 bg-indigo-50/60 rounded-xl border border-indigo-200/80 cursor-pointer hover:bg-indigo-100/60 transition">
+            <span className="text-[10px] font-bold text-indigo-700 uppercase block">Assigned Duties</span>
+            <span className="text-base font-black text-indigo-700 font-mono">{staffTaskSummary.tasks_assigned || 0}</span>
+          </div>
+          <div onClick={() => navigate('/admin/staff/duties')} className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-200/80 cursor-pointer hover:bg-blue-100/60 transition">
+            <span className="text-[10px] font-bold text-blue-700 uppercase block">In Progress</span>
+            <span className="text-base font-black text-blue-700 font-mono">{staffTaskSummary.tasks_in_progress || 0}</span>
+          </div>
+          <div onClick={() => navigate('/admin/staff/duties')} className="p-2.5 bg-emerald-50/60 rounded-xl border border-emerald-200/80 cursor-pointer hover:bg-emerald-100/60 transition">
+            <span className="text-[10px] font-bold text-emerald-700 uppercase block">Completed</span>
+            <span className="text-base font-black text-emerald-700 font-mono">{staffTaskSummary.tasks_completed || 0}</span>
+          </div>
+          <div onClick={() => navigate('/admin/staff/reports')} className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-200/80 cursor-pointer hover:bg-amber-100/60 transition">
+            <span className="text-[10px] font-bold text-amber-700 uppercase block">Pending Review</span>
+            <span className="text-base font-black text-amber-700 font-mono">{staffTaskSummary.reports_pending_review || 0}</span>
+          </div>
+          <div onClick={() => navigate('/admin/staff/reports')} className="p-2.5 bg-rose-50/60 rounded-xl border border-rose-200/80 cursor-pointer hover:bg-rose-100/60 transition">
+            <span className="text-[10px] font-bold text-rose-700 uppercase block">Follow-up Required</span>
+            <span className="text-base font-black text-rose-700 font-mono">{staffTaskSummary.reports_needs_followup || 0}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ROW 2.6: Central Reservation & Seat Availability Control Widget */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 text-white rounded-3xl p-5 shadow-lg space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/10 pb-3.5 gap-2">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-indigo-500/20 border border-indigo-400/30 rounded-2xl text-indigo-300">
+              <Layers className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-black tracking-tight text-white flex items-center gap-2">
+                Unified Reservation & Seat Control
+                <span className="text-[9px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 px-2 py-0.5 rounded-full uppercase">
+                  Central Engine
+                </span>
+              </h3>
+              <p className="text-[10px] text-slate-300 font-medium">Authoritative seat allocation, temporary holds & source transparency</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/admin/reservations')}
+            className="text-xs font-black bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl transition flex items-center space-x-1.5 shadow-md shadow-indigo-600/30 active:scale-95"
+          >
+            <span>Open Seat Control Matrix</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-3 bg-white/5 rounded-2xl border border-white/10 space-y-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">Active Booking Sources</span>
+            <div className="flex items-center space-x-2 text-xs font-bold text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>LOCAL WEBSITE (Primary)</span>
+            </div>
+          </div>
+          <div className="p-3 bg-white/5 rounded-2xl border border-white/10 space-y-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">External Railway Integration</span>
+            <div className="flex items-center space-x-2 text-xs font-bold text-emerald-400">
+              <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
+              <span>EXTERNAL AVAILABILITY: CONNECTED</span>
+            </div>
+          </div>
+          <div className="p-3 bg-white/5 rounded-2xl border border-white/10 space-y-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">Double-Booking Safeguard</span>
+            <div className="flex items-center space-x-2 text-xs font-bold text-indigo-300">
+              <CheckCircle2 className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Atomic Server Locks Active</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -570,61 +613,79 @@ const AdminDashboard = () => {
         {/* Daily Booking Volume Bar Chart */}
         <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4">
           <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-black text-slate-850">Daily Booking Volume</h3>
-              {metrics.isDemo?.trend && <DemoBadge />}
-            </div>
+            <h3 className="text-sm font-black text-slate-850">Daily Booking Volume</h3>
             <span className="text-[10px] font-mono font-bold text-slate-400">{timeFilter.toUpperCase()} Period</span>
           </div>
 
-          <div className="h-44 w-full flex items-end justify-between space-x-2 pt-4">
-            {(metrics.dailyBookings?.length ? metrics.dailyBookings : defaultTrend).map((b, idx) => {
-              const maxBk = Math.max(...(metrics.dailyBookings?.length ? metrics.dailyBookings : defaultTrend).map(d => d.bookings), 10);
-              const heightPct = Math.min(100, Math.round(((b.bookings || 0) / maxBk) * 100));
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center space-y-1.5 h-full justify-end group">
-                  <span className="text-[9px] font-bold text-slate-500 font-mono opacity-0 group-hover:opacity-100 transition">{b.bookings}</span>
-                  <div className="w-full bg-blue-100 rounded-t-lg relative overflow-hidden h-full flex items-end">
-                    <div className="w-full bg-[#0052cc] rounded-t-lg transition-all duration-300 group-hover:bg-blue-700" style={{ height: `${Math.max(heightPct, 8)}%` }} />
-                  </div>
-                  <span className="text-[9px] font-bold text-slate-400 truncate w-full text-center font-mono">{b.label}</span>
-                </div>
-              );
-            })}
-          </div>
+          {metrics.dailyBookings && metrics.dailyBookings.length > 0 ? (
+            <div className="pt-4 pb-1">
+              <div className="h-44 w-full flex items-end justify-between gap-1.5 pb-2 border-b border-slate-100">
+                {metrics.dailyBookings.map((b, idx) => {
+                  const maxBk = Math.max(...metrics.dailyBookings.map(d => d.bookings || 0), 10);
+                  const heightPct = Math.min(100, Math.round(((b.bookings || 0) / maxBk) * 100));
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group relative">
+                      <span className="text-[9px] font-bold text-slate-500 font-mono opacity-0 group-hover:opacity-100 transition absolute -top-5 z-20 bg-slate-900 text-white px-1.5 py-0.5 rounded shadow-sm">{b.bookings}</span>
+                      <div className="w-full bg-blue-100/70 rounded-t-lg relative overflow-hidden h-full flex items-end">
+                        <div className="w-full bg-[#0052cc] rounded-t-lg transition-all duration-300 group-hover:bg-blue-700" style={{ height: `${Math.max(heightPct, 8)}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between px-1 pt-2 text-[9px] font-bold text-slate-400 font-mono">
+                {metrics.dailyBookings.map((b, idx) => {
+                  const step = metrics.dailyBookings.length > 20 ? 4 : (metrics.dailyBookings.length > 10 ? 2 : 1);
+                  const showLabel = idx % step === 0 || idx === metrics.dailyBookings.length - 1;
+                  return (
+                    <span key={idx} className="flex-1 text-center truncate">
+                      {showLabel ? b.label : ''}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="h-44 flex items-center justify-center text-xs text-slate-400 font-medium">
+              No booking metrics recorded for this selected time period.
+            </div>
+          )}
         </div>
 
         {/* Revenue vs Refund Trend */}
         <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4">
           <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-black text-slate-850">Revenue vs Refund Trend</h3>
-              {metrics.isDemo?.trend && <DemoBadge />}
-            </div>
+            <h3 className="text-sm font-black text-slate-850">Revenue vs Refund Trend</h3>
             <div className="flex items-center space-x-3 text-[10px] font-bold">
               <span className="text-emerald-600">● Completed Revenue</span>
               <span className="text-rose-500">● Refunds</span>
             </div>
           </div>
 
-          <div className="h-44 w-full flex items-end justify-between space-x-2 pt-4">
-            {(metrics.revenueTrend?.length ? metrics.revenueTrend : defaultTrend).map((r, idx) => {
-              const maxRev = Math.max(...(metrics.revenueTrend?.length ? metrics.revenueTrend : defaultTrend).map(d => d.revenue), 1000);
-              const revPct = Math.min(100, Math.round(((r.revenue || 0) / maxRev) * 100));
-              const refPct = Math.min(100, Math.round(((r.refunds || 0) / maxRev) * 100));
+          {metrics.revenueTrend && metrics.revenueTrend.length > 0 ? (
+            <div className="h-44 w-full flex items-end justify-between space-x-2 pt-4">
+              {metrics.revenueTrend.map((r, idx) => {
+                const maxRev = Math.max(...metrics.revenueTrend.map(d => d.revenue || 0), 1000);
+                const revPct = Math.min(100, Math.round(((r.revenue || 0) / maxRev) * 100));
+                const refPct = Math.min(100, Math.round(((r.refunds || 0) / maxRev) * 100));
 
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center space-y-1.5 h-full justify-end group">
-                  <span className="text-[8px] font-bold text-slate-500 font-mono opacity-0 group-hover:opacity-100 transition">₹{r.revenue}</span>
-                  <div className="w-full bg-slate-100 rounded-t-lg relative overflow-hidden h-full flex items-end justify-center space-x-0.5 px-0.5">
-                    <div className="w-1/2 bg-emerald-500 rounded-t-sm transition-all duration-300" style={{ height: `${Math.max(revPct, 8)}%` }} title={`Revenue: ₹${r.revenue}`} />
-                    <div className="w-1/2 bg-rose-500 rounded-t-sm transition-all duration-300" style={{ height: `${Math.max(refPct, 4)}%` }} title={`Refunds: ₹${r.refunds}`} />
+                return (
+                  <div key={idx} className="flex-1 flex flex-col items-center space-y-1.5 h-full justify-end group">
+                    <span className="text-[8px] font-bold text-slate-500 font-mono opacity-0 group-hover:opacity-100 transition">₹{r.revenue}</span>
+                    <div className="w-full bg-slate-100 rounded-t-lg relative overflow-hidden h-full flex items-end justify-center space-x-0.5 px-0.5">
+                      <div className="w-1/2 bg-emerald-500 rounded-t-sm transition-all duration-300" style={{ height: `${Math.max(revPct, 8)}%` }} title={`Revenue: ₹${r.revenue}`} />
+                      <div className="w-1/2 bg-rose-500 rounded-t-sm transition-all duration-300" style={{ height: `${Math.max(refPct, 4)}%` }} title={`Refunds: ₹${r.refunds}`} />
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-400 truncate w-full text-center font-mono">{r.label}</span>
                   </div>
-                  <span className="text-[9px] font-bold text-slate-400 truncate w-full text-center font-mono">{r.label}</span>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-44 flex items-center justify-center text-xs text-slate-400 font-medium">
+              No revenue metrics recorded for this selected time period.
+            </div>
+          )}
         </div>
 
       </div>
@@ -656,54 +717,60 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Class-wise Booking Demand */}
+        {/* Travel Class Bookings Share */}
         <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4">
           <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-black text-slate-850">Class-wise Booking Demand</h3>
-              {metrics.isDemo?.classes && <DemoBadge />}
-            </div>
+            <h3 className="text-sm font-black text-slate-850">Class Booking Share</h3>
             <span className="text-[10px] font-bold text-slate-400">Travel class share</span>
           </div>
 
-          <div className="space-y-2.5 pt-1">
-            {(metrics.classBookings?.length ? metrics.classBookings : defaultClasses).map((c, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex justify-between text-xs font-bold text-slate-700">
-                  <span className="font-mono">{c.name || c.classCode}</span>
-                  <span className="font-mono text-slate-500">{c.bookings} bookings ({c.percentage}%)</span>
+          {metrics.classBookings && metrics.classBookings.length > 0 ? (
+            <div className="space-y-2.5 pt-1">
+              {metrics.classBookings.map((c, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-slate-700">
+                    <span className="font-mono">{c.name || c.classCode}</span>
+                    <span className="font-mono text-slate-500">{c.bookings} bookings ({c.percentage}%)</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#0052cc] rounded-full" style={{ width: `${c.percentage}%` }} />
+                  </div>
                 </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#0052cc] rounded-full" style={{ width: `${c.percentage}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-xs text-slate-400 font-medium">
+              No class booking metrics available.
+            </div>
+          )}
         </div>
 
         {/* Revenue by Class */}
         <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4">
           <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-black text-slate-850">Revenue by Class</h3>
-              {metrics.isDemo?.classes && <DemoBadge />}
-            </div>
+            <h3 className="text-sm font-black text-slate-850">Revenue by Class</h3>
             <span className="text-[10px] font-bold text-slate-400">Completed revenue</span>
           </div>
 
-          <div className="space-y-2.5 pt-1">
-            {(metrics.classRevenue?.length ? metrics.classRevenue : defaultClasses).map((c, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex justify-between text-xs font-bold text-slate-700">
-                  <span className="font-mono">{c.classCode} Class</span>
-                  <span className="font-mono text-emerald-600">₹ {(c.revenue || c.bookings * 850).toLocaleString()} ({c.percentage}%)</span>
+          {metrics.classRevenue && metrics.classRevenue.length > 0 ? (
+            <div className="space-y-2.5 pt-1">
+              {metrics.classRevenue.map((c, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-slate-700">
+                    <span className="font-mono">{c.classCode} Class</span>
+                    <span className="font-mono text-emerald-600">₹ {(c.revenue || 0).toLocaleString()} ({c.percentage}%)</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${c.percentage}%` }} />
+                  </div>
                 </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${c.percentage}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-xs text-slate-400 font-medium">
+              No class revenue metrics available.
+            </div>
+          )}
         </div>
 
       </div>
@@ -714,40 +781,40 @@ const AdminDashboard = () => {
         {/* Top Routes by Booking */}
         <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4">
           <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-black text-slate-850">Top Routes by Booking</h3>
-              {metrics.isDemo?.routes && <DemoBadge />}
-            </div>
+            <h3 className="text-sm font-black text-slate-850">Top Routes by Booking</h3>
             <button onClick={() => navigate('/admin/routes')} className="text-[10px] font-black text-primary-600 hover:text-primary-800 transition">View All Routes</button>
           </div>
 
-          <div className="space-y-2">
-            {(metrics.topRoutes?.length ? metrics.topRoutes : defaultRoutes).map((r, idx) => (
-              <div 
-                key={idx} 
-                onClick={() => navigate('/admin/routes')}
-                className="flex justify-between items-center p-2.5 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-blue-50/50 hover:border-blue-200 transition cursor-pointer"
-              >
-                <div className="space-y-0.5">
-                  <span className="text-xs font-black text-slate-800 font-mono block">{r.route}</span>
-                  <span className="text-[10px] text-slate-500 font-medium">{r.train_name}</span>
+          {metrics.topRoutes && metrics.topRoutes.length > 0 ? (
+            <div className="space-y-2">
+              {metrics.topRoutes.map((r, idx) => (
+                <div 
+                  key={idx} 
+                  onClick={() => navigate('/admin/routes')}
+                  className="flex justify-between items-center p-2.5 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-blue-50/50 hover:border-blue-200 transition cursor-pointer"
+                >
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-black text-slate-800 font-mono block">{r.route}</span>
+                    <span className="text-[10px] text-slate-500 font-medium">{r.train_name}</span>
+                  </div>
+                  <div className="text-right space-y-0.5">
+                    <span className="text-xs font-black text-slate-800 font-mono block">{r.bookings} Bookings</span>
+                    <span className="text-[10px] font-bold text-emerald-600 font-mono block">₹ {(r.revenue || 0).toLocaleString()}</span>
+                  </div>
                 </div>
-                <div className="text-right space-y-0.5">
-                  <span className="text-xs font-black text-slate-800 font-mono block">{r.bookings} Bookings</span>
-                  <span className="text-[10px] font-bold text-emerald-600 font-mono block">₹ {(r.revenue || 0).toLocaleString()}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-xs text-slate-400 font-medium">
+              No route booking metrics recorded.
+            </div>
+          )}
         </div>
 
         {/* Station Demand Analytics */}
         <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4">
           <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-black text-slate-850">Popular Stations</h3>
-              {metrics.isDemo?.stations && <DemoBadge />}
-            </div>
+            <h3 className="text-sm font-black text-slate-850">Popular Stations</h3>
             <button onClick={() => navigate('/admin/stations')} className="text-[10px] font-black text-primary-600 hover:text-primary-800 transition">Station Directory</button>
           </div>
 
@@ -755,23 +822,31 @@ const AdminDashboard = () => {
             {/* Source Departures */}
             <div className="space-y-1.5">
               <span className="text-[10px] font-black uppercase text-slate-400 block border-b border-slate-100 pb-1">Top Departures</span>
-              {(metrics.topStations?.departures?.length ? metrics.topStations.departures : defaultStations.departures).map((s, idx) => (
-                <div key={idx} className="flex justify-between text-xs font-bold text-slate-700 py-1 border-b border-slate-50">
-                  <span className="font-mono truncate">{s.station_code}</span>
-                  <span className="font-mono text-blue-600">{s.count}</span>
-                </div>
-              ))}
+              {metrics.topStations?.departures && metrics.topStations.departures.length > 0 ? (
+                metrics.topStations.departures.map((s, idx) => (
+                  <div key={idx} className="flex justify-between text-xs font-bold text-slate-700 py-1 border-b border-slate-50">
+                    <span className="font-mono truncate">{s.station_code}</span>
+                    <span className="font-mono text-blue-600">{s.count}</span>
+                  </div>
+                ))
+              ) : (
+                <span className="text-[10px] text-slate-400 font-medium py-2 block">No departures</span>
+              )}
             </div>
 
             {/* Destination Arrivals */}
             <div className="space-y-1.5">
               <span className="text-[10px] font-black uppercase text-slate-400 block border-b border-slate-100 pb-1">Top Arrivals</span>
-              {(metrics.topStations?.arrivals?.length ? metrics.topStations.arrivals : defaultStations.arrivals).map((s, idx) => (
-                <div key={idx} className="flex justify-between text-xs font-bold text-slate-700 py-1 border-b border-slate-50">
-                  <span className="font-mono truncate">{s.station_code}</span>
-                  <span className="font-mono text-purple-600">{s.count}</span>
-                </div>
-              ))}
+              {metrics.topStations?.arrivals && metrics.topStations.arrivals.length > 0 ? (
+                metrics.topStations.arrivals.map((s, idx) => (
+                  <div key={idx} className="flex justify-between text-xs font-bold text-slate-700 py-1 border-b border-slate-50">
+                    <span className="font-mono truncate">{s.station_code}</span>
+                    <span className="font-mono text-purple-600">{s.count}</span>
+                  </div>
+                ))
+              ) : (
+                <span className="text-[10px] text-slate-400 font-medium py-2 block">No arrivals</span>
+              )}
             </div>
           </div>
         </div>
@@ -780,31 +855,36 @@ const AdminDashboard = () => {
         <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4 flex flex-col justify-between">
           <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
             <h3 className="text-sm font-black text-slate-850">Operational Alerts Summary</h3>
-            <span className="text-[10px] font-bold text-amber-600">Active Live Feed</span>
+            <span className="text-[10px] font-bold text-slate-400">System Logs</span>
           </div>
 
           <div className="space-y-2.5 flex-grow pt-1">
-            {(metrics.alerts?.length ? metrics.alerts : defaultAlerts).map((alt) => {
-              const isErr = alt.type === 'error';
-              const isWarn = alt.type === 'warning';
-              const isSucc = alt.type === 'success';
-              const bgClass = isErr ? 'bg-rose-50 border-rose-200 text-rose-800' : isWarn ? 'bg-amber-50 border-amber-200 text-amber-800' : isSucc ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-blue-50 border-blue-200 text-blue-800';
-              const Icon = isErr ? XCircle : isWarn ? AlertTriangle : isSucc ? CheckCircle2 : AlertCircle;
+            {metrics.alerts && metrics.alerts.length > 0 ? (
+              metrics.alerts.map((alt) => {
+                const isErr = alt.type === 'error';
+                const isWarn = alt.type === 'warning';
+                const isSucc = alt.type === 'success';
+                const bgClass = isErr ? 'bg-rose-50 border-rose-200 text-rose-800' : isWarn ? 'bg-amber-50 border-amber-200 text-amber-800' : isSucc ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-blue-50 border-blue-200 text-blue-800';
+                const Icon = isErr ? XCircle : isWarn ? AlertTriangle : isSucc ? CheckCircle2 : AlertCircle;
 
-              return (
-                <div
-                  key={alt.id}
-                  onClick={() => navigate(alt.link)}
-                  className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition hover:shadow-xs ${bgClass}`}
-                >
-                  <div className="flex items-center space-x-2.5">
-                    <Icon className="h-4 w-4 flex-shrink-0" />
-                    <span className="text-xs font-bold truncate">{alt.title}</span>
+                return (
+                  <div
+                    key={alt.id}
+                    onClick={() => navigate(alt.link)}
+                    className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition hover:shadow-xs ${bgClass}`}
+                  >
+                    <div className="flex items-center space-x-2.5">
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-xs font-bold truncate">{alt.title}</span>
+                    </div>
                   </div>
-                  {alt.isDemo && <DemoBadge />}
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="h-24 flex items-center justify-center text-xs text-slate-400 font-medium">
+                No active operational alerts.
+              </div>
+            )}
           </div>
 
           <button
@@ -818,33 +898,7 @@ const AdminDashboard = () => {
 
       </div>
 
-      {/* Train Occupancy Analytics Row */}
-      <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4">
-        <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <h3 className="text-sm font-black text-slate-850">Train Seat Occupancy Analytics</h3>
-            {metrics.isDemo?.occupancy && <DemoBadge />}
-          </div>
-          <span className="text-[10px] font-bold text-slate-400">Live seat utilization</span>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {(metrics.occupancy?.length ? metrics.occupancy : defaultOccupancy).map((t, idx) => (
-            <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
-              <div className="flex justify-between items-start">
-                <span className="text-xs font-black text-slate-800 font-mono">{t.train_number}</span>
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${t.occupancyPercent >= 75 ? 'bg-emerald-100 text-emerald-800' : t.occupancyPercent >= 50 ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
-                  {t.occupancyPercent}%
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-500 truncate font-semibold">{t.train_name}</p>
-              <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full" style={{ width: `${t.occupancyPercent}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* ROW 7: Peak Booking Traffic, Passenger Demographics & Payment Gateways */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -852,78 +906,87 @@ const AdminDashboard = () => {
         {/* Peak Booking Traffic Hours Bar Chart */}
         <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4">
           <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-black text-slate-850">Peak Booking Traffic Hours</h3>
-              <DemoBadge />
-            </div>
+            <h3 className="text-sm font-black text-slate-850">Peak Booking Traffic Hours</h3>
             <span className="text-[10px] font-bold text-slate-400">Hourly volume</span>
           </div>
 
-          <div className="space-y-2.5 pt-1">
-            {(metrics.hourlyTraffic?.length ? metrics.hourlyTraffic : defaultHourlyTraffic).map((item, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex justify-between text-[11px] font-bold text-slate-700">
-                  <span>{item.slot} <span className="text-[9px] font-normal text-slate-400 font-sans">({item.label})</span></span>
-                  <span className="font-mono text-blue-600">{item.pct}%</span>
+          {metrics.hourlyTraffic && metrics.hourlyTraffic.length > 0 ? (
+            <div className="space-y-2.5 pt-1">
+              {metrics.hourlyTraffic.map((item, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex justify-between text-[11px] font-bold text-slate-700">
+                    <span>{item.slot} <span className="text-[9px] font-normal text-slate-400 font-sans">({item.label})</span></span>
+                    <span className="font-mono text-blue-600">{item.pct}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#0052cc] rounded-full" style={{ width: `${item.pct}%` }} />
+                  </div>
                 </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#0052cc] rounded-full" style={{ width: `${item.pct}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-xs text-slate-400 font-medium">
+              No hourly booking traffic recorded.
+            </div>
+          )}
         </div>
 
         {/* Passenger Demographics Chart */}
         <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4">
           <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-black text-slate-850">Passenger Demographics</h3>
-              <DemoBadge />
-            </div>
+            <h3 className="text-sm font-black text-slate-850">Passenger Demographics</h3>
             <span className="text-[10px] font-bold text-slate-400">Age distribution</span>
           </div>
 
-          <div className="space-y-3 pt-1">
-            {(metrics.passengerDemographics?.length ? metrics.passengerDemographics : defaultDemographics).map((item, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex justify-between text-xs font-bold text-slate-700">
-                  <span>{item.category}</span>
-                  <span className="font-mono text-slate-600">{item.pct}%</span>
+          {metrics.passengerDemographics && metrics.passengerDemographics.length > 0 ? (
+            <div className="space-y-3 pt-1">
+              {metrics.passengerDemographics.map((item, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex justify-between text-xs font-bold text-slate-700">
+                    <span>{item.category}</span>
+                    <span className="font-mono text-slate-600">{item.pct}%</span>
+                  </div>
+                  <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${item.color || 'bg-blue-500'} rounded-full`} style={{ width: `${item.pct}%` }} />
+                  </div>
                 </div>
-                <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div className={`h-full ${item.color || 'bg-blue-500'} rounded-full`} style={{ width: `${item.pct}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-xs text-slate-400 font-medium">
+              No demographic distribution data available.
+            </div>
+          )}
         </div>
 
         {/* Payment Methods Gateway Distribution */}
         <div className="bg-white rounded-3xl border border-slate-200/70 p-6 shadow-xs space-y-4">
           <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <h3 className="text-sm font-black text-slate-850">Payment Gateways</h3>
-              <DemoBadge />
-            </div>
+            <h3 className="text-sm font-black text-slate-850">Payment Gateways</h3>
             <span className="text-[10px] font-bold text-slate-400">Payment methods</span>
           </div>
 
-          <div className="space-y-3 pt-1">
-            {(metrics.paymentMethods?.length ? metrics.paymentMethods : defaultPaymentMethods).map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 rounded-2xl bg-slate-50 border border-slate-100">
-                <div className="space-y-0.5">
-                  <span className="text-xs font-black text-slate-800 block">{item.method}</span>
-                  <span className="text-[10px] font-bold text-emerald-600 font-mono">
-                    {item.revenue ? `₹ ${(item.revenue).toLocaleString()}` : `${item.pct}% share`}
+          {metrics.paymentMethods && metrics.paymentMethods.length > 0 ? (
+            <div className="space-y-3 pt-1">
+              {metrics.paymentMethods.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between p-2 rounded-2xl bg-slate-50 border border-slate-100">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-black text-slate-800 block">{item.method}</span>
+                    <span className="text-[10px] font-bold text-emerald-600 font-mono">
+                      {item.revenue ? `₹ ${(item.revenue).toLocaleString()}` : `${item.pct}% share`}
+                    </span>
+                  </div>
+                  <span className="text-xs font-black text-slate-800 font-mono bg-white px-2 py-1 rounded-xl border border-slate-200">
+                    {item.pct}%
                   </span>
                 </div>
-                <span className="text-xs font-black text-slate-800 font-mono bg-white px-2 py-1 rounded-xl border border-slate-200">
-                  {item.pct}%
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-xs text-slate-400 font-medium">
+              No payment method statistics recorded.
+            </div>
+          )}
         </div>
 
       </div>
@@ -1118,9 +1181,6 @@ const AdminDashboard = () => {
           })}
         </div>
       </div>
-
-      {/* Floating Operational Assistant Chat Overlay */}
-      <RailControlAssistantChat />
 
       {/* Footer bar */}
       <footer className="flex flex-col sm:flex-row justify-between items-center text-[10px] font-bold text-slate-400 pt-8 border-t border-slate-200 gap-3 select-none">

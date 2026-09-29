@@ -1,0 +1,538 @@
+{
+  "deleted_at": "2026-09-14T06:04:42.497Z",
+  "deleted_records_count": 76,
+  "deleted_items": [
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788354123534",
+      "name": "Test Station Master",
+      "email": "test.sm@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788354231979",
+      "name": "Test Station Master",
+      "email": "test.sm.1788354231960@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788354323264",
+      "name": "Test Station Master",
+      "email": "test.sm.1788354323244@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788354379356",
+      "name": "Test Station Master",
+      "email": "test.sm.1788354379332@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788355006974",
+      "name": "Test Station Master",
+      "email": "test.sm.1788355006944@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788356017792",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788356017713@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788356059624",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788356059577@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788356114239",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788356114183@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788356489274",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788356489202@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788360154606",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788360154418@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788360450808",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788360450732@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "staff_profiles",
+      "id": "stf-1788361056826",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788361056698@railway.com",
+      "reason": "Confirmed test staff account"
+    },
+    {
+      "collection": "profiles",
+      "id": "usr-demo-staff",
+      "name": "STAFF",
+      "email": "staff@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "usr-demo-admin",
+      "name": "ADMIN",
+      "email": "admin@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-test-unprivileged",
+      "name": "Unprivileged Staff Officer",
+      "email": "staff.unprivileged@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788425317914",
+      "name": "Matrix Operational Staff",
+      "email": "matrix.staff.1788425317480@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788425618925",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788425618880@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788428439570",
+      "name": "Matrix Operational Staff",
+      "email": "matrix.staff.1788428439329@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788428467520",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788428467471@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788428848389",
+      "name": "Matrix Operational Staff",
+      "email": "matrix.staff.1788428848104@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788428875640",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788428875596@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788428916030",
+      "name": "Matrix Operational Staff",
+      "email": "matrix.staff.1788428915737@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788428944586",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788428944545@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788428969718",
+      "name": "Matrix Operational Staff",
+      "email": "matrix.staff.1788428969428@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788428998129",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788428998076@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-test-unauth-auth",
+      "name": "Unauth Staff",
+      "email": "unauth.staff@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "usr-test-admin-auth",
+      "name": "Test Admin",
+      "email": "admin.auth@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788494771201",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788494771157@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788499622748",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788499622711@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "usr-admin-test-1",
+      "name": "ADMIN User",
+      "email": "admin@test.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788866105556",
+      "name": "Matrix Operational Staff",
+      "email": "matrix.staff.1788866105125@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788866489181",
+      "name": "Matrix Operational Staff",
+      "email": "matrix.staff.1788866488765@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788881338067",
+      "name": "Matrix Operational Staff",
+      "email": "matrix.staff.1788881337610@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1789358139299",
+      "name": "Matrix Operational Staff",
+      "email": "matrix.staff.1789358138874@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788354123534",
+      "name": "Test Station Master",
+      "email": "test.sm@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788354231979",
+      "name": "Test Station Master",
+      "email": "test.sm.1788354231960@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788354323264",
+      "name": "Test Station Master",
+      "email": "test.sm.1788354323244@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788354379356",
+      "name": "Test Station Master",
+      "email": "test.sm.1788354379332@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788355006974",
+      "name": "Test Station Master",
+      "email": "test.sm.1788355006944@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788356017792",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788356017713@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788356059624",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788356059577@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788356114239",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788356114183@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788356489274",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788356489202@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788360154606",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788360154418@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788360450808",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788360450732@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "profiles",
+      "id": "stf-1788361056826",
+      "name": "Test Staff Officer",
+      "email": "test.staff.1788361056698@railway.com",
+      "reason": "Confirmed test staff profile in profiles"
+    },
+    {
+      "collection": "trains",
+      "id": "t-mgm0bf4fv",
+      "number": "90001",
+      "name": "Persistence Test Express",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "trains",
+      "id": "t-n5lw3k21k",
+      "number": "88000",
+      "name": "Concurrent Train 0",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "trains",
+      "id": "t-te2tiumow",
+      "number": "88001",
+      "name": "Concurrent Train 1",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "trains",
+      "id": "t-gups7fhlc",
+      "number": "88002",
+      "name": "Concurrent Train 2",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "trains",
+      "id": "t-v54s8mc2u",
+      "number": "88003",
+      "name": "Concurrent Train 3",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "trains",
+      "id": "t-8xds28ozg",
+      "number": "88004",
+      "name": "Concurrent Train 4",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "trains",
+      "id": "t-t5fcomg72",
+      "number": "88005",
+      "name": "Concurrent Train 5",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "trains",
+      "id": "t-d1yoeccm2",
+      "number": "88006",
+      "name": "Concurrent Train 6",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "trains",
+      "id": "t-nsul47om6",
+      "number": "88007",
+      "name": "Concurrent Train 7",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "trains",
+      "id": "t-mkyq0rg6g",
+      "number": "88008",
+      "name": "Concurrent Train 8",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "trains",
+      "id": "t-homqa5trc",
+      "number": "88009",
+      "name": "Concurrent Train 9",
+      "reason": "Confirmed automated test train fixture"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-seed-upcoming",
+      "pnr": "8819203941",
+      "status": "confirmed",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-seed-completed",
+      "pnr": "7462573954",
+      "status": "completed",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-seed-cancelled",
+      "pnr": "9842105731",
+      "status": "cancelled",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-staff-test-booking",
+      "pnr": "7788990011",
+      "status": "confirmed",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-test-status-88",
+      "pnr": "1122334455",
+      "status": "cancelled",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-test-101",
+      "pnr": "9990001001",
+      "status": "cancelled",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-test-102",
+      "pnr": "9990001002",
+      "status": "cancelled",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-test-103",
+      "pnr": "9990001003",
+      "status": "cancelled",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-rac-test-101",
+      "pnr": "5566778899",
+      "status": "confirmed",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-test-pay-2",
+      "pnr": "9988776655",
+      "status": "completed",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-test-pay-wallet-1",
+      "pnr": "5544332211",
+      "status": "completed",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-vl9zd5bri",
+      "pnr": "9939109668",
+      "status": "rac",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-ofb5t0rzh",
+      "pnr": "9819505227",
+      "status": "waitlist",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-936xzfd3y",
+      "pnr": "4773894946",
+      "status": "rac",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-f4yrvoqbi",
+      "pnr": "4727834708",
+      "status": "waitlist",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-9okkvrmma",
+      "pnr": "3523811691",
+      "status": "rac",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-dfm0a7hw1",
+      "pnr": "7918930610",
+      "status": "waitlist",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-orcknjj7j",
+      "pnr": "7036093157",
+      "status": "cancelled",
+      "reason": "Confirmed test/seed booking record"
+    },
+    {
+      "collection": "bookings",
+      "id": "bk-seed-1",
+      "pnr": "2345678901",
+      "status": "completed",
+      "reason": "Confirmed test/seed booking record"
+    }
+  ]
+}

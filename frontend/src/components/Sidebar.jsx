@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Train, Users, MessageSquare, Receipt, Settings, ShieldAlert, Home,
   Search, BookOpen, FileText, Clock, XCircle, CreditCard, User, Bell, HelpCircle,
   LogOut, Compass, Ticket, Megaphone, ChevronRight, Calendar, MapPin, Layers, BarChart3, Wallet,
-  Utensils, Radio, ChefHat
+  Utensils, Radio, ChefHat, CheckSquare, Send
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
@@ -17,14 +17,15 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
 
   if (!user) return null;
 
-  const isAdmin = user.role === 'admin' || user.role === 'staff';
+  const isAdmin = user.role === 'admin';
+  const isStaff = user.role === 'staff';
   const isPassenger = user.role === 'passenger';
 
   const adminSections = [
     {
       group: 'MANAGEMENT',
       items: [
-        { name: 'Train Fleet & Schedule Management', path: '/admin/trains', icon: Train },
+        { name: 'Train Fleet & Schedule', path: '/admin/trains', icon: Train },
         { name: 'Train Status & Disruptions', path: '/admin/train-status', icon: ShieldAlert },
         { name: 'Route Management', path: '/admin/routes', icon: Compass },
         { name: 'Station Management', path: '/admin/stations', icon: MapPin },
@@ -33,14 +34,23 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
       ]
     },
     {
+      group: 'STAFF MANAGEMENT',
+      items: [
+        { name: 'Staff Roster & Control', path: '/admin/staff', icon: Users, end: true },
+        { name: 'Staff Assigned Tasks', path: '/admin/staff/duties', icon: CheckSquare },
+        { name: 'Staff Reports & Task Reviews', path: '/admin/staff/reports', icon: Send },
+      ]
+    },
+    {
       group: 'USER MANAGEMENT',
       items: [
-        { name: 'Passengers', path: '/admin/users', icon: User },
+        { name: 'Passenger Directory', path: '/admin/users', icon: User },
       ]
     },
     {
       group: 'BOOKING & TICKETS',
       items: [
+        { name: 'Reservation & Seat Control', path: '/admin/reservations', icon: Layers },
         { name: 'Bookings', path: '/admin/bookings', icon: BookOpen },
         { name: 'Payments', path: '/admin/payments', icon: CreditCard },
         { name: 'Cancellations', path: '/admin/cancellation', icon: XCircle },
@@ -49,26 +59,44 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
     {
       group: 'REPORTS',
       items: [
-        { name: 'Reports', path: '/admin/reports', icon: FileText },
+        { name: 'Reports & Analytics', path: '/admin/reports', icon: FileText },
       ]
     }
+  ];
+
+  const staffMenuItems = [
+    { name: 'Dashboard', path: '/staff/dashboard', icon: LayoutDashboard },
+    { name: 'Train Fleet & Schedule', path: '/staff/trains', icon: Train },
+    { name: 'Train Status & Disruptions', path: '/staff/train-status', icon: ShieldAlert },
+    { name: 'Reservation & Seat Control', path: '/staff/reservations', icon: Layers },
+    { name: 'Bookings Management', path: '/staff/bookings', icon: BookOpen },
+    { name: 'Passenger Directory', path: '/staff/passengers', icon: User },
+    { name: 'Cancellations', path: '/staff/cancellation', icon: XCircle },
+    { name: 'Ticket Checking', path: '/staff/ticket-checking', icon: Ticket },
+    { name: 'RAC / Waiting List', path: '/staff/rac-waiting', icon: Clock },
+    { name: 'Assigned Tasks', path: '/staff/tasks', icon: CheckSquare },
+    { name: 'Submit Task', path: '/staff/daily-report', icon: Send },
+    { name: 'Reports', path: '/staff/reports', icon: FileText },
+    { name: 'Announcements', path: '/staff/announcements', icon: Megaphone },
+    { name: 'Help & Support', path: '/staff/inquiries', icon: HelpCircle },
+    { name: 'Settings', path: '/staff/profile', icon: Settings },
   ];
 
   const menuItems = [];
   if (isAdmin) {
     menuItems.push(
       { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-      { name: 'Train Fleet & Schedule Management', path: '/admin/trains', icon: Train },
+      { name: 'Train Fleet & Schedule', path: '/admin/trains', icon: Train },
       { name: 'Train Status & Disruptions', path: '/admin/train-status', icon: ShieldAlert },
       { name: 'Route Management', path: '/admin/routes', icon: Compass },
       { name: 'Station Management', path: '/admin/stations', icon: MapPin },
       { name: 'Class Management', path: '/admin/classes', icon: Layers },
+      { name: 'Reservation & Seat Control', path: '/admin/reservations', icon: Layers },
       { name: 'Bookings Management', path: '/admin/bookings', icon: BookOpen },
       { name: 'Passenger Directory', path: '/admin/users', icon: User },
       { name: 'Ticket Checking', path: '/admin/ticket-checking', icon: Ticket },
       { name: 'RAC & Waiting List', path: '/admin/rac-waiting', icon: Clock },
-      { name: 'Catering Authorization', path: '/admin/catering', icon: Utensils },
-      { name: 'Catering Vendor Portal', path: '/catering/company', icon: ChefHat },
+      { name: 'Catering Management', path: '/admin/catering', icon: Utensils },
       { name: 'Live Announcements', path: '/admin/announcements', icon: Megaphone },
       { name: 'Inquiry Center', path: '/admin/inquiries', icon: MessageSquare },
       { name: 'Refund Disputes', path: '/admin/refunds', icon: Receipt },
@@ -85,20 +113,17 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
       { name: 'RailControl Meals', path: '/passenger/catering', icon: Utensils },
       { name: 'Cancel Ticket', path: '/passenger/cancellations', icon: XCircle },
       { name: 'Payment History', path: '/passenger/payments', icon: CreditCard },
-      { name: 'Rail Wallet', path: '/passenger/wallet', icon: Wallet },
-      { name: 'Profile', path: '/passenger/profile', icon: User },
-      { name: 'Notifications', path: '/passenger/notifications', icon: Bell },
       { name: 'Help & Support', path: '/passenger/support', icon: HelpCircle },
     );
   }
 
   const handleLogout = () => { 
-    const currentRole = (user?.role || '').toLowerCase();
-    logout(); 
-    if (currentRole === 'admin') {
-      navigate('/admin/login');
+    const role = (user?.role || (window.location.pathname.startsWith('/admin') ? 'admin' : window.location.pathname.startsWith('/staff') ? 'staff' : 'passenger')).toLowerCase();
+    logout(role); 
+    if (role === 'passenger') {
+      window.location.replace('/passenger/login');
     } else {
-      navigate('/login');
+      window.location.replace('/login');
     }
   };
   const handleLinkClick = () => { if (handleClose) handleClose(); };
@@ -144,13 +169,13 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
             </div>
             <div className="overflow-hidden">
               <p className="text-xs font-black text-white truncate leading-tight">
-                {user.full_name || 'Admin User'}
+                {user.full_name || (isAdmin ? 'Admin User' : 'Staff Officer')}
               </p>
               <span
                 className="text-[9px] font-bold uppercase tracking-widest block mt-0.5"
-                style={{ color: '#fca5a5' }}
+                style={{ color: isAdmin ? '#fca5a5' : '#6ee7b7' }}
               >
-                ● Administrator
+                ● {isAdmin ? 'Administrator' : 'Operations Officer'}
               </span>
             </div>
           </div>
@@ -174,7 +199,7 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
           <div className="space-y-4 py-2">
             {/* Admin Dashboard link */}
             <NavLink
-              to="/admin"
+              to="/admin/dashboard"
               end
               onClick={handleLinkClick}
               className={({ isActive }) =>
@@ -202,26 +227,97 @@ const Sidebar = ({ isOpen, mobileOpen, onClose, onCloseMobile }) => {
                     <NavLink
                       key={idx}
                       to={item.path}
+                      end={item.end}
                       onClick={handleLinkClick}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all duration-200 ${
-                          isActive
+                      className={({ isActive }) => {
+                        const isCurrentActive = isActive ||
+                          (item.path === '/admin/staff/duties' && (window.location.pathname === '/admin/staff/duties' || window.location.pathname === '/admin/tasks' || window.location.pathname === '/admin/assigned-tasks')) ||
+                          (item.path === '/admin/staff/reports' && (window.location.pathname === '/admin/staff/reports' || window.location.pathname === '/admin/submit-task' || window.location.pathname === '/admin/daily-report'));
+                        return `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all duration-200 ${
+                          isCurrentActive
                             ? 'bg-primary-600/20 text-primary-300 border-l-2 border-primary-500 pl-3'
                             : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'
-                        }`
-                      }
+                        }`;
+                      }}
                     >
-                      {({ isActive }) => (
-                        <>
-                          <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-primary-400' : 'text-slate-500'}`} />
-                          <span>{item.name}</span>
-                        </>
-                      )}
+                      {({ isActive }) => {
+                        const isCurrentActive = isActive ||
+                          (item.path === '/admin/staff/duties' && (window.location.pathname === '/admin/staff/duties' || window.location.pathname === '/admin/tasks' || window.location.pathname === '/admin/assigned-tasks')) ||
+                          (item.path === '/admin/staff/reports' && (window.location.pathname === '/admin/staff/reports' || window.location.pathname === '/admin/submit-task' || window.location.pathname === '/admin/daily-report'));
+                        return (
+                          <>
+                            <Icon className={`h-4 w-4 flex-shrink-0 ${isCurrentActive ? 'text-primary-400' : 'text-slate-500'}`} />
+                            <span>{item.name}</span>
+                          </>
+                        );
+                      }}
                     </NavLink>
                   );
                 })}
               </div>
             ))}
+
+            <div className="pt-3">
+              <button
+                onClick={() => { handleLinkClick(); handleLogout(); }}
+                className="w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 text-left"
+              >
+                <LogOut className="h-4 w-4 flex-shrink-0 text-slate-500" />
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        ) : isStaff ? (
+          <div className="space-y-1 py-2">
+            {staffMenuItems.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={idx}
+                  to={item.path}
+                  end={item.path === '/staff/dashboard' || item.path === '/staff'}
+                  onClick={handleLinkClick}
+                  className={({ isActive }) => {
+                    const isCurrentActive = isActive || 
+                      (item.path === '/staff/dashboard' && (window.location.pathname === '/staff' || window.location.pathname === '/staff/dashboard')) ||
+                      (item.path === '/staff/trains' && (window.location.pathname === '/staff/trains' || window.location.pathname === '/staff/schedules')) ||
+                      (item.path === '/staff/train-status' && (window.location.pathname === '/staff/train-status' || window.location.pathname === '/staff/status')) ||
+                      (item.path === '/staff/reservations' && (window.location.pathname === '/staff/reservations' || window.location.pathname === '/staff/seats')) ||
+                      (item.path === '/staff/bookings' && (window.location.pathname === '/staff/bookings' || window.location.pathname === '/staff/bookings-management')) ||
+                      (item.path === '/staff/passengers' && (window.location.pathname === '/staff/passengers' || window.location.pathname === '/staff/users')) ||
+                      (item.path === '/staff/cancellation' && (window.location.pathname === '/staff/cancellation' || window.location.pathname === '/staff/cancellations' || window.location.pathname === '/staff/refunds')) ||
+                      (item.path === '/staff/tasks' && (window.location.pathname === '/staff/tasks' || window.location.pathname === '/staff/duties' || window.location.pathname === '/staff/assigned-tasks')) ||
+                      (item.path === '/staff/daily-report' && (window.location.pathname === '/staff/daily-report' || window.location.pathname === '/staff/submit-task')) ||
+                      (item.path === '/staff/ticket-checking' && (window.location.pathname === '/staff/ticket-checking' || window.location.pathname === '/staff/checking'));
+                    return `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all duration-200 ${
+                      isCurrentActive
+                        ? 'bg-emerald-600/20 text-emerald-300 border-l-2 border-emerald-500 pl-3'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-slate-100'
+                    }`;
+                  }}
+                >
+                  {({ isActive }) => {
+                    const isCurrentActive = isActive || 
+                      (item.path === '/staff/dashboard' && (window.location.pathname === '/staff' || window.location.pathname === '/staff/dashboard')) ||
+                      (item.path === '/staff/trains' && (window.location.pathname === '/staff/trains' || window.location.pathname === '/staff/schedules')) ||
+                      (item.path === '/staff/train-status' && (window.location.pathname === '/staff/train-status' || window.location.pathname === '/staff/status')) ||
+                      (item.path === '/staff/reservations' && (window.location.pathname === '/staff/reservations' || window.location.pathname === '/staff/seats')) ||
+                      (item.path === '/staff/bookings' && (window.location.pathname === '/staff/bookings' || window.location.pathname === '/staff/bookings-management')) ||
+                      (item.path === '/staff/passengers' && (window.location.pathname === '/staff/passengers' || window.location.pathname === '/staff/users')) ||
+                      (item.path === '/staff/cancellation' && (window.location.pathname === '/staff/cancellation' || window.location.pathname === '/staff/cancellations' || window.location.pathname === '/staff/refunds')) ||
+                      (item.path === '/staff/tasks' && (window.location.pathname === '/staff/tasks' || window.location.pathname === '/staff/duties' || window.location.pathname === '/staff/assigned-tasks')) ||
+                      (item.path === '/staff/daily-report' && (window.location.pathname === '/staff/daily-report' || window.location.pathname === '/staff/submit-task')) ||
+                      (item.path === '/staff/ticket-checking' && (window.location.pathname === '/staff/ticket-checking' || window.location.pathname === '/staff/checking'));
+                    return (
+                      <>
+                        <Icon className={`h-4 w-4 flex-shrink-0 ${isCurrentActive ? 'text-emerald-400' : 'text-slate-500'}`} />
+                        <span>{item.name}</span>
+                      </>
+                    );
+                  }}
+                </NavLink>
+              );
+            })}
 
             <div className="pt-3">
               <button

@@ -1,13 +1,7 @@
-const fs = require('fs');
-const path = require('path');
+console.error('⛔ OPERATION BLOCKED: cleanDb.js has been permanently decommissioned to protect train master records.');
+console.error('Train data filtering and deletion is strictly prohibited by system data integrity rules.');
+process.exit(1);
 
-const dbPath = path.join(__dirname, '../../data/db.json');
-const backupPath = path.join(__dirname, '../../data/db.json.backup-before-dummy-cleanup');
-
-if (fs.existsSync(dbPath)) {
-  fs.copyFileSync(dbPath, backupPath);
-  console.log('✅ Created backup at backend/data/db.json.backup-before-dummy-cleanup');
-}
 
 const data = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
 const trainsMap = new Map(data.trains || []);

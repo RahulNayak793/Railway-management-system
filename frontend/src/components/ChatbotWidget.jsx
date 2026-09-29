@@ -51,14 +51,35 @@ const ChatbotWidget = () => {
         }
       ]);
     } catch (err) {
-      console.error(err);
-      setMessages(prev => [
-        ...prev, 
-        { 
-          sender: 'bot', 
-          text: 'I am experiencing connection latency. You can also use the navigation bar to access PNR, E-Catering, or Live Tracking directly.' 
-        }
-      ]);
+      console.error('Chatbot request error:', err);
+      const pnrMatch = text.match(/\b\d{10}\b/);
+      if (pnrMatch) {
+        const pnr = pnrMatch[0];
+        setMessages(prev => [
+          ...prev, 
+          { 
+            sender: 'bot', 
+            text: `🔍 **PNR Status Inquiry: ${pnr}**\n\nYou can verify the real-time reservation status, coach/berth allocation, and passenger chart directly on the PNR Status page.`,
+            quickActions: [
+              { label: `View PNR ${pnr} Status`, route: `/passenger/pnr?pnr=${pnr}` },
+              { label: 'View My Bookings', route: '/passenger/bookings' }
+            ]
+          }
+        ]);
+      } else {
+        setMessages(prev => [
+          ...prev, 
+          { 
+            sender: 'bot', 
+            text: 'I can assist you with your journey! Use the options below to check PNR status, order meals, or track live trains.',
+            quickActions: [
+              { label: 'Check PNR Status', route: '/passenger/pnr' },
+              { label: 'Order Seat Meals', route: '/passenger/catering' },
+              { label: 'Track Live Train', route: '/passenger/track' }
+            ]
+          }
+        ]);
+      }
     } finally {
       setLoading(false);
     }

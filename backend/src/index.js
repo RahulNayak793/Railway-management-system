@@ -1,3 +1,4 @@
+// RailControl System Server Entry Point - Updated Task Routes
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -39,6 +40,13 @@ app.use((req, res, next) => {
   next();
 });
 
+const { getRailwaySystemStatus } = require('./services/railwayIntegrationService');
+
+// Railway System Connection & Data Source Status Endpoint
+app.get(['/api/railway-system/status', '/railway-system/status'], (req, res) => {
+  return res.json(getRailwaySystemStatus());
+});
+
 // Import Routes
 const authRoutes = require('./routes/auth');
 const trainRoutes = require('./routes/trains');
@@ -51,11 +59,19 @@ const aiRoutes = require('./routes/ai');
 const notificationsRoutes = require('./routes/notifications');
 const cateringRoutes = require('./routes/catering');
 const sosRoutes = require('./routes/sos');
+const staffRoutes = require('./routes/staff');
 const { router: trackingRoutes } = require('./routes/tracking');
+const { router: passengerRoutes } = require('./routes/passengers');
 
 // Mount Routes for both /api/* and /* Vercel serverless pathing
+app.use('/api/passengers', passengerRoutes);
+app.use('/passengers', passengerRoutes);
+
 app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes);
+
+app.use('/api/staff', staffRoutes);
+app.use('/staff', staffRoutes);
 
 app.use('/api/trains', trainRoutes);
 app.use('/trains', trainRoutes);
@@ -68,6 +84,9 @@ app.use('/bookings', bookingRoutes);
 
 app.use('/api/payments', paymentRoutes);
 app.use('/payments', paymentRoutes);
+
+app.use('/api/wallet', paymentRoutes);
+app.use('/wallet', paymentRoutes);
 
 app.use('/api/support', supportRoutes);
 app.use('/support', supportRoutes);

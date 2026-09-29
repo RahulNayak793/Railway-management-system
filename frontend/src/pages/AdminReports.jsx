@@ -570,27 +570,35 @@ const AdminReports = () => {
             </div>
 
             <div className="pt-5 pb-2">
-              <div className="flex items-end justify-between gap-2 h-44 border-b border-slate-200 px-2 pb-2">
+              <div className="flex items-end justify-between gap-1.5 h-44 border-b border-slate-200 px-1 pb-2">
                 {periodTrendData.map((item, idx) => {
-                  const heightPct = Math.max(10, Math.round((item.bookings / maxBookingsVal) * 100));
+                  const heightPct = Math.max(8, Math.round((item.bookings / maxBookingsVal) * 100));
                   return (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-1 group relative">
+                    <div key={idx} className="flex-1 h-full flex flex-col justify-end items-center group relative">
                       {/* Tooltip */}
-                      <div className="opacity-0 group-hover:opacity-100 transition duration-150 absolute -top-8 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-md whitespace-nowrap z-10 pointer-events-none">
+                      <div className="opacity-0 group-hover:opacity-100 transition duration-150 absolute -top-8 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-md whitespace-nowrap z-20 pointer-events-none">
                         {item.label}: {item.bookings} bookings
                       </div>
-                      <div
-                        className="w-full bg-gradient-to-t from-blue-600 to-indigo-500 rounded-t-lg transition-all duration-300 group-hover:from-blue-700 group-hover:to-indigo-600"
-                        style={{ height: `${heightPct}%` }}
-                      ></div>
+                      <div className="w-full bg-slate-100 rounded-t-lg h-full flex items-end overflow-hidden">
+                        <div
+                          className="w-full bg-gradient-to-t from-blue-600 to-indigo-500 rounded-t-lg transition-all duration-300 group-hover:from-blue-700 group-hover:to-indigo-600"
+                          style={{ height: `${heightPct}%` }}
+                        ></div>
+                      </div>
                     </div>
                   );
                 })}
               </div>
-              <div className="flex justify-between px-2 pt-2 text-[10px] font-bold text-slate-500 font-mono">
-                {periodTrendData.map((item, idx) => (
-                  <span key={idx} className="text-center truncate max-w-[40px]">{item.label}</span>
-                ))}
+              <div className="flex justify-between px-1 pt-2 text-[9px] font-bold text-slate-400 font-mono">
+                {periodTrendData.map((item, idx) => {
+                  const step = periodTrendData.length > 20 ? 4 : (periodTrendData.length > 10 ? 2 : 1);
+                  const showLabel = idx % step === 0 || idx === periodTrendData.length - 1;
+                  return (
+                    <span key={idx} className="flex-1 text-center truncate">
+                      {showLabel ? item.label : ''}
+                    </span>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -619,10 +627,10 @@ const AdminReports = () => {
               </span>
             </div>
 
-            <div className="pt-4 space-y-3">
+            <div className="pt-4 space-y-3 max-h-72 overflow-y-auto pr-1 custom-scrollbar">
               {periodTrendData.map((item, idx) => {
-                const totalItemRev = item.revenue + item.refunds || 1;
-                const revPct = Math.round((item.revenue / totalItemRev) * 100);
+                const totalItemRev = (item.revenue || 0) + (item.refunds || 0) || 1;
+                const revPct = Math.round(((item.revenue || 0) / totalItemRev) * 100);
                 const refPct = 100 - revPct;
 
                 return (
@@ -630,8 +638,8 @@ const AdminReports = () => {
                     <div className="flex justify-between text-xs font-bold">
                       <span className="text-slate-700 font-mono text-[11px]">{item.label}</span>
                       <div className="space-x-3 text-[11px] font-mono">
-                        <span className="text-emerald-600">₹ {item.revenue.toLocaleString()}</span>
-                        <span className="text-rose-500">₹ {item.refunds.toLocaleString()}</span>
+                        <span className="text-emerald-600">₹ {(item.revenue || 0).toLocaleString()}</span>
+                        <span className="text-rose-500">₹ {(item.refunds || 0).toLocaleString()}</span>
                       </div>
                     </div>
                     <div className="flex h-3 w-full rounded-full overflow-hidden bg-slate-100">

@@ -44,8 +44,8 @@ const PassengerFeedback = () => {
       {
         id: 'FB-98412',
         pnr_number: '2489104820',
+        category_id: 'catering',
         category: 'Food & Pantry Service',
-        category_icon: Utensils,
         rating: 5,
         comments: 'The Hot Thali served at New Delhi Station was fresh, warm, and delivered right to my seat on time!',
         status: 'Resolved & Addressed',
@@ -55,8 +55,8 @@ const PassengerFeedback = () => {
       {
         id: 'FB-91204',
         pnr_number: '9841205912',
+        category_id: 'cleanliness',
         category: 'Coach Cleanliness & Hygiene',
-        category_icon: Sparkles,
         rating: 4,
         comments: 'Cleanliness in 2A compartment was good, washrooms were disinfected regularly during trip.',
         status: 'Under Review by IRCTC Quality Cell',
@@ -65,6 +65,15 @@ const PassengerFeedback = () => {
       }
     ];
   });
+
+  // Helper to safely obtain Lucide icon component without component-in-JSON serialization bugs
+  const getCategoryIcon = (catId, catLabel, catIcon) => {
+    if (typeof catIcon === 'function' || (typeof catIcon === 'object' && catIcon && catIcon.$$typeof)) {
+      return catIcon;
+    }
+    const found = categories.find(c => c.id === catId || c.label === catLabel || c.id === catLabel);
+    return found ? found.icon : MessageSquare;
+  };
 
   // Sync feedback history to localStorage
   useEffect(() => {
@@ -137,8 +146,8 @@ const PassengerFeedback = () => {
       const newFeedback = {
         id: `FB-${Math.floor(10000 + Math.random() * 90000)}`,
         pnr_number: selectedPnr || 'PNR Not Specified',
+        category_id: selectedCategory,
         category: categories.find(c => c.id === selectedCategory)?.label || 'General Service',
-        category_icon: categories.find(c => c.id === selectedCategory)?.icon || MessageSquare,
         rating,
         comments: comments.trim(),
         status: 'Under Review by IRCTC Quality Cell',
@@ -351,7 +360,7 @@ const PassengerFeedback = () => {
 
             <div className="space-y-3">
               {feedbackHistory.map((fb) => {
-                const IconComp = fb.category_icon || MessageSquare;
+                const IconComp = getCategoryIcon(fb.category_id, fb.category, fb.category_icon);
                 return (
                   <div key={fb.id} className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">

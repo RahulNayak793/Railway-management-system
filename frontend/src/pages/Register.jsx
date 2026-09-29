@@ -3,17 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   User, Shield, Lock, Mail, Phone, ArrowRight, ShieldCheck, 
-  CheckCircle, RefreshCw, Eye, EyeOff, FileText, Sparkles, Award, CreditCard
+  CheckCircle, Eye, EyeOff, FileText, Sparkles, Award, CreditCard
 } from 'lucide-react';
-
-const generateCaptcha = () => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-  let result = '';
-  for (let i = 0; i < 5; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
 
 const Register = () => {
   const { signup, error, setError } = useAuth();
@@ -30,15 +21,6 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
-
-  // Captcha
-  const [captchaCode, setCaptchaCode] = useState(() => generateCaptcha());
-  const [captchaInput, setCaptchaInput] = useState('');
-
-  const refreshCaptcha = () => {
-    setCaptchaCode(generateCaptcha());
-    setCaptchaInput('');
-  };
 
   // Password strength logic
   const getPasswordStrength = () => {
@@ -67,12 +49,6 @@ const Register = () => {
       return;
     }
 
-    if (captchaInput.trim() !== captchaCode) {
-      setError('Invalid CAPTCHA code. Please re-enter the verification code.');
-      refreshCaptcha();
-      return;
-    }
-
     if (!agreeTerms) {
       setError('You must accept the IRCTC Travel Terms & Conditions to register.');
       return;
@@ -93,7 +69,6 @@ const Register = () => {
       navigate('/passenger');
     } catch (err) {
       setError(err.message || 'Registration failed. Please check your information.');
-      refreshCaptcha();
     } finally {
       setFormLoading(false);
     }
@@ -312,24 +287,6 @@ const Register = () => {
                   </span>
                 )}
               </div>
-            </div>
-
-            {/* CAPTCHA Code Box */}
-            <div className="flex items-center space-x-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-              <div className="flex items-center space-x-2 bg-slate-900 text-cyan-400 px-4 py-2 rounded-xl font-mono text-sm font-black tracking-widest select-none shadow">
-                <span>{captchaCode}</span>
-                <button type="button" onClick={refreshCaptcha} className="text-slate-400 hover:text-white">
-                  <RefreshCw className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <input
-                type="text"
-                required
-                placeholder="Enter CAPTCHA"
-                value={captchaInput}
-                onChange={(e) => setCaptchaInput(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono font-bold text-slate-800 focus:outline-none"
-              />
             </div>
 
             {/* Terms Agreement Checkbox */}

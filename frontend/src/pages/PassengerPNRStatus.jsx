@@ -3,9 +3,10 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   FileText, Search, Train, Calendar, Clock, MapPin, 
   CheckCircle2, AlertCircle, RefreshCw, ArrowRight, Download, Printer, ShieldCheck,
-  Sparkles, TrendingUp, Utensils
+  Sparkles, TrendingUp, Utensils, AlertTriangle
 } from 'lucide-react';
 import api from '../services/api';
+import { getClassFullName } from '../utils/trainClasses';
 
 const PassengerPNRStatus = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,36 +36,10 @@ const PassengerPNRStatus = () => {
         throw new Error('PNR record not found');
       }
     } catch (err) {
-      console.warn('Backend PNR fetch fallback triggered');
-      // Fallback Mock PNR data for seamless user demonstration
-      const mockResult = {
-        id: 'bk-pnr-demo',
-        pnr_number: queryPnr.trim(),
-        passenger_name: 'Rahul Sharma',
-        passenger_age: 32,
-        passenger_gender: 'Male',
-        train_id: 't1',
-        coach_class: '3A',
-        total_fare: 1450,
-        status: 'confirmed',
-        created_at: new Date().toISOString(),
-        train: {
-          train_number: '12952',
-          train_name: 'Rajdhani Express',
-          status: 'on_time',
-          delay_minutes: 0
-        },
-        allocations: [
-          { seat_id: 's1', coach_number: 'B1', seat_number: 24, berth_type: 'LB', passenger_name: 'Rahul Sharma' },
-          { seat_id: 's2', coach_number: 'B1', seat_number: 25, berth_type: 'MB', passenger_name: 'Priya Sharma' }
-        ],
-        payment: {
-          payment_status: 'completed',
-          amount: 1450,
-          payment_method: 'UPI'
-        }
-      };
-      setPnrData(mockResult);
+      console.warn('Backend PNR fetch error:', err);
+      const errMsg = err.response?.data?.error || err.response?.data?.message || err.customMessage || 'PNR record not found. Please verify your 10-digit PNR number.';
+      setError(errMsg);
+      setPnrData(null);
     } finally {
       setLoading(false);
     }
@@ -163,38 +138,82 @@ const PassengerPNRStatus = () => {
           {/* Header Bar */}
           <div className="bg-slate-900 text-white p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">PNR NUMBER</span>
                 <span className="font-mono text-lg font-black text-primary-400">{pnrData.pnr_number}</span>
+                <span className="bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded">
+                  IRCTC ID: {pnrData.irctc_id || 'Not Provided'}
+                </span>
               </div>
               <h2 className="text-base font-extrabold mt-1">
                 {pnrData.train?.train_name || 'Rajdhani Express'} <span className="font-mono text-slate-400">#{pnrData.train?.train_number || '12952'}</span>
               </h2>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className={`px-4 py-1.5 rounded-full font-black text-xs uppercase tracking-wider ${
-                pnrData.status === 'confirmed' || pnrData.status === 'CNF'
+                (pnrData.booking_status === 'CNF' || pnrData.status === 'confirmed')
                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : pnrData.status === 'rac'
+                  : (pnrData.booking_status === 'RAC' || pnrData.status === 'rac')
                   ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                   : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
               }`}>
-                ● Status: {pnrData.status ? pnrData.status.toUpperCase() : 'CONFIRMED'}
+                ● Status: {pnrData.booking_status || (pnrData.status ? pnrData.status.toUpperCase() : 'CNF')}{pnrData.waitlist_type ? ` (${pnrData.waitlist_type} ${pnrData.current_status_number || pnrData.booking_status_number || ''})` : ''}
               </span>
+              {pnrData.boarding_eligibility && (
+                <span className="px-3 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
+                  Eligibility: {pnrData.boarding_eligibility.replace(/_/g, ' ')}
+                </span>
+              )}
             </div>
           </div>
 
           <div className="p-6 sm:p-8 space-y-6">
+            {/* Operational Travel Alert Banner */}
+            {((pnrData.operational_disruption && pnrData.operational_disruption.status !== 'on_time') || (pnrData.train?.status && pnrData.train.status !== 'on_time')) && (() => {
+              const dis = pnrData.operational_disruption || {};
+              const st = (dis.status || pnrData.train?.status || 'delayed').toLowerCase();
+              const delay = dis.delay_minutes ?? (pnrData.train?.delay_minutes || 0);
+              return (
+                <div className="flex items-center space-x-3 rounded-2xl bg-amber-600 text-white p-4 shadow-sm border border-amber-700">
+                  <AlertTriangle className="h-6 w-6 shrink-0 text-amber-100 animate-pulse" />
+                  <div className="flex-1 text-xs">
+                    <h4 className="text-xs font-black uppercase tracking-wide flex items-center gap-1.5">
+                      ⚠ IMPORTANT TRAVEL UPDATE: {st === 'cancelled' ? 'TRAIN CANCELLED' : st === 'delayed' ? `TRAIN DELAYED BY ${delay} MINUTES` : `TRAIN ${st.toUpperCase()}`}
+                    </h4>
+                    <p className="text-[11px] text-amber-100 font-medium mt-0.5 leading-snug">
+                      {dis.announcement_message || `This train is currently ${st}${delay ? ' by ' + delay + ' minutes' : ''}. Please check the latest operational status before travelling.`}
+                    </p>
+                    {dis.platform && (
+                      <span className="inline-block mt-1.5 font-mono font-bold text-[10px] bg-amber-800 px-2.5 py-0.5 rounded text-amber-100 border border-amber-700">
+                        Departing from Platform {dis.platform}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Route & Schedule details */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-5 rounded-2xl border border-slate-100 text-xs">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">From & To Station</span>
-                <p className="font-extrabold text-slate-800 text-sm">New Delhi (NDLS) &rarr; Mumbai (MMCT)</p>
+                <p className="font-extrabold text-slate-800 text-sm">
+                  {pnrData.source_station_name || pnrData.from_station_name || 'New Delhi (NDLS)'} &rarr; {pnrData.destination_station_name || pnrData.to_station_name || 'Mumbai Central (MMCT)'}
+                </p>
               </div>
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Journey Date & Class</span>
-                <p className="font-extrabold text-slate-800 text-sm">24 Jul 2026 • Class {pnrData.coach_class || '3A'}</p>
+                <p className="font-extrabold text-slate-800 text-sm flex items-center gap-1.5 flex-wrap">
+                  <span>{pnrData.travel_date || ''} • {getClassFullName(pnrData.coach_class || '3A')}</span>
+                  {pnrData.quota === 'TATKAL' ? (
+                    <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-[10px]">
+                      TATKAL
+                    </span>
+                  ) : (
+                    <span className="text-xs text-slate-500 font-bold">({pnrData.quota || 'GN'})</span>
+                  )}
+                </p>
               </div>
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Fare Paid</span>
@@ -251,6 +270,7 @@ const PassengerPNRStatus = () => {
                     <tr>
                       <th className="px-4 py-3">#</th>
                       <th className="px-4 py-3">Passenger Name</th>
+                      <th className="px-4 py-3">IRCTC ID</th>
                       <th className="px-4 py-3">Coach / Seat No</th>
                       <th className="px-4 py-3">Berth Type</th>
                       <th className="px-4 py-3">Booking Status</th>
@@ -259,33 +279,61 @@ const PassengerPNRStatus = () => {
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                     {(pnrData.allocations && pnrData.allocations.length > 0) ? (
-                      pnrData.allocations.map((alloc, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50">
-                          <td className="px-4 py-3 font-bold">{idx + 1}</td>
-                          <td className="px-4 py-3 font-extrabold text-slate-800">{alloc.passenger_name || pnrData.passenger_name || 'Passenger'}</td>
-                          <td className="px-4 py-3 font-mono font-bold text-primary-700">{alloc.coach_number || 'B1'} / {alloc.seat_number || 24}</td>
-                          <td className="px-4 py-3 font-bold">{alloc.berth_type || 'LB'} (Lower)</td>
-                          <td className="px-4 py-3 font-semibold text-slate-500">CNF / {alloc.coach_number || 'B1'} / {alloc.seat_number || 24}</td>
-                          <td className="px-4 py-3">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
-                              CONFIRMED
-                            </span>
-                          </td>
-                        </tr>
-                      ))
+                      pnrData.allocations.map((alloc, idx) => {
+                        const defaultCoach = pnrData.coach_class === '1A' ? 'H1' : pnrData.coach_class === '2A' ? 'A1' : pnrData.coach_class === '3A' ? 'B1' : pnrData.coach_class === 'SL' ? 'S1' : 'C1';
+                        const coachStr = alloc.coach_number || pnrData.coach_number || defaultCoach;
+                        const seatStr = alloc.seat_number || pnrData.seat_number || (idx + 1);
+                        const berthStr = alloc.berth_type || pnrData.berth_type || 'LB';
+                        const statusStr = String(pnrData.status || pnrData.booking_status || 'CONFIRMED').toUpperCase();
+                        const isCNF = statusStr === 'CONFIRMED' || statusStr === 'CNF';
+
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            <td className="px-4 py-3 font-bold">{idx + 1}</td>
+                            <td className="px-4 py-3 font-extrabold text-slate-800">{alloc.passenger_name || pnrData.passenger_name || 'Passenger'}</td>
+                            <td className="px-4 py-3 font-mono font-bold text-orange-700">
+                              {alloc.irctc_id || (pnrData.irctc_id && (!pnrData.allocations || pnrData.allocations.length === 1) ? pnrData.irctc_id : '—')}
+                            </td>
+                            <td className="px-4 py-3 font-mono font-bold text-primary-700">{isCNF ? `${coachStr} / ${seatStr}` : '—'}</td>
+                            <td className="px-4 py-3 font-bold">{isCNF ? `${berthStr}` : '—'}</td>
+                            <td className="px-4 py-3 font-semibold text-slate-500">{isCNF ? `CNF / ${coachStr} / ${seatStr}` : statusStr}</td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                isCNF ? 'bg-emerald-100 text-emerald-800' : statusStr.includes('RAC') ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {statusStr}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
-                      <tr className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-bold">1</td>
-                        <td className="px-4 py-3 font-extrabold text-slate-800">{pnrData.passenger_name || 'Rahul Sharma'}</td>
-                        <td className="px-4 py-3 font-mono font-bold text-primary-700">B1 / 24</td>
-                        <td className="px-4 py-3 font-bold">LB (Lower Berth)</td>
-                        <td className="px-4 py-3 font-semibold text-slate-500">CNF / B1 / 24</td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
-                            CONFIRMED
-                          </span>
-                        </td>
-                      </tr>
+                      (() => {
+                        const defaultCoach = pnrData.coach_class === '1A' ? 'H1' : pnrData.coach_class === '2A' ? 'A1' : pnrData.coach_class === '3A' ? 'B1' : pnrData.coach_class === 'SL' ? 'S1' : 'C1';
+                        const coachStr = pnrData.coach_number || defaultCoach;
+                        const seatStr = pnrData.seat_number || '01';
+                        const berthStr = pnrData.berth_type || 'LB';
+                        const statusStr = String(pnrData.status || pnrData.booking_status || 'CONFIRMED').toUpperCase();
+                        const isCNF = statusStr === 'CONFIRMED' || statusStr === 'CNF';
+
+                        return (
+                          <tr className="hover:bg-slate-50">
+                            <td className="px-4 py-3 font-bold">1</td>
+                            <td className="px-4 py-3 font-extrabold text-slate-800">{pnrData.passenger_name || 'Passenger'}</td>
+                            <td className="px-4 py-3 font-mono font-bold text-orange-700">{pnrData.irctc_id || '—'}</td>
+                            <td className="px-4 py-3 font-mono font-bold text-primary-700">{isCNF ? `${coachStr} / ${seatStr}` : '—'}</td>
+                            <td className="px-4 py-3 font-bold">{isCNF ? `${berthStr}` : '—'}</td>
+                            <td className="px-4 py-3 font-semibold text-slate-500">{isCNF ? `CNF / ${coachStr} / ${seatStr}` : statusStr}</td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                isCNF ? 'bg-emerald-100 text-emerald-800' : statusStr.includes('RAC') ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {statusStr}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })()
                     )}
                   </tbody>
                 </table>

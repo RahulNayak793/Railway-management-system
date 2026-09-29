@@ -6,9 +6,12 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 const CompanyCatering = () => {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const isStaffOrAdmin = user?.role === 'staff' || user?.role === 'admin';
 
   // Active Company Selection (For demo testing & Vendor isolation)
   const [activeVendorId, setActiveVendorId] = useState('comp-1');
@@ -48,6 +51,33 @@ const CompanyCatering = () => {
     { id: 'comp-4', name: 'Coastal Rail Foods', fssai: '11222005000109', station: 'MAQ, UD, MAO, ERS, SBC' },
     { id: 'comp-5', name: 'Western Gourmet Express', fssai: '10821009000341', station: 'MMCT, BDTS, ST, BRC, ADI' }
   ];
+
+  const [vendorList, setVendorList] = useState(DEMO_VENDORS);
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const res = await api.get('/catering/companies');
+        const apiComps = res.data?.companies;
+        if (Array.isArray(apiComps) && apiComps.length > 0) {
+          const mapped = apiComps.map(c => ({
+            id: c.id,
+            name: c.company_name || c.legal_name || c.name,
+            fssai: c.fssai_number || c.fssai || 'N/A',
+            station: Array.isArray(c.stations) ? c.stations.join(', ') : (c.station || c.address || 'NDLS')
+          }));
+
+          // Merge API vendors while avoiding duplicates
+          const seenIds = new Set(mapped.map(m => m.id));
+          const fallbackDemos = DEMO_VENDORS.filter(d => !seenIds.has(d.id));
+          setVendorList([...mapped, ...fallbackDemos]);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch dynamic catering companies list:', err);
+      }
+    };
+    fetchCompanies();
+  }, []);
 
   // Fetch Vendor Profile & Data
   const fetchVendorData = async () => {
@@ -197,7 +227,7 @@ const CompanyCatering = () => {
   });
 
   // Metrics
-  const activeCompanyObj = DEMO_VENDORS.find(v => v.id === activeVendorId) || DEMO_VENDORS[0];
+  const activeCompanyObj = vendorList.find(v => v.id === activeVendorId) || vendorList[0] || DEMO_VENDORS[0];
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
   return (
@@ -222,17 +252,17 @@ const CompanyCatering = () => {
           </div>
         </div>
 
-        {/* Demo Vendor Switcher Dropdown */}
+        {/* Vendor Switcher Dropdown */}
         <div className="bg-slate-900/90 border border-slate-700 p-3 rounded-xl min-w-[240px]">
           <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-            Switch Authorized Vendor (Demo):
+            Switch Catering Vendor:
           </label>
           <select
             value={activeVendorId}
             onChange={(e) => setActiveVendorId(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 text-white font-bold text-xs rounded-lg px-2.5 py-2 focus:outline-none focus:border-amber-500"
+            className="w-full bg-slate-800 border border-slate-700 text-white font-bold text-xs rounded-lg px-2.5 py-2 focus:outline-none focus:border-amber-500 cursor-pointer"
           >
-            {DEMO_VENDORS.map(v => (
+            {vendorList.map(v => (
               <option key={v.id} value={v.id}>{v.name} ({v.fssai})</option>
             ))}
           </select>
@@ -263,12 +293,23 @@ const CompanyCatering = () => {
         {activeTab === 'menu' && (
           <button
             onClick={handleOpenAddDish}
-            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-1.5"
+            className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-xs rounded-xl shadow-lg flex items-center gap-2 transition transform active:scale-95 cursor-pointer shrink-0"
           >
-            <Plus className="h-4 w-4" /> Add New Dish
+            <Plus className="h-4.5 w-4.5" />
+            <span>+ Add Food Option</span>
           </button>
         )}
       </div>
+
+      {isStaffOrAdmin && (
+        <div className="bg-blue-950/50 border border-blue-800/60 p-4 rounded-xl mb-6 text-xs text-blue-200 flex items-center gap-3">
+          <ShieldCheck className="h-5 w-5 text-blue-400 shrink-0" />
+          <div>
+            <span className="font-bold text-blue-300 block uppercase tracking-wider">Railway Operational Mode ({user?.role?.toUpperCase()})</span>
+            Staff and Admin monitor station delivery statuses, verify train manifests, and handle service issues. External food delivery partners own and manage food menu items and prices.
+          </div>
+        </div>
+      )}
 
       {/* ==================== TAB 1: MENU MANAGEMENT ==================== */}
       {activeTab === 'menu' && (
@@ -285,18 +326,28 @@ const CompanyCatering = () => {
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-400 text-sm focus:outline-none focus:border-amber-500"
               />
             </div>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500"
-            >
-              <option value="all">All Categories</option>
-              <option value="Thali">Thalis & Meals</option>
-              <option value="Main Course">Main Course & Biryanis</option>
-              <option value="South Indian">South Indian Tiffins</option>
-              <option value="Snacks">Snacks & Rolls</option>
-              <option value="Desserts">Desserts & Beverages</option>
-            </select>
+            <div className="flex items-center gap-3">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="bg-slate-800 border border-slate-700 text-slate-200 text-sm font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:border-amber-500"
+              >
+                <option value="all">All Categories</option>
+                <option value="Thali">Thalis & Meals</option>
+                <option value="Main Course">Main Course & Biryanis</option>
+                <option value="South Indian">South Indian Tiffins</option>
+                <option value="Snacks">Snacks & Rolls</option>
+                <option value="Desserts">Desserts & Beverages</option>
+              </select>
+
+              <button
+                onClick={handleOpenAddDish}
+                className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-md flex items-center gap-1.5 transition active:scale-95 cursor-pointer shrink-0"
+              >
+                <Plus className="h-4 w-4" />
+                <span>+ Add Food Item</span>
+              </button>
+            </div>
           </div>
 
           {/* Menu Items Grid */}
@@ -415,11 +466,28 @@ const CompanyCatering = () => {
                       <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold rounded-md">
                         📍 Station: {order.delivery_station_code || order.station_code}
                       </span>
+                      {(order.food_entitlement === 'COMPLIMENTARY' || order.payment_status === 'COMPLIMENTARY' || order.ticket_class === '1A') && (
+                        <>
+                          <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-md flex items-center gap-1">
+                            <ShieldCheck className="h-3.5 w-3.5" /> RailControl Food Entitlement: 1A
+                          </span>
+                          <span className="px-2.5 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold rounded-md">
+                            Payment Type: COMPLIMENTARY
+                          </span>
+                        </>
+                      )}
                     </div>
 
-                    <div className="text-xs text-slate-300 font-semibold mb-3">
-                      Passenger: {order.passenger_name} • Seat: Coach {order.coach_number || 'B1'} / Seat {order.seat_number || '24'}
+                    <div className="text-xs text-slate-300 font-semibold mb-2">
+                      Passenger: {order.passenger_name} • Seat: Coach {order.coach_number || 'H1'} / Seat {order.seat_number || '4'} • Class: {order.ticket_class || '1A'}
                     </div>
+
+                    {(order.food_entitlement === 'COMPLIMENTARY' || order.payment_status === 'COMPLIMENTARY') && (
+                      <div className="mb-3 text-[11px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                        <span><strong>1A Complimentary Order:</strong> Passenger Fare Charged: ₹{order.passenger_fare_charged ?? 0} | Food Entitlement: 1A | Order Status: {order.status || 'CONFIRMED'}</span>
+                      </div>
+                    )}
 
                     {/* Order Items */}
                     <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50 space-y-1">
@@ -435,8 +503,11 @@ const CompanyCatering = () => {
                   {/* Status Pipeline Buttons */}
                   <div className="flex flex-col justify-between items-end border-t lg:border-t-0 lg:border-l border-slate-700/60 pt-4 lg:pt-0 lg:pl-6 min-w-[240px]">
                     <div className="text-right mb-3">
-                      <div className="text-lg font-black text-amber-400 font-mono">₹{order.total_amount}</div>
-                      <span className="text-xs text-slate-400">{order.payment_method} • {order.payment_status}</span>
+                      <div className="text-lg font-black text-amber-400 font-mono">
+                        {order.food_entitlement === 'COMPLIMENTARY' || order.payment_status === 'COMPLIMENTARY' ? '₹0 (Free 1A)' : `₹${order.total_amount}`}
+                      </div>
+                      <span className="text-xs text-slate-400 block">{order.payment_method}</span>
+                      <span className="text-[11px] text-slate-400 block font-mono">Status: {order.status || 'CONFIRMED'}</span>
                       <div className="text-xs font-bold text-emerald-400 mt-1">{order.delivery_status}</div>
                     </div>
 

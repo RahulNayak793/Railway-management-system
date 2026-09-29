@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-09-22T01:47:21.572Z",
+  "backupPath": "C:\\Railway management\\backend\\data\\db.backup.rac_autopromote.2026-09-22T01-47-21-312Z.json",
+  "counts": {
+    "bookings": 26,
+    "trains": 112,
+    "stations": 175,
+    "profiles": 19,
+    "passengers": 0,
+    "payments": 12,
+    "seat_allocations": 33,
+    "notifications": 8,
+    "confirmed_bookings": 6,
+    "rac_bookings": 4,
+    "wl_bookings": 1
+  },
+  "sample_rac": [
+    {
+      "pnr": "9271933801",
+      "status": "RAC",
+      "seat": 24
+    },
+    {
+      "pnr": "3445907927",
+      "status": "RAC",
+      "seat": 24
+    },
+    {
+      "pnr": "8773503988",
+      "status": "RAC",
+      "seat": 24
+    },
+    {
+      "pnr": "2688438133",
+      "status": "RAC",
+      "seat": 24
+    }
+  ],
+  "sample_wl": [
+    {
+      "pnr": "6739586017",
+      "status": "WL"
+    }
+  ]
+}

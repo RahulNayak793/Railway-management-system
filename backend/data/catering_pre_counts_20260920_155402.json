@@ -1,0 +1,252 @@
+{
+  "backupPath": "C:\\Railway management\\backend\\data\\db.backup.pre_catering_connection_20260920_155402.json",
+  "counts": {
+    "profiles": 19,
+    "saved_passengers": 3,
+    "trains": 108,
+    "stations": 175,
+    "routes": 1859,
+    "seats": 5280,
+    "bookings": 22,
+    "seat_allocations": 26,
+    "payments": 10,
+    "support_tickets": 2,
+    "support_messages": 4,
+    "feedback": 0,
+    "notifications": 8,
+    "cancellation_requests": 0,
+    "cancellation_records": 6,
+    "train_telemetry": 1,
+    "catering_companies": 5,
+    "company_stations": 32,
+    "catering_menu": 0,
+    "catering_orders": 5,
+    "train_status_history": 1,
+    "audit_logs": 2,
+    "staff_profiles": 2,
+    "staff_permissions": 1,
+    "staff_duties": 0,
+    "staff_daily_reports": 0,
+    "staff_incidents": 0,
+    "staff_audit_logs": 169,
+    "staff_tasks": 1,
+    "service_requests": 0,
+    "policies": 0,
+    "train_services": 7375,
+    "razorpay_payments": 0,
+    "eft_records": 0,
+    "system_policies": 3,
+    "wallets": 1,
+    "wallet_transactions": 4
+  },
+  "idsSummary": {
+    "profiles": [
+      "usr-1",
+      "usr-2",
+      "usr-3",
+      "usr-4",
+      "usr-5",
+      "usr-6",
+      "usr-demo-passenger",
+      "usr-demo-staff",
+      "usr-lwki3j4zo",
+      "usr-demo-admin"
+    ],
+    "saved_passengers": [
+      "sp-b954c61c-01d1-4593-9482-d31906670fa7",
+      "sp-7d0f3530-f0f7-430f-a3d7-00cbdb710646",
+      "sp-8ab12e27-2283-4b4c-834d-04a75c16dce2"
+    ],
+    "trains": [
+      "t-co0fa2xs2",
+      "train-udupi-12345",
+      "t-f6llzt119",
+      "t-kii9i4f2x",
+      "t-ldn34nqkb",
+      "t-c56ljuwr0",
+      "t-9o36itk9w",
+      "t-riluukz45",
+      "t-12951",
+      "t-12001"
+    ],
+    "stations": [
+      "s1",
+      "s2",
+      "s3",
+      "s4",
+      "s5",
+      "s6",
+      "s7",
+      "s8",
+      "s9",
+      "s10"
+    ],
+    "routes": [
+      "r-n2lse7iqu",
+      "r-45jgxi0z5",
+      "r-olr6eox3x",
+      "r-ndls-mmct-ltmgmf",
+      "r-mmct-ndls-37dcki",
+      "r-ndls-gwl-aekmvl",
+      "r-gwl-ndls-znblzu",
+      "r-ndls-bpl-4xp8o3",
+      "r-bpl-ndls-7uvmo9",
+      "r-ndls-brc-b17e2r"
+    ],
+    "seats": [
+      "t-oxplup9xz-S1-1",
+      "t-oxplup9xz-S1-2",
+      "t-oxplup9xz-S1-3",
+      "t-oxplup9xz-S1-4",
+      "t-oxplup9xz-S1-5",
+      "t-oxplup9xz-S1-6",
+      "t-oxplup9xz-S1-7",
+      "t-oxplup9xz-S1-8",
+      "t-oxplup9xz-S1-9",
+      "t-oxplup9xz-S1-10"
+    ],
+    "bookings": [
+      "bk-rxx0xfjpx",
+      "bk-gyvcw78lp",
+      "bk-jagg5ufwq",
+      "bk-9wc7pwbgp",
+      "bk-afijvx743",
+      "bk-2cn78wtcq",
+      "bk-xsjdmp0jv",
+      "bk-01g3lmcsv",
+      "bk-swxq6qf09",
+      "bk-2d9onsqy2"
+    ],
+    "seat_allocations": [
+      "al-8kvc29mzu",
+      "al-hk4qalzz8",
+      "al-87gpponbc",
+      "al-lf68hl1es",
+      "al-42yikzmy9",
+      "al-6021ksb66",
+      "al-u80m8h3xq",
+      "al-eqg8e7mp5",
+      "al-vqivhisx7",
+      "al-70s2pxiwt"
+    ],
+    "payments": [
+      "pay-nkzzh8ere",
+      "pay-36g4pfzvd",
+      "pay-z0n4kp6me",
+      "pay-rxswmofj2",
+      "pay-r3xmo3hrn",
+      "pay-jnm5hajpt",
+      "pay-zo9tffzql",
+      "pay-48wcrvww3",
+      "pay-buxa3k2ry",
+      "pay-20nynzule"
+    ],
+    "support_tickets": [
+      "tk-e1edr1phi",
+      "tk-1789824019726-2pnyaw"
+    ],
+    "support_messages": [
+      "msg-1789824021513-init",
+      "msg-1789824025426-ptqhd",
+      "msg-1789824061752-puktx",
+      "msg-1789824065070-7e3r0"
+    ],
+    "notifications": [
+      "81298152-0d91-43a3-89e3-e99ca8549631",
+      "6693fe8e-a2d6-4998-9d09-36d233f1b456",
+      "a04cc18f-67e1-470c-8efd-c46fa00b0910",
+      "e4c9b4e3-7305-479c-bbd4-a87b9aadeefa",
+      "ad224518-b1aa-4fe7-8b71-33d09f3db6e9",
+      "d7d05dc2-b93b-46da-8981-1c6239245d62",
+      "8e2f833d-5bcb-4b98-b0ab-a7852226a968",
+      "bcedea3a-388d-4335-9cfd-f464d94d93e6"
+    ],
+    "cancellation_records": [
+      "bk-rxx0xfjpx",
+      "bk-jagg5ufwq",
+      "bk-9wc7pwbgp",
+      "bk-afijvx743",
+      "bk-2cn78wtcq",
+      "bk-01g3lmcsv"
+    ],
+    "train_telemetry": [
+      "t-co0fa2xs2"
+    ],
+    "catering_companies": [
+      "comp-1",
+      "comp-2",
+      "comp-3",
+      "comp-4",
+      "comp-5"
+    ],
+    "company_stations": [
+      "comp-1_NDLS",
+      "comp-1_DLI",
+      "comp-1_NZM",
+      "comp-1_CNB",
+      "comp-1_AGC",
+      "comp-1_JP",
+      "comp-2_BPL",
+      "comp-2_GWL",
+      "comp-2_VGLJ",
+      "comp-2_ET"
+    ],
+    "catering_orders": [
+      "ORD-98421",
+      "ORD-17215",
+      "ORD-67207",
+      "ORD-86765",
+      "ORD-40455"
+    ],
+    "train_status_history": [
+      "d960953a-0ef8-49a0-bb93-32b1ad542c15"
+    ],
+    "audit_logs": [
+      "audit-1787802489097-gxtt8",
+      "audit-1787888477317-fej86"
+    ],
+    "staff_profiles": [
+      "stf-1788361589156",
+      "stf-1789915681567"
+    ],
+    "staff_permissions": [
+      "stf-1789915681567"
+    ],
+    "staff_audit_logs": [
+      "aud-1789804400261",
+      "aud-1789804400923",
+      "aud-1789806600497",
+      "aud-1789806601157",
+      "aud-1789806660410",
+      "aud-1789806660777",
+      "aud-1789806720371",
+      "aud-1789806720732",
+      "aud-1789806780379",
+      "aud-1789806780720"
+    ],
+    "staff_tasks": [
+      "tsk-1789894130386"
+    ],
+    "train_services": [
+      "svc-12345-2026-09-19",
+      "svc-12345-2026-09-20",
+      "svc-12345-2026-09-21",
+      "svc-12345-2026-09-22",
+      "svc-12345-2026-09-23",
+      "svc-12345-2026-09-24",
+      "svc-12345-2026-09-25",
+      "svc-12345-2026-09-26",
+      "svc-12345-2026-09-27",
+      "svc-12345-2026-09-28"
+    ],
+    "wallets": [
+      "usr-demo-passenger"
+    ],
+    "wallet_transactions": [
+      "txn-topup-1789832324727",
+      "txn-topup-1789832447105",
+      "txn-topup-1789832567281",
+      "txn-topup-1789832654430"
+    ]
+  }
+}

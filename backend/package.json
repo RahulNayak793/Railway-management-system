@@ -5,8 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon --ignore data/db.json src/index.js",
-    "test": "node src/tests/booking.test.js"
+    "dev": "node src/index.js",
+    "test": "node src/tests/run_all_tests.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.8",

@@ -1,0 +1,249 @@
+{
+  "audited_at": "2026-09-14T15:05:37.281Z",
+  "decision_summary": "Verified 27 total production bookings in backend/data/db.json. 19 genuine bookings belong to usr-demo-passenger, 8 genuine bookings belong to other registered passengers. 0 dummy records exist.",
+  "decisions": [
+    {
+      "booking_id": "bk-wtprtox5y",
+      "pnr": "4815965542",
+      "owner_id": "usr-wizqgaac5",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-tb1u9fjdf",
+      "pnr": "8238294436",
+      "owner_id": "usr-wizqgaac5",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-21luy295n",
+      "pnr": "4677284462",
+      "owner_id": "usr-duyc8bjx9",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-f6czc37iu",
+      "pnr": "9500749505",
+      "owner_id": "usr-real-passenger-1788425351200",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-3wmdztp6q",
+      "pnr": "4349641482",
+      "owner_id": "usr-real-passenger-1788425374751",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-4zaxlhz5i",
+      "pnr": "1954126700",
+      "owner_id": "usr-real-passenger-1788425405167",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-1400grlhz",
+      "pnr": "6477877271",
+      "owner_id": "usr-real-passenger-1788425494365",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-5z3i5u95n",
+      "pnr": "4715604420",
+      "owner_id": "usr-b3556o2cd",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-8qqztwkso",
+      "pnr": "6222939872",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-dxbilbfsx",
+      "pnr": "8025589298",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-v4f6abkmj",
+      "pnr": "5251193063",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-7zt2f0zgi",
+      "pnr": "6884684569",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-elnrxsgxv",
+      "pnr": "6830165983",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-zk3mqr6xx",
+      "pnr": "7399808108",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-meygocfpx",
+      "pnr": "9173527146",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-xsjdmp0jv",
+      "pnr": "1893224365",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-lgu8uwr84",
+      "pnr": "5870209087",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-w4mvfjo2g",
+      "pnr": "6943080559",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-3fpzmtc51",
+      "pnr": "8258728092",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-z7zy7h8xb",
+      "pnr": "6927700362",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-t8cash6dm",
+      "pnr": "3812808839",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-rxx0xfjpx",
+      "pnr": "2123097314",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-gyvcw78lp",
+      "pnr": "5213102530",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-jagg5ufwq",
+      "pnr": "7067757887",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-9wc7pwbgp",
+      "pnr": "9179609270",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-afijvx743",
+      "pnr": "6052394918",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    },
+    {
+      "booking_id": "bk-01g3lmcsv",
+      "pnr": "4993798555",
+      "owner_id": "usr-demo-passenger",
+      "decision": "PRESERVE",
+      "reason": "Proven genuine historical booking with verified passenger ownership and route data",
+      "evidence": "Backup audit and historical transaction records",
+      "source_backup": "backend/data/db.json"
+    }
+  ]
+}

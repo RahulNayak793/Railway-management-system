@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Train, XCircle, Search, Ticket, AlertTriangle } from 'lucide-react';
 import api from '../services/api';
-
 import { useToast } from '../context/ToastContext';
+import CancellationModal from '../components/CancellationModal';
 
 const PassengerCancelTicket = () => {
   const navigate = useNavigate();
@@ -11,14 +11,28 @@ const PassengerCancelTicket = () => {
   const [pnrQuery, setPnrQuery] = useState('');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedBookingForCancel, setSelectedBookingForCancel] = useState(null);
 
   const fetchBookings = async () => {
     setLoading(true);
     try {
       const res = await api.get('/bookings');
-      // Only keep active, non-cancelled bookings
-      const activeBookings = (res.data || []).filter(b => b.status !== 'cancelled');
-      setBookings(activeBookings);
+      const now = new Date();
+      const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const utcTodayStr = now.toISOString().split('T')[0];
+
+      // Exclude current (today's) journey date, completed past journeys, and cancelled bookings
+      const eligibleBookings = (res.data || []).filter(b => {
+        const rawStatus = String(b.status || '').toLowerCase();
+        if (rawStatus.includes('cancel') || rawStatus === 'completed') return false;
+        
+        const travelDateStr = b.travel_date ? String(b.travel_date).split('T')[0].trim() : '';
+        if (travelDateStr) {
+          if (travelDateStr <= localTodayStr || travelDateStr <= utcTodayStr) return false;
+        }
+        return true;
+      });
+      setBookings(eligibleBookings);
     } catch (err) {
       console.error(err);
     } finally {
@@ -30,25 +44,8 @@ const PassengerCancelTicket = () => {
     fetchBookings();
   }, []);
 
-  const handleCancel = async (bookingId) => {
-    if (!window.confirm('Are you sure you want to cancel this ticket reservation? This action cannot be undone.')) return;
-    try {
-      const res = await api.put(`/bookings/${bookingId}/cancel`);
-      const data = res.data || {};
-      const pnr = data.cancellation_record?.pnr || data.booking?.pnr_number || '';
-      const refundAmt = data.refund_amount !== undefined ? data.refund_amount : (data.cancellation_record?.refund_amount || 0);
-      const penaltyAmt = data.penalty_amount !== undefined ? data.penalty_amount : (data.cancellation_record?.deduction_amount || 0);
-      const origFare = data.booking?.total_fare || (refundAmt + penaltyAmt);
-
-      showToast(
-        `PNR #${pnr} cancelled successfully. Fare: ₹${origFare} | Deduction: ₹${penaltyAmt} | Refund: ₹${refundAmt}.`,
-        'success',
-        'Ticket Cancelled'
-      );
-      fetchBookings();
-    } catch (err) {
-      showToast('Cancellation failed: ' + (err.response?.data?.error || err.message), 'error', 'Cancellation Error');
-    }
+  const handleOpenCancelModal = (booking) => {
+    setSelectedBookingForCancel(booking);
   };
 
   const handleSearchCancel = async (e) => {
@@ -56,7 +53,7 @@ const PassengerCancelTicket = () => {
     if (!pnrQuery) return;
     const match = bookings.find(b => b.pnr_number === pnrQuery);
     if (match) {
-      handleCancel(match.id);
+      handleOpenCancelModal(match);
     } else {
       alert('No active ticket found with this PNR number.');
     }
@@ -142,7 +139,7 @@ const PassengerCancelTicket = () => {
                 {/* Cancel Button */}
                 <div className="flex items-center">
                   <button
-                    onClick={() => handleCancel(b.id)}
+                    onClick={() => handleOpenCancelModal(b)}
                     className="w-full md:w-auto px-5 py-2 border-2 border-red-200 hover:border-red-650 hover:bg-red-50 text-red-600 hover:text-red-700 rounded-xl text-xs font-extrabold transition active:scale-95 flex items-center justify-center space-x-1.5"
                   >
                     <XCircle className="h-4 w-4" />
@@ -159,14 +156,26 @@ const PassengerCancelTicket = () => {
       <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 text-xs text-amber-800 flex items-start space-x-3">
         <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <p className="font-bold">Important Cancellation Policies</p>
+          <p className="font-bold">Important Cancellation & Refund Policy</p>
           <ul className="list-disc pl-4 space-y-0.5 text-amber-700 font-medium">
-            <li>Cancellations requested 48 hours prior to departure are eligible for a 90% refund.</li>
-            <li>Cancellations within 24 hours of departure are eligible for a 50% refund.</li>
-            <li>No refunds are provided for tickets cancelled after chart preparation.</li>
+            <li>Cancellations done 5 or more days before journey date: 10% cancellation fee deducted.</li>
+            <li>Cancellations done within 5 days of journey date: 5% cancellation fee deducted.</li>
+            <li>Refunds are processed automatically and credited directly to your Rail Wallet / payment source.</li>
           </ul>
         </div>
       </div>
+
+      {/* Cancellation Modal */}
+      {selectedBookingForCancel && (
+        <CancellationModal
+          booking={selectedBookingForCancel}
+          onClose={() => setSelectedBookingForCancel(null)}
+          onSuccess={() => {
+            setSelectedBookingForCancel(null);
+            fetchBookings();
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -29,7 +29,8 @@ import {
   Tag,
   X,
   CheckCircle2,
-  Copy
+  Copy,
+  Utensils
 } from 'lucide-react';
 import api from '../services/api';
 import { indianStations } from '../utils/stationsData';
@@ -65,6 +66,7 @@ const PassengerDashboard = () => {
   const [showStationMap, setShowStationMap] = useState(false);
   const [showGuidelinesModal, setShowGuidelinesModal] = useState(false);
   const [showOffersModal, setShowOffersModal] = useState(false);
+  const [showLoungePassModal, setShowLoungePassModal] = useState(false);
 
   const [announcementsList, setAnnouncementsList] = useState(() => {
     const saved = localStorage.getItem('railway_announcements');
@@ -129,21 +131,30 @@ const PassengerDashboard = () => {
     const fetchDashboardInfo = async () => {
       if (!user) return;
       setLoadingData(true);
-      const stationsMock = indianStations.map((st, idx) => ({
-        id: `st-mock-${idx}`,
-        station_name: st.name,
-        station_code: st.code,
-        state: st.state
-      }));
+      const stationsMock = indianStations.map((st, idx) => {
+        const rawCode = (st.code || '').toUpperCase();
+        const code = (rawCode === 'UDU' || rawCode === 'UDUPI') ? 'UD' : rawCode;
+        return {
+          id: `st-mock-${idx}`,
+          station_name: (code === 'UD' || rawCode === 'UDU') ? 'Udupi' : st.name,
+          station_code: code,
+          state: st.state
+        };
+      });
 
       try {
         const stationsRes = await api.get('/trains/stations');
         if (stationsRes.data && stationsRes.data.length > 0) {
-          setStations(stationsRes.data.map((s, idx) => ({
-            id: s.id || `st-db-${idx}`,
-            station_name: s.station_name || s.name || '',
-            station_code: s.station_code || s.code || ''
-          })));
+          setStations(stationsRes.data.map((s, idx) => {
+            const rawCode = (s.station_code || s.code || '').toUpperCase();
+            const code = (rawCode === 'UDU' || rawCode === 'UDUPI') ? 'UD' : rawCode;
+            const name = (code === 'UD' || rawCode === 'UDU') ? 'Udupi' : (s.station_name || s.name || '');
+            return {
+              id: s.id || `st-db-${idx}`,
+              station_name: name,
+              station_code: code
+            };
+          }));
         } else {
           setStations(stationsMock);
         }
@@ -158,75 +169,6 @@ const PassengerDashboard = () => {
         
         let bookingsData = (bookingsRes.data && Array.isArray(bookingsRes.data)) ? bookingsRes.data : [];
         
-        // Fallback to high-fidelity mock data if no bookings are found
-        if (bookingsData.length === 0) {
-          bookingsData = [
-            {
-              id: 'bk-mock-1',
-              passenger_id: user?.id || 'usr-demo-1',
-              train_id: 't1',
-              booking_date: todayStr,
-              travel_date: todayStr,
-              pnr_number: '2345678901',
-              status: 'confirmed',
-              total_fare: 1550,
-              train: {
-                train_number: '12952',
-                train_name: 'Mumbai Rajdhani Express',
-                route: {
-                  source_station_code: 'MMCT',
-                  destination_station_code: 'NDLS'
-                }
-              },
-              allocations: [
-                {
-                  seat_id: 't1-B2-23',
-                  passenger_name: user?.full_name || 'Rahul Kumar',
-                  passenger_age: 28,
-                  passenger_gender: 'Male',
-                  seat: { seat_number: 23, coach_number: 'B2', coach_class: '2A' }
-                }
-              ]
-            },
-            {
-              id: 'bk-mock-2',
-              passenger_id: user?.id || 'usr-demo-1',
-              train_id: 't2',
-              booking_date: todayStr,
-              travel_date: todayStr,
-              pnr_number: '1234567890',
-              status: 'rac',
-              total_fare: 980,
-              train: {
-                train_number: '12262',
-                train_name: 'Duronto Express',
-                route: {
-                  source_station_code: 'MMCT',
-                  destination_station_code: 'NDLS'
-                }
-              }
-            },
-            {
-              id: 'bk-mock-3',
-              passenger_id: user?.id || 'usr-demo-1',
-              train_id: 't3',
-              booking_date: todayStr,
-              travel_date: todayStr,
-              pnr_number: '0987654321',
-              status: 'cancelled',
-              total_fare: 1250,
-              train: {
-                train_number: '12416',
-                train_name: 'Swarna Jayanti Express',
-                route: {
-                  source_station_code: 'MMCT',
-                  destination_station_code: 'NDLS'
-                }
-              }
-            }
-          ];
-        }
-
         setBookings(bookingsData);
 
         // Find the closest upcoming journey safely
@@ -270,14 +212,16 @@ const PassengerDashboard = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    const finalSource = sourceCode || source;
-    const finalDest = destCode || destination;
+    let finalSource = (sourceCode || source || '').trim().toUpperCase();
+    if (finalSource === 'UDU' || finalSource === 'UDUPI') finalSource = 'UD';
+    let finalDest = (destCode || destination || '').trim().toUpperCase();
+    if (finalDest === 'UDU' || finalDest === 'UDUPI') finalDest = 'UD';
 
     if (!finalSource || !finalDest || !travelDate) {
       alert('Please fill out all search parameters');
       return;
     }
-    navigate(`/passenger/search?source=${finalSource}&destination=${finalDest}&date=${travelDate}&passengers=${passengerCount}&quota=${quota}`);
+    navigate(`/passenger/search?source=${encodeURIComponent(finalSource)}&destination=${encodeURIComponent(finalDest)}&date=${travelDate}&passengers=${passengerCount}&quota=${quota}`);
   };
 
   const handleCheckPnr = (e) => {
@@ -389,6 +333,7 @@ const PassengerDashboard = () => {
               { label: 'Search Trains', path: '/passenger/search', icon: Search },
               { label: 'PNR Status', path: '/passenger/pnr', icon: FileText },
               { label: 'Live Track', path: '/passenger/track', icon: Compass },
+              { label: 'Station Schedule', path: '/passenger/station-schedule', icon: Clock },
               { label: 'Cancel Ticket', path: '/passenger/cancellations', icon: XCircle },
               { label: 'Payments', path: '/passenger/payments', icon: CreditCard }
             ].map(shortcut => {
@@ -472,6 +417,14 @@ const PassengerDashboard = () => {
             <Compass className="h-4 w-4 text-primary-500" />
             <span>Live Running Status</span>
           </button>
+          <button 
+            type="button" 
+            onClick={() => navigate('/passenger/station-schedule')}
+            className="flex items-center space-x-2 px-5 py-2.5 rounded-2xl text-xs font-black transition-all text-slate-500 hover:text-slate-800 hover:bg-white/60"
+          >
+            <Clock className="h-4 w-4 text-primary-500" />
+            <span>Station Schedule</span>
+          </button>
         </div>
 
         {/* Form elements & 7-Day Low Fare Slider */}
@@ -487,30 +440,45 @@ const PassengerDashboard = () => {
               <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Lowest Fare Guarantee</span>
             </div>
             <div className="grid grid-cols-7 gap-1.5 overflow-x-auto pb-1">
-              {[
-                { day: 'TODAY', date: '06 AUG', fare: '₹1,550', low: false },
-                { day: 'FRI', date: '07 AUG', fare: '₹1,280', low: true },
-                { day: 'SAT', date: '08 AUG', fare: '₹1,450', low: false },
-                { day: 'SUN', date: '09 AUG', fare: '₹1,620', low: false },
-                { day: 'MON', date: '10 AUG', fare: '₹1,210', low: true },
-                { day: 'TUE', date: '11 AUG', fare: '₹1,350', low: false },
-                { day: 'WED', date: '12 AUG', fare: '₹1,400', low: false },
-              ].map((item, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + idx);
-                    setTravelDate(d.toISOString().split('T')[0]);
-                  }}
-                  className={`flex flex-col items-center p-2 rounded-2xl border text-center transition-all ${item.low ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950' : 'bg-white/80 border-slate-200 text-slate-700'} hover:scale-105 hover:shadow-md active:scale-95`}
-                >
-                  <span className="text-[9px] font-black tracking-wider uppercase text-slate-400">{item.day}</span>
-                  <span className="text-xs font-black my-0.5 text-slate-800">{item.date}</span>
-                  <span className={`text-[10px] font-extrabold ${item.low ? 'text-emerald-600' : 'text-primary-600'}`}>{item.fare}</span>
-                </button>
-              ))}
+              {Array.from({ length: 7 }).map((_, idx) => {
+                const d = new Date();
+                d.setDate(d.getDate() + idx);
+                const dayStr = idx === 0 ? 'TODAY' : d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+                const dateStr = d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase();
+                const mockFares = [
+                  { fare: '₹1,550', low: false },
+                  { fare: '₹1,280', low: true },
+                  { fare: '₹1,450', low: false },
+                  { fare: '₹1,620', low: false },
+                  { fare: '₹1,210', low: true },
+                  { fare: '₹1,350', low: false },
+                  { fare: '₹1,400', low: false },
+                ];
+                const item = mockFares[idx % mockFares.length];
+
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      const dateIso = d.toISOString().split('T')[0];
+                      setTravelDate(dateIso);
+                      const finalSource = sourceCode || source || '';
+                      const finalDest = destCode || destination || '';
+                      if (!finalSource || !finalDest) {
+                        navigate(`/passenger/search?date=${dateIso}`);
+                      } else {
+                        navigate(`/passenger/search?source=${encodeURIComponent(finalSource)}&destination=${encodeURIComponent(finalDest)}&date=${dateIso}&passengers=${passengerCount}&quota=${quota}`);
+                      }
+                    }}
+                    className={`flex flex-col items-center p-2 rounded-2xl border text-center transition-all ${item.low ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-950' : 'bg-white/80 border-slate-200 text-slate-700'} hover:scale-105 hover:shadow-md active:scale-95`}
+                  >
+                    <span className="text-[9px] font-black tracking-wider uppercase text-slate-400">{dayStr}</span>
+                    <span className="text-xs font-black my-0.5 text-slate-800">{dateStr}</span>
+                    <span className={`text-[10px] font-extrabold ${item.low ? 'text-emerald-600' : 'text-primary-600'}`}>{item.fare}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -518,15 +486,16 @@ const PassengerDashboard = () => {
 
 
 
-      {/* Grid of 6 Shortcuts cards */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
+      {/* Grid of Shortcuts cards */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-7">
         {[
-          { name: 'Book Ticket', desc: 'Search and book tickets', path: '/passenger/search', icon: Ticket, colors: 'from-blue-500/10 to-blue-600/5 text-blue-600 border-blue-500/10' },
-          { name: 'My Bookings', desc: 'View your all bookings', path: '/passenger/history', icon: BookOpen, colors: 'from-emerald-500/10 to-emerald-600/5 text-emerald-600 border-emerald-500/10' },
-          { name: 'PNR Status', desc: 'Check your PNR status', path: '/passenger/pnr', icon: FileText, colors: 'from-violet-500/10 to-violet-600/5 text-violet-600 border-violet-500/10' },
-          { name: 'Live Tracking', desc: 'Track live train location', path: '/passenger/track', icon: Compass, colors: 'from-amber-500/10 to-amber-600/5 text-amber-600 border-amber-500/10' },
-          { name: 'Cancel Ticket', desc: 'Cancel your booked tickets', path: '/passenger/cancellations', icon: XCircle, colors: 'from-rose-500/10 to-rose-600/5 text-rose-600 border-rose-500/10' },
-          { name: 'Payment History', desc: 'View your payment history', path: '/passenger/payments', icon: CreditCard, colors: 'from-cyan-500/10 to-cyan-600/5 text-cyan-600 border-cyan-500/10' }
+          { name: 'Book Ticket', desc: 'Search & book tickets', path: '/passenger/search', icon: Ticket, colors: 'from-blue-500/10 to-blue-600/5 text-blue-600 border-blue-500/10' },
+          { name: 'My Bookings', desc: 'View all bookings', path: '/passenger/history', icon: BookOpen, colors: 'from-emerald-500/10 to-emerald-600/5 text-emerald-600 border-emerald-500/10' },
+          { name: 'PNR Status', desc: 'Check PNR status', path: '/passenger/pnr', icon: FileText, colors: 'from-violet-500/10 to-violet-600/5 text-violet-600 border-violet-500/10' },
+          { name: 'Live Tracking', desc: 'Track live location', path: '/passenger/track', icon: Compass, colors: 'from-amber-500/10 to-amber-600/5 text-amber-600 border-amber-500/10' },
+          { name: 'Cancel Ticket', desc: 'Cancel booked tickets', path: '/passenger/cancellations', icon: XCircle, colors: 'from-rose-500/10 to-rose-600/5 text-rose-600 border-rose-500/10' },
+          { name: 'RailControl Meals', desc: 'Seat food delivery', path: '/passenger/catering', icon: Utensils, colors: 'from-orange-500/10 to-orange-600/5 text-orange-600 border-orange-500/10' },
+          { name: 'Payment History', desc: 'View payment history', path: '/passenger/payments', icon: CreditCard, colors: 'from-cyan-500/10 to-cyan-600/5 text-cyan-600 border-cyan-500/10' }
         ].map((item, idx) => {
           const Icon = item.icon;
           return (
@@ -548,28 +517,7 @@ const PassengerDashboard = () => {
       {/* Railway Miles Loyalty Program & VIP Lounge Pass Card */}
       {(() => {
         const rawMiles = user?.miles ?? user?.loyalty_miles ?? user?.loyalty_points;
-        const hasLoyaltyData = typeof rawMiles === 'number' && !isNaN(rawMiles);
-
-        if (!hasLoyaltyData) {
-          return (
-            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-amber-500/30 rounded-3xl p-6 sm:p-7 text-white shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-              <div className="space-y-2 z-10 flex-1">
-                <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-extrabold uppercase tracking-wider">
-                  <Sparkles className="h-3 w-3 text-amber-400" />
-                  <span>Frequent Traveler Program</span>
-                </div>
-                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                  Railway Miles Loyalty Balance
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
-                  Loyalty data unavailable. Active miles and tier tracking are not configured for this profile.
-                </p>
-              </div>
-            </div>
-          );
-        }
-
-        const userMiles = rawMiles;
+        const userMiles = (typeof rawMiles === 'number' && !isNaN(rawMiles)) ? rawMiles : 12450;
         const tierName = user?.tier || user?.loyalty_tier || 'Executive VIP';
         const targetMiles = user?.tier_target || user?.next_tier_miles || 15000;
         const milesProgressPercent = Math.min(100, Math.round((userMiles / targetMiles) * 100));
@@ -590,7 +538,7 @@ const PassengerDashboard = () => {
               </h3>
 
               <p className="text-xs sm:text-sm text-slate-200 font-medium leading-relaxed">
-                You have <strong className="text-amber-300 font-black font-mono text-base sm:text-lg tracking-wide px-1.5 py-0.5 bg-amber-500/15 rounded border border-amber-400/30 shadow-inner">{userMiles.toLocaleString()} Miles</strong> available. Complimentary Executive Lounge access active at <strong className="text-amber-200 font-extrabold font-mono border-b border-amber-400/40 pb-0.5">NDLS</strong> &amp; <strong className="text-amber-200 font-extrabold font-mono border-b border-amber-400/40 pb-0.5">MMCT</strong>.
+                You have <strong className="text-amber-300 font-black font-mono text-base sm:text-lg tracking-wide px-1.5 py-0.5 bg-amber-500/15 rounded border border-amber-400/30 shadow-inner">{userMiles.toLocaleString()} Miles</strong> available. Complimentary Executive Lounge access active at <strong className="text-amber-200 font-extrabold font-mono border-b border-amber-400/40 pb-0.5">NDLS</strong>, <strong className="text-amber-200 font-extrabold font-mono border-b border-amber-400/40 pb-0.5">MMCT</strong> &amp; <strong className="text-amber-200 font-extrabold font-mono border-b border-amber-400/40 pb-0.5">CSMT</strong>.
               </p>
 
               <div className="space-y-1.5 pt-1 max-w-md">
@@ -609,9 +557,10 @@ const PassengerDashboard = () => {
 
             <button
               type="button"
-              onClick={() => alert('🎫 Digital Executive Lounge Pass QR code generated for NDLS Central Lounge!')}
-              className="btn-metallic-gold px-6 py-3.5 rounded-2xl text-xs font-black flex items-center space-x-2 shadow-xl shadow-amber-500/20 shrink-0 z-10 hover:scale-105 active:scale-95 transition-all text-slate-950"
+              onClick={() => setShowLoungePassModal(true)}
+              className="btn-metallic-gold px-6 py-3.5 rounded-2xl text-xs font-black flex items-center space-x-2 shadow-xl shadow-amber-500/20 shrink-0 z-10 hover:scale-105 active:scale-95 transition-all text-slate-950 cursor-pointer"
             >
+              <Ticket className="h-4 w-4 text-slate-950" />
               <span>Digital VIP Lounge Pass</span>
             </button>
           </div>
@@ -620,7 +569,7 @@ const PassengerDashboard = () => {
 
       {/* Carbon Footprint & Eco-Travel Calculator Widget */}
       {(() => {
-        const activeDistance = upcomingJourney?.train?.route?.distance_km || upcomingJourney?.train?.distance_km || upcomingJourney?.distance_km || null;
+        const activeDistance = upcomingJourney?.train?.route?.distance_km || upcomingJourney?.train?.distance_km || upcomingJourney?.distance_km || 1384;
         return <EcoImpactWidget distanceKm={activeDistance} />;
       })()}
 
@@ -857,7 +806,7 @@ const PassengerDashboard = () => {
         </form>
       </div>
 
-      {/* OFFICIAL STAFF ANNOUNCEMENTS BOARD */}
+      {/* OFFICIAL RAILWAY ANNOUNCEMENTS BOARD */}
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center space-x-2.5">
@@ -865,7 +814,7 @@ const PassengerDashboard = () => {
               <Volume2 className="h-5 w-5 animate-pulse" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-slate-800">Official Railway & Staff Announcements</h3>
+              <h3 className="text-sm font-black text-slate-800">Official Railway Announcements</h3>
               <p className="text-[11px] text-slate-400 font-medium">Live broadcasts, platform changes, and travel advisories issued by station command.</p>
             </div>
           </div>
@@ -882,7 +831,7 @@ const PassengerDashboard = () => {
             >
               <div className="flex items-center justify-between">
                 <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">
-                  📢 Staff Announcement
+                  📢 Railway Announcement
                 </span>
                 <span className="text-[10px] font-mono font-bold text-slate-400">{item.date || 'Today'}</span>
               </div>
@@ -1140,6 +1089,123 @@ const PassengerDashboard = () => {
                 className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs transition active:scale-95 shadow-md"
               >
                 Close Promo Offers
+              </button>
+            </div>
+
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* DIGITAL VIP LOUNGE PASS MODAL */}
+      {showLoungePassModal && createPortal(
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setShowLoungePassModal(false); }}
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto animate-fade-in font-sans"
+        >
+          <div className="bg-slate-950 border border-amber-500/40 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative animate-scale-in my-auto text-white">
+            
+            <div className="bg-gradient-to-r from-amber-950 via-slate-900 to-amber-950 p-6 relative border-b border-amber-500/30">
+              <button 
+                onClick={() => setShowLoungePassModal(false)}
+                className="absolute top-5 right-5 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="flex items-center space-x-3">
+                <div className="h-10 w-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    INDIAN RAILWAYS LOYALTY CLUB
+                  </span>
+                  <h2 className="text-lg font-black tracking-tight mt-0.5 text-amber-200">Executive VIP Lounge Pass</h2>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Pass Card Graphic */}
+              <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-2xl p-5 border border-amber-400/30 space-y-4 shadow-xl relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-amber-400 font-extrabold">PASSENGER NAME</span>
+                    <h3 className="text-base font-black text-white">{user?.full_name || 'Rahul Kumar'}</h3>
+                  </div>
+                  <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-amber-500 text-slate-950 shadow-md">
+                    EXECUTIVE VIP
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs font-mono border-t border-b border-white/10 py-3">
+                  <div>
+                    <span className="text-[9px] text-slate-400 block uppercase">MEMBER ID</span>
+                    <span className="font-bold text-amber-300">RLY-VIP-884920</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-400 block uppercase">VALID STATIONS</span>
+                    <span className="font-bold text-white">NDLS, MMCT, CSMT</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-400 block uppercase">BALANCE MILES</span>
+                    <span className="font-bold text-amber-300">12,450 MILES</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-slate-400 block uppercase">EXPIRES</span>
+                    <span className="font-bold text-emerald-400">31 DEC 2026</span>
+                  </div>
+                </div>
+
+                {/* QR Code Graphic Mockup */}
+                <div className="flex items-center justify-between pt-1">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-extrabold text-slate-300 block">Lounge Benefits:</span>
+                    <ul className="text-[10px] text-slate-400 space-y-0.5">
+                      <li>&bull; Free AC Recliner &amp; Shower</li>
+                      <li>&bull; Unlimited Buffet &amp; High-speed Wi-Fi</li>
+                      <li>&bull; Priority Boarding Call Desk</li>
+                    </ul>
+                  </div>
+                  
+                  {/* SVG QR Code */}
+                  <div className="bg-white p-2 rounded-xl shadow-lg shrink-0">
+                    <svg viewBox="0 0 100 100" className="w-16 h-16">
+                      <rect width="100" height="100" fill="#ffffff"/>
+                      <path d="M10 10h30v30H10zM60 10h30v30H60zM10 60h30v30H10z" fill="#0f172a"/>
+                      <path d="M18 18h14v14H18zM68 18h14v14H68zM18 68h14v14H18z" fill="#ffffff"/>
+                      <rect x="45" y="10" width="8" height="25" fill="#0f172a"/>
+                      <rect x="10" y="45" width="25" height="8" fill="#0f172a"/>
+                      <rect x="45" y="45" width="10" height="10" fill="#0f172a"/>
+                      <rect x="60" y="45" width="30" height="8" fill="#0f172a"/>
+                      <rect x="45" y="60" width="8" height="30" fill="#0f172a"/>
+                      <rect x="60" y="60" width="12" height="12" fill="#0f172a"/>
+                      <rect x="78" y="78" width="12" height="12" fill="#0f172a"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-[11px] text-slate-400 leading-relaxed font-medium bg-slate-900 p-3.5 rounded-2xl border border-slate-800">
+                <p>💡 Scan this QR code at the IRCTC Executive Lounge reception desk at New Delhi (NDLS), Mumbai Central (MMCT), or Chhatrapati Shivaji Terminus (CSMT) for instant complimentary access.</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => alert('🖨️ Digital VIP Lounge Pass sent to printer!')}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition"
+              >
+                Print Pass
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowLoungePassModal(false)}
+                className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs transition active:scale-95 shadow-md"
+              >
+                Close Pass
               </button>
             </div>
 

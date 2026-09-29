@@ -1,0 +1,219 @@
+{
+  "manifest_timestamp": "2026-09-14T15:10:41.434Z",
+  "sha256_hash": "e146d7cc3ec5722cf4d16b858ae459dc381ee1dbafc9ee33c2ad5163839d0b24",
+  "deleted_dummy_records": [],
+  "repaired_records": [],
+  "preserved_uncertain_records": [],
+  "cancellation_parent_validation": [
+    {
+      "cancellation_id": "canc-bk-w4mvfjo2g",
+      "booking_id": "bk-w4mvfjo2g",
+      "pnr": "6943080559",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-3fpzmtc51",
+      "booking_id": "bk-3fpzmtc51",
+      "pnr": "8258728092",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-z7zy7h8xb",
+      "booking_id": "bk-z7zy7h8xb",
+      "pnr": "6927700362",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-t8cash6dm",
+      "booking_id": "bk-t8cash6dm",
+      "pnr": "3812808839",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-8qqztwkso",
+      "booking_id": "bk-8qqztwkso",
+      "pnr": "6222939872",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-dxbilbfsx",
+      "booking_id": "bk-dxbilbfsx",
+      "pnr": "8025589298",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-v4f6abkmj",
+      "booking_id": "bk-v4f6abkmj",
+      "pnr": "5251193063",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-zk3mqr6xx",
+      "booking_id": "bk-zk3mqr6xx",
+      "pnr": "7399808108",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-meygocfpx",
+      "booking_id": "bk-meygocfpx",
+      "pnr": "9173527146",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-jmtayohzn",
+      "booking_id": "bk-jmtayohzn",
+      "pnr": "9821070744",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": false,
+      "owner_match": false,
+      "status_match": false,
+      "is_valid_cancellation": false
+    },
+    {
+      "cancellation_id": "canc-bk-w4mvfjo2g",
+      "booking_id": "bk-w4mvfjo2g",
+      "pnr": "6943080559",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-3fpzmtc51",
+      "booking_id": "bk-3fpzmtc51",
+      "pnr": "8258728092",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-z7zy7h8xb",
+      "booking_id": "bk-z7zy7h8xb",
+      "pnr": "6927700362",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-t8cash6dm",
+      "booking_id": "bk-t8cash6dm",
+      "pnr": "3812808839",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-9wc7pwbgp",
+      "booking_id": "bk-9wc7pwbgp",
+      "pnr": "9179609270",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-afijvx743",
+      "booking_id": "bk-afijvx743",
+      "pnr": "6052394918",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-01g3lmcsv",
+      "booking_id": "bk-01g3lmcsv",
+      "pnr": "4993798555",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-rxx0xfjpx",
+      "booking_id": "bk-rxx0xfjpx",
+      "pnr": "2123097314",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-9wc7pwbgp",
+      "booking_id": "bk-9wc7pwbgp",
+      "pnr": "9179609270",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-afijvx743",
+      "booking_id": "bk-afijvx743",
+      "pnr": "6052394918",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    },
+    {
+      "cancellation_id": "canc-bk-01g3lmcsv",
+      "booking_id": "bk-01g3lmcsv",
+      "pnr": "4993798555",
+      "passenger_id": "usr-demo-passenger",
+      "has_valid_parent_booking": true,
+      "owner_match": true,
+      "status_match": true,
+      "is_valid_cancellation": true
+    }
+  ]
+}

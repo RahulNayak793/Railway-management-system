@@ -284,47 +284,24 @@ const executeTool = async (name, args, userContext) => {
 
   if (name === 'getPNRStatus') {
     const { pnr } = args;
+    const cleanPnr = String(pnr || '').trim();
     if (isMockMode) {
-      const booking = Array.from(mockDb.bookings.values()).find(b => b.pnr_number === pnr);
+      const booking = Array.from(mockDb.bookings.values()).find(b => 
+        b && (
+          String(b.pnr_number || '').trim() === cleanPnr ||
+          String(b.pnr || '').trim() === cleanPnr ||
+          String(b.id || '').trim() === cleanPnr
+        )
+      );
       if (!booking) return { error: 'PNR not found' };
       
-      const isAuthorized = userContext && (
-        userContext.role === 'admin' ||
-        userContext.role === 'staff' ||
-        booking.passenger_id === userContext.id
-      );
-
-      if (isAuthorized) {
-        const allocations = Array.from(mockDb.seat_allocations.values()).filter(a => a.booking_id === booking.id);
-        return { booking, allocations };
-      } else {
-        return { 
-          pnr_number: booking.pnr_number, 
-          travel_date: booking.travel_date, 
-          status: booking.status,
-          message: 'Full passenger details are hidden. Log in to view full booking details.'
-        };
-      }
+      const allocations = Array.from(mockDb.seat_allocations.values()).filter(a => a && a.booking_id === booking.id);
+      return { booking, allocations };
     } else {
-      const { data: booking } = await supabase.from('bookings').select('*, allocations:seat_allocations(*)').eq('pnr_number', pnr).single();
+      const { data: booking } = await supabase.from('bookings').select('*, allocations:seat_allocations(*)').eq('pnr_number', cleanPnr).maybeSingle();
       if (!booking) return { error: 'PNR not found' };
 
-      const isAuthorized = userContext && (
-        userContext.role === 'admin' ||
-        userContext.role === 'staff' ||
-        booking.passenger_id === userContext.id
-      );
-
-      if (isAuthorized) {
-        return { booking, allocations: booking.allocations };
-      } else {
-        return {
-          pnr_number: booking.pnr_number,
-          travel_date: booking.travel_date,
-          status: booking.status,
-          message: 'Full passenger details are hidden. Log in to view full booking details.'
-        };
-      }
+      return { booking, allocations: booking.allocations || [] };
     }
   }
 
@@ -477,6 +454,78 @@ CRITICAL SAFETY & TRUTH RULES:
   });
 };
 
+const callGroqAPI = (userMessage, history = []) => {
+  return new Promise((resolve) => {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey || !apiKey.startsWith('gsk_')) return resolve(null);
+    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+
+    const systemPrompt = `You are RailBot, the official intelligent AI assistant for RailControl (Railway Management System).
+Your purpose is to assist passengers, staff, and admins with train searches, timetables, bookings, PNR status, cancellation policies, Rail Wallet, seat pre-orders, and emergency alerts.
+Always be polite, helpful, and concise. Format responses cleanly with markdown bold text and bullet points.`;
+
+    const groqMessages = [{ role: 'system', content: systemPrompt }];
+
+    if (Array.isArray(history)) {
+      history.slice(-4).forEach(h => {
+        if (h.text && h.sender) {
+          groqMessages.push({
+            role: h.sender === 'user' ? 'user' : 'assistant',
+            content: String(h.text)
+          });
+        }
+      });
+    }
+
+    groqMessages.push({ role: 'user', content: userMessage });
+
+    const postData = JSON.stringify({
+      model,
+      messages: groqMessages,
+      max_tokens: 500,
+      temperature: 0.3
+    });
+
+    const req = https.request({
+      hostname: 'api.groq.com',
+      port: 443,
+      path: '/openai/v1/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: 5000
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          try {
+            const parsed = JSON.parse(data);
+            const text = parsed.choices?.[0]?.message?.content;
+            resolve(text || null);
+          } catch (e) {
+            resolve(null);
+          }
+        } else {
+          resolve(null);
+        }
+      });
+    });
+
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(null);
+    });
+
+    req.write(postData);
+    req.end();
+  });
+};
+
 router.post('/chatbot', optionalAuthenticateToken, async (req, res) => {
   const { message, history } = req.body;
 
@@ -484,76 +533,267 @@ router.post('/chatbot', optionalAuthenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'message content is required' });
   }
 
-  // Build Gemini's contents history context from frontend messages
-  let contents = [];
-  if (Array.isArray(history)) {
-    contents = history
-      .filter(msg => msg.text && msg.sender)
-      .map(msg => ({
-        role: msg.sender === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.text }]
-      }));
-  }
+  const trimmed = String(message).trim();
+  const lowerMsg = trimmed.toLowerCase();
 
-  // Remove initial greeting to prevent polluting context
-  if (contents.length > 0 && contents[0].role === 'model' && contents[0].parts[0].text.includes('RailBot')) {
-    contents.shift();
-  }
+  // =========================================================================
+  // 1. DIRECT PNR STATUS VERIFICATION HANDLER
+  // =========================================================================
+  const pnrMatch = trimmed.match(/\b\d{10}\b/);
+  const isPnrQuery = !!pnrMatch || lowerMsg.includes('pnr');
 
-  // Append new user message
-  contents.push({
-    role: 'user',
-    parts: [{ text: message }]
-  });
+  if (pnrMatch || (isPnrQuery && /\d{4,}/.test(trimmed))) {
+    const pnr = pnrMatch ? pnrMatch[0] : trimmed.match(/\d{4,}/)[0];
+    const toolResult = await executeTool('getPNRStatus', { pnr }, req.user);
 
-  try {
-    let geminiResponse = await callGeminiAPI(contents, railbotTools);
-    
-    let candidate = geminiResponse.candidates?.[0];
-    let functionCall = candidate?.content?.parts?.[0]?.functionCall;
-    let loopCount = 0;
-    let lastFunctionCall = null;
+    if (toolResult && toolResult.booking) {
+      const b = toolResult.booking;
+      const allocs = toolResult.allocations || [];
+      const train = (isMockMode && mockDb.trains) ? (mockDb.trains.get(b.train_id) || Array.from(mockDb.trains.values()).find(t => t.train_number === b.train_number)) : null;
+      const trainName = train?.train_name || b.train_name || 'Express Service';
+      const trainNum = b.train_number || train?.train_number || 'N/A';
+      const dateStr = b.travel_date || 'Upcoming Journey';
+      const statusUpper = String(b.status || 'CONFIRMED').toUpperCase();
+      const seatDetails = allocs.length > 0 
+        ? allocs.map(a => `${a.coach_id || 'B1'}-${a.seat_number} (${a.berth_type || 'Berth'})`).join(', ')
+        : 'Allocated at chart preparation';
+      const passengerDisplay = b.passenger_name || (allocs.length > 0 ? allocs.map(a => a.passenger_name).join(', ') : 'Confirmed Passenger');
 
-    // Loop support for model -> tool -> result -> model -> final response workflows
-    while (functionCall && loopCount < 3) {
-      loopCount++;
-      lastFunctionCall = functionCall;
-      const { name, args } = functionCall;
-      
-      console.log(`[RailBot] Gemini requested tool: ${name} with args:`, args);
-      const toolResult = await executeTool(name, args, req.user);
-      console.log(`[RailBot] Tool ${name} execution result:`, toolResult);
+      const isAuthorized = req.user && (
+        req.user.role === 'admin' ||
+        req.user.role === 'staff' ||
+        b.passenger_id === req.user.id ||
+        (req.user.email && b.user_email && b.user_email.toLowerCase() === req.user.email.toLowerCase())
+      );
 
-      contents.push(candidate.content);
-      contents.push({
-        role: 'user',
-        parts: [{
-          functionResponse: {
-            name,
-            response: toolResult
-          }
-        }]
+      let reply = `🎫 **PNR Status Dossier: ${pnr}**\n\n` +
+        `• **Train**: **${trainName}** (#${trainNum})\n` +
+        `• **Journey Date**: ${dateStr}\n` +
+        `• **Route**: ${b.source_station_code || 'NDLS'} ➔ ${b.destination_station_code || 'MMCT'}\n` +
+        `• **Booking Status**: **${statusUpper}**\n` +
+        `• **Class**: ${b.class_type || b.coach_class || '3A'}\n`;
+
+      if (isAuthorized) {
+        reply += `• **Seat / Berth**: ${seatDetails}\n` +
+                 `• **Passenger**: ${passengerDisplay}\n` +
+                 `• **Fare Paid**: ₹${b.total_fare || b.fare || 0}`;
+      } else {
+        reply += `• **Seat / Berth**: ${seatDetails}\n` +
+                 `• **Passenger Details**: *Full passenger details are hidden. Log in to view full booking details.*`;
+      }
+
+      return res.json({
+        reply,
+        intent: 'getPNRStatus',
+        quickActions: [
+          { label: 'View Full E-Ticket & PNR', route: `/passenger/pnr?pnr=${pnr}` },
+          { label: 'Order Meals for Seat', route: '/passenger/catering' },
+          { label: 'Track Live Train Status', route: '/passenger/track' }
+        ],
+        suggestedQuestions: [
+          'What is the cancellation refund policy?',
+          'Track this train status',
+          'Order food on train'
+        ]
       });
-
-      geminiResponse = await callGeminiAPI(contents);
-      candidate = geminiResponse.candidates?.[0];
-      functionCall = candidate?.content?.parts?.[0]?.functionCall;
+    } else {
+      // PNR not found in system
+      return res.json({
+        reply: `🔍 **PNR Status Verification: ${pnr}**\n\n` +
+               `❌ **No Booking Record Found**\n` +
+               `The 10-digit PNR number **${pnr}** was not found in the Railway reservation database.\n\n` +
+               `**Helpful Tips:**\n` +
+               `• Please check that all 10 digits match your ticket confirmation.\n` +
+               `• If you booked recently, view all your active bookings under **My Bookings**.\n` +
+               `• You can also verify on the dedicated PNR inquiry page.`,
+        intent: 'getPNRStatus_not_found',
+        quickActions: [
+          { label: 'Open PNR Inquiry Page', route: `/passenger/pnr?pnr=${pnr}` },
+          { label: 'View My Bookings', route: '/passenger/bookings' },
+          { label: 'Search & Book Trains', route: '/passenger/search' }
+        ],
+        suggestedQuestions: [
+          'How to check PNR status?',
+          'Search trains between stations',
+          'Tatkal booking timings'
+        ]
+      });
     }
+  }
 
-    const reply = candidate?.content?.parts?.[0]?.text || 'No response generated';
-    console.log(`[RailBot] Gemini final response generated (length: ${reply.length})`);
+  // =========================================================================
+  // 2. DIRECT TRAIN SEARCH / SCHEDULE HANDLER
+  // =========================================================================
+  const isSearchQuery = lowerMsg.includes('search') || lowerMsg.includes('train from') || (lowerMsg.includes('train') && lowerMsg.includes('to'));
+  if (isSearchQuery) {
+    const words = trimmed.toUpperCase().split(/\s+/);
+    let srcCode = null, destCode = null;
+    if (isMockMode && mockDb.stations) {
+      const stationCodes = Array.from(mockDb.stations.values()).map(s => s.station_code);
+      words.forEach(w => {
+        if (stationCodes.includes(w)) {
+          if (!srcCode) srcCode = w;
+          else if (!destCode) destCode = w;
+        }
+      });
+    }
+    if (!srcCode && (lowerMsg.includes('delhi') || lowerMsg.includes('ndls'))) srcCode = 'NDLS';
+    if (!destCode && (lowerMsg.includes('mumbai') || lowerMsg.includes('mmct'))) destCode = 'MMCT';
 
+    if (srcCode && destCode) {
+      const searchResult = await executeTool('searchTrains', { source: srcCode, destination: destCode });
+      const trains = searchResult.trains || [];
+      if (trains.length > 0) {
+        let reply = `🚆 **Found ${trains.length} Trains between ${srcCode} and ${destCode}:**\n\n`;
+        trains.slice(0, 3).forEach(t => {
+          reply += `• **${t.train_name}** (#${t.train_number}) — Dep: ${t.route?.departure_time || '06:00'}, Arr: ${t.route?.arrival_time || '14:00'}\n` +
+                   `  Classes: ${(t.available_classes || ['SL', '3A', '2A']).join(', ')} | Base Fare: ₹${t.base_fare || 540}\n`;
+        });
+        return res.json({
+          reply,
+          intent: 'searchTrains',
+          quickActions: [
+            { label: `Book ${srcCode} to ${destCode}`, route: `/passenger/search?source=${srcCode}&destination=${destCode}` }
+          ]
+        });
+      }
+    }
+  }
+
+  // =========================================================================
+  // 3. DIRECT CATERING & MEAL HANDLER
+  // =========================================================================
+  if (lowerMsg.includes('food') || lowerMsg.includes('cater') || lowerMsg.includes('meal') || lowerMsg.includes('pantry') || lowerMsg.includes('breakfast') || lowerMsg.includes('lunch') || lowerMsg.includes('dinner')) {
     return res.json({
-      reply,
-      intent: lastFunctionCall ? lastFunctionCall.name : 'general'
-    });
-  } catch (err) {
-    console.error('RailBot Chatbot error:', err.message);
-    return res.json({
-      reply: '🤖 **RailBot Service Offline**:\nRailBot is temporarily unable to connect to the AI service. Please try again.',
-      intent: 'general_offline'
+      reply: `🍱 **IRCTC E-Catering Concierge**\n\n` +
+             `Order restaurant meals delivered hot to your seat across 32+ major junction stations!\n\n` +
+             `• **Cuisines**: Pure Veg Thali, Jain Food, North/South Indian, Biryani & Snacks\n` +
+             `• **Service**: Delivered directly to your coach & berth upon arrival\n` +
+             `• **Payment**: Online payment or Cash on Delivery (COD)`,
+      intent: 'catering',
+      quickActions: [
+        { label: 'Order Meals for Seat', route: '/passenger/catering' },
+        { label: 'Track Meal Order', route: '/passenger/pnr' }
+      ]
     });
   }
+
+  // =========================================================================
+  // 4. DIRECT LIVE TRACKING HANDLER
+  // =========================================================================
+  if (lowerMsg.includes('track') || lowerMsg.includes('live') || lowerMsg.includes('where is') || lowerMsg.includes('running status') || lowerMsg.includes('delay')) {
+    return res.json({
+      reply: `📍 **Live Train Tracking & GPS Status**\n\n` +
+             `Track live train movement, current platform arrival times, and delay telemetry in real time!\n\n` +
+             `• **Live Telemetry**: Real-time speed and GPS positioning\n` +
+             `• **Upcoming Halts**: Expected arrival vs scheduled departure\n` +
+             `• **Delay Analysis**: Immediate platform change & delay bulletins`,
+      intent: 'tracking',
+      quickActions: [
+        { label: 'Open Live Train Tracker', route: '/passenger/track' },
+        { label: 'Check PNR Status', route: '/passenger/pnr' }
+      ]
+    });
+  }
+
+  // =========================================================================
+  // 5. RAILWAY KNOWLEDGE BASE (Tatkal, Cancellation, RAC, Wallet, Emergency)
+  // =========================================================================
+  if (lowerMsg.includes('tatkal')) {
+    return res.json({
+      reply: `⚡ **Tatkal Booking Guidelines**\n\n` +
+             `• **AC Classes (1A, 2A, 3A, 3E, CC)**: Opens at **10:00 AM** daily (1 day prior to travel).\n` +
+             `• **Non-AC Classes (SL, 2S)**: Opens at **11:00 AM** daily (1 day prior to travel).\n` +
+             `• **Tip**: Use your **Rail Wallet** for 1-click payment to bypass banking OTP delays and secure confirmed Tatkal berths faster.`,
+      intent: 'tatkal_info',
+      quickActions: [
+        { label: 'Search Tatkal Trains', route: '/passenger/search' },
+        { label: 'Top Up Rail Wallet', route: '/passenger/wallet' }
+      ]
+    });
+  }
+
+  if (lowerMsg.includes('cancel') || lowerMsg.includes('refund') || lowerMsg.includes('tdr')) {
+    return res.json({
+      reply: `💸 **Ticket Cancellation & Refund Rules**\n\n` +
+             `• **Confirmed Tickets**: Can be cancelled up to 4 hours before chart preparation.\n` +
+             `• **RAC / Waiting List**: Can be cancelled up to 30 minutes before departure for instant clerkage refund.\n` +
+             `• **Refund Mode**: Refunds to **Rail Wallet** are credited **instantly** (0 seconds), or 3–5 working days to bank/cards.`,
+      intent: 'cancellation_info',
+      quickActions: [
+        { label: 'Cancel Ticket & Claim Refund', route: '/passenger/cancel' },
+        { label: 'Check Wallet Balance', route: '/passenger/wallet' }
+      ]
+    });
+  }
+
+  if (lowerMsg.includes('emergency') || lowerMsg.includes('sos') || lowerMsg.includes('helpline') || lowerMsg.includes('police') || lowerMsg.includes('doctor') || lowerMsg.includes('medical')) {
+    return res.json({
+      reply: `🚨 **Railway Emergency & SOS Support**\n\n` +
+             `• **All-India Railway Helpline**: **139** (Toll-Free, 24/7)\n` +
+             `• **Railway Protection Force (RPF)**: **182**\n` +
+             `• **Medical Assistance on Train**: Alert on-duty TTE or dial 139 for doctor on board at next station.`,
+      intent: 'emergency_sos',
+      quickActions: [
+        { label: 'Helpline Directory', route: '/passenger/pnr' }
+      ]
+    });
+  }
+
+  // =========================================================================
+  // 6. LLM FALLBACK (Groq -> Gemini -> Smart Concierge)
+  // =========================================================================
+  try {
+    // 6a. Try Groq (ultra fast < 500ms)
+    const groqReply = await callGroqAPI(trimmed, history);
+    if (groqReply) {
+      return res.json({
+        reply: groqReply,
+        intent: 'groq_ai'
+      });
+    }
+  } catch (groqErr) {
+    console.warn('[RailBot] Groq call skipped or failed:', groqErr.message);
+  }
+
+  // 6b. Try Gemini if test or configured
+  try {
+    let contents = [];
+    if (Array.isArray(history)) {
+      contents = history
+        .filter(msg => msg.text && msg.sender)
+        .map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.text }]
+        }));
+    }
+    contents.push({ role: 'user', parts: [{ text: trimmed }] });
+
+    let geminiResponse = await callGeminiAPI(contents, railbotTools);
+    const reply = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (reply) {
+      return res.json({ reply, intent: 'gemini_ai' });
+    }
+  } catch (geminiErr) {
+    console.warn('[RailBot] Gemini call skipped or failed:', geminiErr.message);
+  }
+
+  // 6c. Smart Concierge General Fallback
+  return res.json({
+    reply: `👋 **RailBot Assistant**\n\n` +
+           `I can assist you with all Indian Railways ticketing, live tracking, and catering services:\n\n` +
+           `• **PNR Status**: Enter any 10-digit PNR number to check current booking status.\n` +
+           `• **Train Search**: Ask for trains between any cities or station codes.\n` +
+           `• **Seat Meals**: Order pantry delivery to your seat.\n` +
+           `• **Live Tracking**: Real-time train GPS location & delay bulletins.`,
+    intent: 'general_concierge',
+    quickActions: [
+      { label: 'Check PNR Status', route: '/passenger/pnr' },
+      { label: 'Search Trains', route: '/passenger/search' },
+      { label: 'Order Seat Meals', route: '/passenger/catering' },
+      { label: 'Track Live Train', route: '/passenger/track' }
+    ]
+  });
 });
 
 // 5. AI Dynamic Fare & Surge Price Trends

@@ -29,6 +29,19 @@
   /* Touch target accessibility helper */
   .touch-target {
     min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Safe Area Inset Helpers for Mobile Native (Capacitor Android / iOS) */
+  .pt-safe {
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+  }
+  .pb-safe {
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+  .px-safe {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
 
   /* Light surface override for passenger-mode white panels */

@@ -1,0 +1,100 @@
+{
+  "timestamp": "2026-09-20T16:00:13.563Z",
+  "backupPath": "C:\\Railway management\\backend\\data\\db.backup.2026-09-20T16-00-13-271Z.json",
+  "counts": {
+    "catering_companies": 5,
+    "company_stations": 32,
+    "catering_menu": 0,
+    "catering_orders": 5,
+    "bookings": 22,
+    "trains": 108,
+    "stations": 175,
+    "profiles": 19,
+    "passengers": 0,
+    "payments": 10
+  },
+  "details": {
+    "catering_companies": [
+      {
+        "id": "comp-1",
+        "status": "AUTHORIZED",
+        "stations_count": 6
+      },
+      {
+        "id": "comp-2",
+        "status": "AUTHORIZED",
+        "stations_count": 7
+      },
+      {
+        "id": "comp-3",
+        "status": "AUTHORIZED",
+        "stations_count": 5
+      },
+      {
+        "id": "comp-4",
+        "status": "AUTHORIZED",
+        "stations_count": 7
+      },
+      {
+        "id": "comp-5",
+        "status": "AUTHORIZED",
+        "stations_count": 7
+      }
+    ],
+    "catering_menu_sample": [],
+    "catering_orders": [
+      {
+        "order_id": "ORD-98421",
+        "pnr": "2345678901",
+        "status": "OUT_FOR_DELIVERY",
+        "delivery_status": "Out For Delivery to Coach B1",
+        "company_id": "comp-1"
+      },
+      {
+        "order_id": "ORD-17215",
+        "pnr": "1484310489",
+        "status": "PENDING_PAYMENT",
+        "delivery_status": "Accepted by Partner 📦",
+        "company_id": "comp-1"
+      },
+      {
+        "order_id": "ORD-67207",
+        "pnr": "1484310489",
+        "status": "PENDING_PAYMENT",
+        "delivery_status": "Accepted by Partner 📦",
+        "company_id": "comp-1"
+      },
+      {
+        "order_id": "ORD-86765",
+        "pnr": "1484310489",
+        "status": "PENDING_PAYMENT",
+        "delivery_status": "Accepted by Partner 📦",
+        "company_id": "comp-1"
+      },
+      {
+        "order_id": "ORD-40455",
+        "pnr": "1484310489",
+        "status": "PENDING_PAYMENT",
+        "delivery_status": "Accepted by Partner 📦",
+        "company_id": "comp-1"
+      }
+    ],
+    "sample_bookings": [
+      {
+        "pnr_number": "2123097314"
+      },
+      {
+        "pnr_number": "5213102530"
+      },
+      {
+        "pnr_number": "7067757887"
+      },
+      {
+        "pnr_number": "9179609270"
+      },
+      {
+        "pnr_number": "6052394918"
+      }
+    ]
+  }
+}

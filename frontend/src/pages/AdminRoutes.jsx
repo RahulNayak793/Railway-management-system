@@ -571,7 +571,7 @@ const AdminRoutes = () => {
               <Search className="h-4 w-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search station code, name, UDU ➔ NDLS..."
+                placeholder="Search station code, name, UD ➔ NDLS..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-transparent focus:outline-none placeholder:text-slate-400 font-semibold w-full"

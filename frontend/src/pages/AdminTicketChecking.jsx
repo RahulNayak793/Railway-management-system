@@ -1,508 +1,571 @@
-import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Ticket, Search, CheckCircle, XCircle, AlertTriangle, ShieldCheck, User, Compass,
-  QrCode, Camera, RefreshCw, Sparkles, CheckCircle2, UserCheck, AlertCircle, Scan, Volume2,
-  Receipt, Printer, Filter, Check, X, ArrowRight, DollarSign
+  Ticket, Search, CheckCircle, XCircle, AlertTriangle, User, 
+  Train, Calendar, MapPin, RefreshCw, UserCheck, ShieldAlert,
+  Clock, ArrowRight, X, Sparkles, Check, AlertCircle
 } from 'lucide-react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const AdminTicketChecking = () => {
+  const { user } = useAuth();
+
+  // PNR Search State
   const [pnrInput, setPnrInput] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const [checkedResult, setCheckedResult] = useState(null);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
+  const [verificationError, setVerificationError] = useState(null);
+  const [actionSuccessMessage, setActionSuccessMessage] = useState(null);
 
-  // Coach & Filter States
-  const [selectedCoach, setSelectedCoach] = useState('B1');
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'verified' | 'unverified' | 'no_show'
+  // Recent / All Bookings State for Quick Selection
+  const [bookings, setBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [tableSearch, setTableSearch] = useState('');
 
-  // EFT Modal State
-  const [showEftModal, setShowEftModal] = useState(false);
-  const [eftSeat, setEftSeat] = useState('');
-  const [eftPassenger, setEftPassenger] = useState('');
-  const [eftReason, setEftReason] = useState('Traveling Without Ticket (TWT)');
-  const [eftAmount, setEftAmount] = useState('450');
+  // Fetch recent bookings from backend for quick test chips and table
+  const fetchRecentBookings = async () => {
+    setLoadingBookings(true);
+    try {
+      const res = await api.get('/staff/manifest/all?status=ALL');
+      if (res.data && Array.isArray(res.data.manifest)) {
+        setBookings(res.data.manifest);
+      }
+    } catch (err) {
+      console.warn('Could not fetch manifest for quick PNR chips:', err.message);
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
 
-  // RAC Reassignment Modal State
-  const [showRacModal, setShowRacModal] = useState(false);
-  const [racTargetSeat, setRacTargetSeat] = useState(null);
-  const [nextRacPassenger, setNextRacPassenger] = useState({ name: 'Vikram Sethi (RAC 1)', pnr: '9841209412', age: 34, gender: 'Male' });
+  useEffect(() => {
+    fetchRecentBookings();
+  }, []);
 
-  // Interactive Coach Seat Grid (24 Berths)
-  const [seatsState, setSeatsState] = useState(() => {
-    return Array.from({ length: 24 }).map((_, idx) => {
-      const seatNo = idx + 1;
-      const berthType = seatNo % 6 === 1 || seatNo % 6 === 2 ? 'LB' : seatNo % 6 === 3 || seatNo % 6 === 4 ? 'MB' : 'UB';
-      return {
-        id: `B1-${seatNo}`,
-        seatNo,
-        berthType,
-        passengerName: idx === 0 ? 'Rahul Sharma' : idx === 1 ? 'Priya Sharma' : idx === 3 ? 'Ramesh Kumar' : `Passenger ${seatNo}`,
-        pnr: idx === 0 ? '2345678901' : idx === 1 ? '7462573954' : idx === 3 ? '6543210987' : `9000${seatNo}123`,
-        status: idx === 0 || idx === 1 ? 'verified' : idx === 3 ? 'no_show' : 'unverified',
-        age: 30 + (seatNo % 20),
-        gender: seatNo % 2 === 0 ? 'Female' : 'Male'
-      };
+  // Quick PNR chips from database
+  const quickTestPnrs = useMemo(() => {
+    const list = [];
+    bookings.forEach(b => {
+      if (b.pnr && !list.some(x => x.pnr === b.pnr)) {
+        list.push({
+          pnr: b.pnr,
+          name: b.passenger_name || 'Passenger',
+          status: b.ticket_status || 'CNF',
+          coach: b.coach || 'B1',
+          seat: b.seat_number || '-'
+        });
+      }
     });
-  });
+    return list.slice(0, 6);
+  }, [bookings]);
 
-  const verifiedCount = seatsState.filter(s => s.status === 'verified').length;
-  const unverifiedCount = seatsState.filter(s => s.status === 'unverified').length;
-  const noShowCount = seatsState.filter(s => s.status === 'no_show').length;
-
-  const handleVerifyPnr = async (queryPnr) => {
-    const targetPnr = queryPnr || pnrInput;
-    setErrorMsg('');
-    setCheckedResult(null);
-    setLoading(true);
-
-    if (!targetPnr || targetPnr.length !== 10) {
-      setErrorMsg('Please enter a valid 10-Digit PNR Number.');
-      setLoading(false);
+  // Verify PNR
+  const handleVerifyPnr = async (customPnr) => {
+    const targetPnr = String(customPnr || pnrInput).trim();
+    if (!targetPnr || targetPnr.length < 5) {
+      setVerificationError({
+        status: 'INPUT_ERROR',
+        title: 'Invalid Input',
+        message: 'Please enter a valid 10-digit PNR number.'
+      });
       return;
     }
 
+    setVerifying(true);
+    setVerificationError(null);
+    setCheckedResult(null);
+    setActionSuccessMessage(null);
+
     try {
-      const res = await api.get(`/bookings/pnr/${targetPnr}`);
-      if (res.data) {
-        const b = res.data;
-        const firstAlloc = b.allocations?.[0] || {};
-        setCheckedResult({
-          pnr: b.pnr_number || b.id,
-          passengerName: firstAlloc.passenger_name || 'Rahul Sharma',
-          trainNo: b.train?.train_number || '12952',
-          trainName: b.train?.train_name || 'Rajdhani Express',
-          from: b.train?.source || 'NDLS',
-          to: b.train?.destination || 'MMCT',
-          seat: firstAlloc.seat_id ? `B1-${firstAlloc.seat_number || 24}` : 'B1-24',
-          class: b.coach_class || '3A',
-          status: b.status ? b.status.charAt(0).toUpperCase() + b.status.slice(1).toLowerCase() : 'Confirmed',
-          verified: true
-        });
-      } else {
-        fallbackMock(targetPnr);
+      const res = await api.post('/staff/ticket/verify', { pnr: targetPnr, checked_status: true });
+      if (res.data && res.data.valid) {
+        setCheckedResult(res.data);
+        fetchRecentBookings();
       }
     } catch (err) {
-      fallbackMock(targetPnr);
+      const data = err.response?.data;
+      if (data && data.status === 'CANCELLED') {
+        setVerificationError({
+          status: 'CANCELLED',
+          title: 'TICKET CANCELLED - BOARDING DENIED',
+          message: data.error || 'This ticket was cancelled in the reservation system. Boarding is not permitted.',
+          details: data
+        });
+      } else if (data && data.status === 'NOT_FOUND') {
+        setVerificationError({
+          status: 'NOT_FOUND',
+          title: 'PNR NOT FOUND',
+          message: data.error || `No booking found for PNR "${targetPnr}" in the centralized database.`
+        });
+      } else {
+        setVerificationError({
+          status: 'ERROR',
+          title: 'VERIFICATION FAILED',
+          message: data?.error || err.message || 'Unable to verify PNR.'
+        });
+      }
     } finally {
-      setLoading(false);
+      setVerifying(false);
     }
   };
 
-  const fallbackMock = (targetPnr) => {
-    const matched = seatsState.find(s => s.pnr === targetPnr);
-    if (matched) {
-      setCheckedResult({
-        pnr: matched.pnr,
-        passengerName: matched.passengerName,
-        trainNo: '12952',
-        trainName: 'Mumbai Rajdhani Express',
-        from: 'NDLS',
-        to: 'MMCT',
-        seat: matched.id,
-        class: '3A',
-        status: 'Confirmed',
-        verified: matched.status === 'verified'
+  // Mark Present / Boarded
+  const handleMarkPresent = async () => {
+    if (!checkedResult?.pnr) return;
+    setVerifying(true);
+    try {
+      const res = await api.post('/staff/ticket/verify', { pnr: checkedResult.pnr, checked_status: true });
+      if (res.data && res.data.valid) {
+        setCheckedResult(res.data);
+        setActionSuccessMessage(`Passenger marked as VERIFIED / PRESENT on board.`);
+        fetchRecentBookings();
+      }
+    } catch (err) {
+      alert('Failed to mark verified: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  // Mark No-Show
+  const handleMarkNoShow = async () => {
+    if (!checkedResult?.pnr) return;
+    const confirmMsg = `Mark passenger "${checkedResult.passenger_name}" (PNR: ${checkedResult.pnr}) as NO-SHOW / ABSENT?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setVerifying(true);
+    try {
+      const res = await api.post('/staff/ticket/no-show', {
+        pnr: checkedResult.pnr,
+        seat_id: `${checkedResult.coach}-${checkedResult.seat_number}`,
+        reason: 'Passenger absent at boarding station'
       });
-    } else {
-      setErrorMsg('PNR code not found in active train manifest.');
+      if (res.data && res.data.success) {
+        setCheckedResult(prev => prev ? { ...prev, boarding_status: 'NO_SHOW' } : null);
+        setActionSuccessMessage(`Passenger marked as NO-SHOW. Berth ${checkedResult.coach}-${checkedResult.seat_number} vacated.`);
+        fetchRecentBookings();
+      }
+    } catch (err) {
+      alert('Failed to mark NO-SHOW: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setVerifying(false);
     }
   };
 
-  const toggleSeatStatus = (seatId, newStatus) => {
-    setSeatsState(prev => prev.map(s => s.id === seatId ? { ...s, status: newStatus } : s));
-  };
-
-  const simulateCameraScan = () => {
-    setIsScanning(true);
-    setTimeout(() => {
-      setIsScanning(false);
-      setPnrInput('2345678901');
-      handleVerifyPnr('2345678901');
-    }, 1800);
-  };
+  // Filtered table rows
+  const filteredBookings = useMemo(() => {
+    if (!tableSearch) return bookings;
+    const q = tableSearch.toLowerCase().trim();
+    return bookings.filter(b => 
+      (b.pnr && b.pnr.toLowerCase().includes(q)) ||
+      (b.passenger_name && b.passenger_name.toLowerCase().includes(q)) ||
+      (b.train_number && b.train_number.toLowerCase().includes(q)) ||
+      (b.coach && b.coach.toLowerCase().includes(q))
+    );
+  }, [bookings, tableSearch]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 font-sans space-y-6 animate-slide-in">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 font-sans space-y-6">
       
-      {/* Top Banner Header */}
-      <div className="rounded-3xl bg-slate-900 p-6 text-white shadow-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden border border-slate-800">
-        <div className="z-10 space-y-1">
-          <div className="inline-flex items-center space-x-2 px-3 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-black uppercase tracking-wider">
-            <Scan className="h-3 w-3 animate-pulse" />
-            <span>TTE Digital Terminal &bull; Northern Railway Division</span>
-          </div>
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">On-Board Ticket Verification HUD</h1>
-          <p className="text-xs text-slate-400 font-medium">Verify passenger e-tickets, scan digital QR codes, and update seat occupancy live.</p>
+
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-4 gap-2">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+            <Ticket className="h-7 w-7 text-primary-600" />
+            <span>Ticket Checking & PNR Verification</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+            Simple PNR inspection terminal for Ticket Examiners. Check passenger status, seat allocation, and boarding attendance.
+          </p>
         </div>
 
-        {/* Stats Pills */}
-        <div className="flex items-center space-x-3 shrink-0 z-10">
-          <div className="bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-2xl text-center">
-            <span className="block text-[9px] text-emerald-400 font-mono font-bold uppercase">Verified</span>
-            <span className="text-base font-black text-emerald-400">{verifiedCount}</span>
-          </div>
-          <div className="bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-2xl text-center">
-            <span className="block text-[9px] text-amber-400 font-mono font-bold uppercase">Pending</span>
-            <span className="text-base font-black text-amber-400">{unverifiedCount}</span>
-          </div>
-          <div className="bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-2xl text-center">
-            <span className="block text-[9px] text-rose-400 font-mono font-bold uppercase">No-Show</span>
-            <span className="text-base font-black text-rose-400">{noShowCount}</span>
-          </div>
-        </div>
+        <button
+          onClick={fetchRecentBookings}
+          disabled={loadingBookings}
+          className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl transition flex items-center space-x-1.5 text-xs font-bold cursor-pointer"
+          title="Refresh bookings list"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${loadingBookings ? 'animate-spin text-primary-600' : ''}`} />
+          <span>Sync Data</span>
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left Column: PNR Search & Camera HUD Scanner */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-black text-slate-800 flex items-center space-x-2">
-              <QrCode className="h-4 w-4 text-primary-600" />
-              <span>Verify Passenger PNR Code</span>
-            </h3>
+      {/* Main PNR Search Card */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl p-6 sm:p-8 space-y-6">
+        <div className="max-w-3xl mx-auto space-y-4">
+          <label className="block text-sm font-black text-slate-800 uppercase tracking-wider">
+            Enter 10-Digit PNR Number
+          </label>
 
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  maxLength={10}
-                  placeholder="Enter 10-Digit PNR..."
-                  value={pnrInput}
-                  onChange={(e) => setPnrInput(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-primary-500 transition"
-                />
-              </div>
-              <button
-                onClick={() => handleVerifyPnr()}
-                disabled={loading}
-                className="px-5 py-3 rounded-2xl bg-primary-600 hover:bg-primary-700 text-white font-black text-xs shadow-md transition active:scale-95 shrink-0"
-              >
-                {loading ? 'Verifying...' : 'Verify'}
-              </button>
-            </div>
-
-            {errorMsg && (
-              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
-                {errorMsg}
-              </div>
-            )}
-
-            {/* Verified Ticket Card Result */}
-            {checkedResult && (
-              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-slate-900 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 border border-emerald-500/30 text-[10px] font-black uppercase">
-                    ✓ VERIFIED ETICKET
-                  </span>
-                  <span className="text-xs font-mono font-bold text-slate-600">PNR: {checkedResult.pnr}</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="block text-[10px] text-slate-400 font-bold">Passenger</span>
-                    <span className="font-extrabold text-slate-800">{checkedResult.passengerName}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-400 font-bold">Assigned Berth</span>
-                    <span className="font-black text-primary-600 font-mono">{checkedResult.seat}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-400 font-bold">Train No</span>
-                    <span className="font-bold text-slate-800">{checkedResult.trainNo} - {checkedResult.trainName}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-400 font-bold">Class & Status</span>
-                    <span className="font-bold text-emerald-600">{checkedResult.class} ({checkedResult.status})</span>
-                  </div>
-                </div>
-
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleVerifyPnr();
+            }}
+            className="flex flex-col sm:flex-row gap-3"
+          >
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <input
+                type="text"
+                value={pnrInput}
+                onChange={(e) => setPnrInput(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))}
+                placeholder="Enter 10-digit PNR (e.g. 5213102530)..."
+                maxLength={10}
+                className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-lg font-mono font-black text-slate-900 placeholder:font-sans placeholder:font-normal placeholder:text-slate-400 focus:bg-white focus:border-primary-500 focus:outline-none transition shadow-inner"
+              />
+              {pnrInput && (
                 <button
+                  type="button"
                   onClick={() => {
-                    toggleSeatStatus(checkedResult.seat, 'verified');
-                    alert(`Seat ${checkedResult.seat} marked as VERIFIED PRESENT!`);
+                    setPnrInput('');
+                    setCheckedResult(null);
+                    setVerificationError(null);
+                    setActionSuccessMessage(null);
                   }}
-                  className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow transition active:scale-95"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-200"
                 >
-                  Confirm Passenger Check-In
+                  <X className="h-4 w-4" />
                 </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column: Interactive Coach Seat Grid */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-            
-            {/* Header & Coach Selection Bar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-3 gap-3">
-              <div>
-                <h3 className="text-sm font-black text-slate-800 flex items-center space-x-2">
-                  <UserCheck className="h-4 w-4 text-primary-600" />
-                  <span>Coach {selectedCoach} Seat Verification Grid</span>
-                </h3>
-                <p className="text-[11px] text-slate-400 font-medium">Click berth status to mark Present or No-Show.</p>
-              </div>
-
-              {/* Coach Selection Switcher */}
-              <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-700">
-                {['H1 (1A)', 'A1 (2A)', 'B1 (3A)', 'B2 (3A)', 'S1 (SL)'].map(c => {
-                  const code = c.split(' ')[0];
-                  const isActive = selectedCoach === code;
-                  return (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => setSelectedCoach(code)}
-                      className={`px-2.5 py-1 rounded-lg transition font-mono ${
-                        isActive ? 'bg-white shadow-sm font-black text-primary-700' : 'text-slate-500 hover:bg-white/50'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  );
-                })}
-              </div>
+              )}
             </div>
 
-            {/* Quick Action & Status Filter Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs">
-              <div className="flex items-center space-x-1">
-                <Filter className="h-3.5 w-3.5 text-slate-400 mr-1" />
-                {[
-                  { id: 'all', label: `All (${seatsState.length})` },
-                  { id: 'verified', label: `Verified (${verifiedCount})` },
-                  { id: 'unverified', label: `Pending (${unverifiedCount})` },
-                  { id: 'no_show', label: `No-Show (${noShowCount})` },
-                ].map(flt => (
+            <button
+              type="submit"
+              disabled={verifying || !pnrInput}
+              className="px-8 py-4 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-bold text-base rounded-2xl transition shadow-lg shadow-primary-500/25 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {verifying ? (
+                <>
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-5 w-5" />
+                  <span>Verify PNR</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Quick Clickable Sample PNR Chips */}
+          {quickTestPnrs.length > 0 && (
+            <div className="pt-2 space-y-1.5">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                Quick Test PNRs from Database:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {quickTestPnrs.map((item) => (
                   <button
-                    key={flt.id}
+                    key={item.pnr}
                     type="button"
-                    onClick={() => setFilterStatus(flt.id)}
-                    className={`px-2.5 py-1 rounded-xl text-[10px] font-black transition ${
-                      filterStatus === flt.id ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+                    onClick={() => {
+                      setPnrInput(item.pnr);
+                      handleVerifyPnr(item.pnr);
+                    }}
+                    className={`text-xs px-3 py-1.5 rounded-xl font-mono font-bold border transition flex items-center gap-1.5 cursor-pointer ${
+                      pnrInput === item.pnr
+                        ? 'bg-primary-50 border-primary-400 text-primary-700 shadow-sm'
+                        : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700'
                     }`}
                   >
-                    {flt.label}
+                    <span>{item.pnr}</span>
+                    <span className="text-[10px] font-sans px-1.5 py-0.2 rounded bg-white text-slate-600 border border-slate-200">
+                      {item.name} ({item.status})
+                    </span>
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action Success Alert */}
+      {actionSuccessMessage && (
+        <div className="rounded-2xl bg-emerald-50 border-2 border-emerald-300 p-4 flex items-center gap-3 text-emerald-900 shadow-sm">
+          <CheckCircle className="h-6 w-6 text-emerald-600 shrink-0" />
+          <span className="text-sm font-bold">{actionSuccessMessage}</span>
+        </div>
+      )}
+
+      {/* Verification Error / Cancelled Banner */}
+      {verificationError && (
+        <div className={`rounded-3xl border-2 p-6 shadow-xl space-y-3 ${
+          verificationError.status === 'CANCELLED' 
+            ? 'bg-rose-50 border-rose-300 text-rose-900' 
+            : 'bg-amber-50 border-amber-300 text-amber-900'
+        }`}>
+          <div className="flex items-center gap-3">
+            {verificationError.status === 'CANCELLED' ? (
+              <XCircle className="h-7 w-7 text-rose-600 shrink-0" />
+            ) : (
+              <AlertTriangle className="h-7 w-7 text-amber-600 shrink-0" />
+            )}
+            <div>
+              <h3 className="text-lg font-black tracking-tight">{verificationError.title}</h3>
+              <p className="text-sm font-medium">{verificationError.message}</p>
+            </div>
+          </div>
+
+          {verificationError.details && (
+            <div className="bg-white/80 rounded-2xl p-4 border border-rose-200 text-xs font-mono space-y-1 mt-2">
+              <p><strong>Passenger:</strong> {verificationError.details.passenger_name}</p>
+              <p><strong>Train:</strong> {verificationError.details.train_number} - {verificationError.details.train_name}</p>
+              <p><strong>Cancellation Reason:</strong> {verificationError.details.cancellation_reason}</p>
+              <p><strong>Refund Status:</strong> {verificationError.details.refund_status}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Verified Ticket Details Card */}
+      {checkedResult && (
+        <div className="bg-white rounded-3xl border-2 border-emerald-300 shadow-2xl overflow-hidden animate-slide-in">
+          {/* Card Top Banner */}
+          <div className="bg-linear-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle className="h-6 w-6 text-emerald-300" />
+              <div>
+                <span className="text-[11px] font-mono tracking-widest text-emerald-200 font-bold uppercase block">
+                  Official Verification Result
+                </span>
+                <span className="text-lg font-black tracking-tight">VALID RESERVED TICKET</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-white/20 text-white font-mono text-xs font-bold">
+                PNR: {checkedResult.pnr}
+              </span>
+              <span className={`px-3 py-1 rounded-full font-bold text-xs uppercase tracking-wider ${
+                checkedResult.boarding_status === 'VERIFIED' 
+                  ? 'bg-emerald-300 text-emerald-950 font-black' 
+                  : checkedResult.boarding_status === 'NO_SHOW'
+                  ? 'bg-rose-300 text-rose-950 font-black'
+                  : 'bg-amber-300 text-amber-950 font-black'
+              }`}>
+                {checkedResult.boarding_status === 'VERIFIED' ? 'PRESENT / VERIFIED' : checkedResult.boarding_status || 'PENDING'}
+              </span>
+            </div>
+          </div>
+
+          {/* Ticket Information Grid */}
+          <div className="p-6 sm:p-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* Passenger Info */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                  <User className="h-3.5 w-3.5" /> Passenger
+                </span>
+                <span className="text-base font-black text-slate-900 block truncate">
+                  {checkedResult.passenger_name}
+                </span>
+                <span className="text-xs text-slate-500 font-medium block">
+                  Age: {checkedResult.age || 30} &bull; {checkedResult.gender || 'Male'}
+                </span>
+              </div>
+
+              {/* Train Info */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                  <Train className="h-3.5 w-3.5" /> Train Service
+                </span>
+                <span className="text-base font-black text-slate-900 block truncate">
+                  {checkedResult.train_number} - {checkedResult.train_name}
+                </span>
+                <span className="text-xs text-slate-500 font-medium block">
+                  Class: <strong>{checkedResult.coach_class || '3A'}</strong>
+                </span>
+              </div>
+
+              {/* Route & Date */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" /> Journey Route
+                </span>
+                <span className="text-base font-black text-slate-900 block truncate">
+                  {checkedResult.from} &rarr; {checkedResult.to}
+                </span>
+                <span className="text-xs text-slate-500 font-medium block">
+                  Date: <strong className="font-mono">{checkedResult.travel_date}</strong>
+                </span>
+              </div>
+
+              {/* Berth Allocation */}
+              <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 space-y-1">
+                <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
+                  Allocated Berth
+                </span>
+                <span className="text-xl font-black text-emerald-900 block">
+                  Coach {checkedResult.coach || 'B1'} &bull; Seat {checkedResult.seat_number}
+                </span>
+                <span className="text-xs font-bold text-emerald-700 block">
+                  {checkedResult.berth_type === 'LB' ? 'Lower Berth (LB)' :
+                   checkedResult.berth_type === 'MB' ? 'Middle Berth (MB)' :
+                   checkedResult.berth_type === 'UB' ? 'Upper Berth (UB)' :
+                   checkedResult.berth_type === 'SL' ? 'Side Lower (SL)' :
+                   checkedResult.berth_type === 'SU' ? 'Side Upper (SU)' :
+                   checkedResult.berth_type || 'Berth'}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Actions Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleMarkPresent}
+                  disabled={verifying || checkedResult.boarding_status === 'VERIFIED'}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <UserCheck className="h-4 w-4" />
+                  <span>{checkedResult.boarding_status === 'VERIFIED' ? 'Verified (Present)' : 'Mark as Verified (Present)'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleMarkNoShow}
+                  disabled={verifying || checkedResult.boarding_status === 'NO_SHOW'}
+                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{checkedResult.boarding_status === 'NO_SHOW' ? 'Marked No-Show' : 'Mark as No-Show'}</span>
+                </button>
+              </div>
 
               <button
                 type="button"
                 onClick={() => {
-                  setEftSeat(`${selectedCoach}-05`);
-                  setShowEftModal(true);
+                  setCheckedResult(null);
+                  setPnrInput('');
+                  setActionSuccessMessage(null);
                 }}
-                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] shadow-xs flex items-center space-x-1"
+                className="px-4 py-2 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
               >
-                <Receipt className="h-3 w-3" />
-                <span>Issue EFT Fine Fine Penalty</span>
+                Clear / Check Another
               </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Grid list of seats */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-2">
-              {seatsState
-                .filter(s => filterStatus === 'all' || s.status === filterStatus)
-                .map(seat => {
-                  const isVerified = seat.status === 'verified';
-                  const isNoShow = seat.status === 'no_show';
-                  return (
-                    <div
-                      key={seat.id}
-                      className={`p-3 rounded-2xl border transition duration-150 flex flex-col justify-between space-y-2 relative ${
-                        isVerified
-                          ? 'bg-emerald-50/70 border-emerald-200'
-                          : isNoShow
-                          ? 'bg-rose-50/70 border-rose-200'
-                          : 'bg-white border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <span className="font-mono font-black text-xs text-slate-800">{seat.id}</span>
-                        <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-200/60 text-slate-600">
-                          {seat.berthType}
-                        </span>
-                      </div>
+      {/* Recent Bookings List (Quick Click-to-Check) */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 shadow-lg p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <h2 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-primary-600" />
+              <span>Active Passenger Bookings in Database</span>
+            </h2>
+            <p className="text-xs text-slate-500 font-medium">
+              Click any passenger to instantly load and verify their ticket details.
+            </p>
+          </div>
 
-                      <div>
-                        <span className="block text-xs font-extrabold text-slate-900 truncate">{seat.passengerName}</span>
-                        <span className="text-[10px] text-slate-400 font-mono block">PNR: {seat.pnr}</span>
-                      </div>
-
-                      {/* Action toggle buttons */}
-                      <div className="flex gap-1 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => toggleSeatStatus(seat.id, isVerified ? 'unverified' : 'verified')}
-                          className={`flex-1 py-1 rounded-xl text-[10px] font-black transition flex items-center justify-center space-x-1 ${
-                            isVerified
-                              ? 'bg-emerald-600 text-white shadow-xs'
-                              : 'bg-slate-100 hover:bg-emerald-100 text-slate-600 hover:text-emerald-700'
-                          }`}
-                        >
-                          <Check className="h-3 w-3" />
-                          <span>{isVerified ? 'Present' : 'Verify'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (isNoShow) {
-                              toggleSeatStatus(seat.id, 'unverified');
-                            } else {
-                              toggleSeatStatus(seat.id, 'no_show');
-                              setRacTargetSeat(seat.id);
-                              setShowRacModal(true);
-                            }
-                          }}
-                          className={`py-1 px-2 rounded-xl text-[10px] font-black transition ${
-                            isNoShow
-                              ? 'bg-rose-600 text-white shadow-xs'
-                              : 'bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-700'
-                          }`}
-                          title="Mark No-Show"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              value={tableSearch}
+              onChange={(e) => setTableSearch(e.target.value)}
+              placeholder="Search Name, PNR, Coach..."
+              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:outline-none focus:border-primary-500"
+            />
           </div>
         </div>
 
+        {loadingBookings ? (
+          <div className="py-8 text-center text-slate-400 text-xs font-medium flex items-center justify-center gap-2">
+            <RefreshCw className="h-4 w-4 animate-spin text-primary-600" />
+            <span>Loading database bookings...</span>
+          </div>
+        ) : filteredBookings.length === 0 ? (
+          <div className="py-8 text-center text-slate-400 text-xs font-medium">
+            No bookings found matching your search.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/75 text-slate-500 font-black uppercase text-[10px] tracking-wider">
+                  <th className="py-3 px-3">PNR Number</th>
+                  <th className="py-3 px-3">Passenger</th>
+                  <th className="py-3 px-3">Train</th>
+                  <th className="py-3 px-3">Date</th>
+                  <th className="py-3 px-3">Coach / Seat</th>
+                  <th className="py-3 px-3">Status</th>
+                  <th className="py-3 px-3">Boarding</th>
+                  <th className="py-3 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium">
+                {filteredBookings.slice(0, 15).map((b, idx) => (
+                  <tr 
+                    key={b.pnr || idx} 
+                    className="hover:bg-slate-50/80 transition"
+                  >
+                    <td className="py-3 px-3 font-mono font-bold text-slate-900">
+                      {b.pnr}
+                    </td>
+                    <td className="py-3 px-3 font-bold text-slate-900">
+                      {b.passenger_name || 'Passenger'}
+                    </td>
+                    <td className="py-3 px-3 text-slate-600">
+                      {b.train_number}
+                    </td>
+                    <td className="py-3 px-3 font-mono text-slate-600">
+                      {b.travel_date}
+                    </td>
+                    <td className="py-3 px-3 font-mono font-bold text-slate-800">
+                      {b.coach ? `${b.coach}-${b.seat_number || '-'}` : 'WL'}
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] uppercase ${
+                        String(b.ticket_status).toLowerCase().includes('cnf') || String(b.ticket_status).toLowerCase().includes('confirmed')
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : String(b.ticket_status).toLowerCase().includes('cancel')
+                          ? 'bg-rose-100 text-rose-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {b.ticket_status || 'CNF'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] uppercase ${
+                        b.verification_status === 'VERIFIED'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : b.verification_status === 'NO_SHOW'
+                          ? 'bg-rose-100 text-rose-800'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {b.verification_status || 'PENDING'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPnrInput(b.pnr);
+                          handleVerifyPnr(b.pnr);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="px-3 py-1 bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 rounded-lg text-xs font-bold transition cursor-pointer"
+                      >
+                        Check PNR
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-
-      {/* EFT Excess Fare Ticket Penalty Modal */}
-      {showEftModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-slate-100">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2 text-amber-600">
-                <Receipt className="h-5 w-5" />
-                <h3 className="text-base font-black text-slate-800">Issue Excess Fare Ticket (EFT)</h3>
-              </div>
-              <button onClick={() => setShowEftModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="block font-bold text-slate-600 mb-1">Berth / Seat Number</label>
-                <input
-                  type="text"
-                  value={eftSeat}
-                  onChange={(e) => setEftSeat(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold font-mono text-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-600 mb-1">Passenger Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter passenger name..."
-                  value={eftPassenger}
-                  onChange={(e) => setEftPassenger(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-600 mb-1">Violation Reason</label>
-                <select
-                  value={eftReason}
-                  onChange={(e) => setEftReason(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-800"
-                >
-                  <option value="Traveling Without Ticket (TWT)">Traveling Without Ticket (TWT)</option>
-                  <option value="Unbooked Luggage Penalty">Unbooked Luggage Penalty</option>
-                  <option value="Traveling in Higher Class">Traveling in Higher Class</option>
-                  <option value="Expired Ticket / Out-of-Zone">Expired Ticket / Out-of-Zone</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-600 mb-1">Fine Amount (₹)</label>
-                <input
-                  type="number"
-                  value={eftAmount}
-                  onChange={(e) => setEftAmount(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold font-mono text-emerald-600 text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  alert(`EFT Receipt Issued successfully for ₹${eftAmount} to ${eftPassenger || 'Passenger'}! Digital receipt generated.`);
-                  setShowEftModal(false);
-                }}
-                className="w-full py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-lg shadow-amber-600/25 transition active:scale-95"
-              >
-                Issue Digital EFT Fine Receipt
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* RAC Auto-Reassignment Modal */}
-      {showRacModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl space-y-4 border border-slate-100">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-2 text-indigo-600">
-                <Sparkles className="h-5 w-5" />
-                <h3 className="text-base font-black text-slate-800">Auto RAC Berth Promotion</h3>
-              </div>
-              <button onClick={() => setShowRacModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-2 text-xs">
-              <p className="text-indigo-900 font-bold">
-                Berth <span className="font-mono text-indigo-700 font-black">{racTargetSeat}</span> is marked as No-Show. Reassign to next queued RAC passenger?
-              </p>
-              <div className="bg-white p-3 rounded-xl border border-indigo-200/60 space-y-1">
-                <span className="block text-[10px] text-slate-400 font-bold uppercase">Next in RAC Queue</span>
-                <span className="font-extrabold text-slate-800 block text-sm">{nextRacPassenger.name}</span>
-                <span className="text-[10px] font-mono text-slate-500">PNR: {nextRacPassenger.pnr} &bull; Age {nextRacPassenger.age} ({nextRacPassenger.gender})</span>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  toggleSeatStatus(racTargetSeat, 'verified');
-                  alert(`Berth ${racTargetSeat} successfully reassigned to ${nextRacPassenger.name}! SMS notification dispatched.`);
-                  setShowRacModal(false);
-                }}
-                className="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-lg shadow-indigo-600/25 transition active:scale-95 flex items-center justify-center space-x-2"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                <span>Confirm & Reassign Berth to RAC Passenger</span>
-              </button>
-            </div>
-
-          </div>
-        </div>,
-        document.body
-      )}
 
     </div>
   );

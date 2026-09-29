@@ -1,0 +1,2407 @@
+{
+  "audited_at": "2026-09-14T14:28:22.998Z",
+  "current_db_bookings_count": 8,
+  "backup_files_scanned": [
+    "db.json",
+    "db.json.backup",
+    "db.json.backup-before-dummy-cleanup",
+    "db.json.backup_after_data_restore",
+    "db.json.backup_all_indian_routes",
+    "db.json.backup_before_android_capacitor_conversion",
+    "db.json.backup_before_connection_audit",
+    "db.json.backup_before_data_restore",
+    "db.json.backup_before_dummy_cleanup",
+    "db.json.backup_before_passenger_auth_upgrade",
+    "db.json.backup_before_passenger_history_ownership_fix",
+    "db.json.backup_before_payment_realism_upgrade",
+    "db.json.backup_before_rac_wl_payment_flow",
+    "db.json.backup_before_rac_wl_seat_selection_final",
+    "db.json.backup_before_railway_portal_enhancement",
+    "db.json.backup_before_real_rac_wl_rules",
+    "db.json.backup_before_roster_duty_ui_fix",
+    "db.json.backup_before_staff_cleanup",
+    "db.json.backup_before_staff_schedule_fix",
+    "db.json.backup_before_staff_separate_pages",
+    "db.json.backup_before_staff_task_upgrade",
+    "db.json.backup_routes_management",
+    "db.json.backup_staff_management",
+    "db.json.backup_staff_removal",
+    "db.json.backup_train_status",
+    "db.json.bak",
+    "db.json.bak.master_fix",
+    "db.json.bak.master_support_fix",
+    "db.json.bak.root_fix",
+    "db.json.bak_status_fix",
+    "db.json.final_audit_backup"
+  ],
+  "all_historical_bookings": {},
+  "passenger_legitimate_bookings": {
+    "usr-wizqgaac5": [
+      {
+        "id": "bk-wtprtox5y",
+        "pnr": "4815965542",
+        "passenger_id": "usr-wizqgaac5",
+        "passenger_name": "RAM12",
+        "passenger_email": "ram12@gmail.com",
+        "travel_date": "2026-09-09",
+        "status": "completed",
+        "present_in_current_db": true,
+        "found_in_files": [
+          "db.json",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_android_capacitor_conversion",
+          "db.json.backup_before_connection_audit",
+          "db.json.backup_before_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.backup_before_rac_wl_payment_flow",
+          "db.json.backup_before_rac_wl_seat_selection_final",
+          "db.json.backup_before_real_rac_wl_rules",
+          "db.json.bak",
+          "db.json.final_audit_backup"
+        ]
+      },
+      {
+        "id": "bk-tb1u9fjdf",
+        "pnr": "8238294436",
+        "passenger_id": "usr-wizqgaac5",
+        "passenger_name": "RAM12",
+        "passenger_email": "ram12@gmail.com",
+        "travel_date": "2026-09-09",
+        "status": "completed",
+        "present_in_current_db": true,
+        "found_in_files": [
+          "db.json",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_android_capacitor_conversion",
+          "db.json.backup_before_connection_audit",
+          "db.json.backup_before_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.backup_before_real_rac_wl_rules",
+          "db.json.bak",
+          "db.json.final_audit_backup"
+        ]
+      }
+    ],
+    "usr-b3556o2cd": [
+      {
+        "id": "bk-5z3i5u95n",
+        "pnr": "4715604420",
+        "passenger_id": "usr-b3556o2cd",
+        "passenger_name": "rahul",
+        "passenger_email": "rahulna@gmail.com",
+        "travel_date": "2026-08-26",
+        "status": "confirmed",
+        "present_in_current_db": true,
+        "found_in_files": [
+          "db.json",
+          "db.json.backup-before-dummy-cleanup",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.bak.master_fix"
+        ]
+      }
+    ],
+    "usr-demo-passenger": [
+      {
+        "id": "bk-8qqztwkso",
+        "pnr": "6222939872",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-08-20",
+        "status": "cancelled",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup-before-dummy-cleanup",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.bak.master_fix"
+        ]
+      },
+      {
+        "id": "bk-dxbilbfsx",
+        "pnr": "8025589298",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-08-26",
+        "status": "cancelled",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup-before-dummy-cleanup",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.bak.master_fix"
+        ]
+      },
+      {
+        "id": "bk-v4f6abkmj",
+        "pnr": "5251193063",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-08-26",
+        "status": "cancelled",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup-before-dummy-cleanup",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.bak.master_fix"
+        ]
+      },
+      {
+        "id": "bk-7zt2f0zgi",
+        "pnr": "6884684569",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-08-25",
+        "status": "confirmed",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup-before-dummy-cleanup",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.bak.master_fix"
+        ]
+      },
+      {
+        "id": "bk-elnrxsgxv",
+        "pnr": "6830165983",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-09-15",
+        "status": "confirmed",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup-before-dummy-cleanup",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.bak.master_fix"
+        ]
+      },
+      {
+        "id": "bk-zk3mqr6xx",
+        "pnr": "7399808108",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-09-15",
+        "status": "cancelled",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup-before-dummy-cleanup",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.bak.master_fix"
+        ]
+      },
+      {
+        "id": "bk-meygocfpx",
+        "pnr": "9173527146",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-09-15",
+        "status": "cancelled",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup-before-dummy-cleanup",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.bak.master_fix"
+        ]
+      },
+      {
+        "id": "bk-jmtayohzn",
+        "pnr": "9821070744",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-09-15",
+        "status": "cancelled",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup-before-dummy-cleanup",
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.bak.master_fix"
+        ]
+      },
+      {
+        "id": "bk-xsjdmp0jv",
+        "pnr": "1893224365",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-08-28",
+        "status": "completed",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_android_capacitor_conversion",
+          "db.json.backup_before_connection_audit",
+          "db.json.backup_before_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_auth_upgrade",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.backup_before_payment_realism_upgrade",
+          "db.json.backup_before_rac_wl_payment_flow",
+          "db.json.backup_before_rac_wl_seat_selection_final",
+          "db.json.backup_before_railway_portal_enhancement",
+          "db.json.backup_before_real_rac_wl_rules",
+          "db.json.backup_before_roster_duty_ui_fix",
+          "db.json.backup_before_staff_cleanup",
+          "db.json.backup_before_staff_schedule_fix",
+          "db.json.backup_before_staff_separate_pages",
+          "db.json.backup_before_staff_task_upgrade",
+          "db.json.backup_staff_management",
+          "db.json.bak",
+          "db.json.final_audit_backup"
+        ]
+      },
+      {
+        "id": "bk-lgu8uwr84",
+        "pnr": "5870209087",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-09-09",
+        "status": "completed",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_android_capacitor_conversion",
+          "db.json.backup_before_connection_audit",
+          "db.json.backup_before_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_auth_upgrade",
+          "db.json.backup_before_passenger_history_ownership_fix",
+          "db.json.backup_before_payment_realism_upgrade",
+          "db.json.backup_before_rac_wl_payment_flow",
+          "db.json.backup_before_rac_wl_seat_selection_final",
+          "db.json.backup_before_railway_portal_enhancement",
+          "db.json.backup_before_real_rac_wl_rules",
+          "db.json.backup_before_roster_duty_ui_fix",
+          "db.json.backup_before_staff_cleanup",
+          "db.json.backup_before_staff_schedule_fix",
+          "db.json.backup_before_staff_separate_pages",
+          "db.json.backup_before_staff_task_upgrade",
+          "db.json.backup_staff_management",
+          "db.json.bak",
+          "db.json.final_audit_backup"
+        ]
+      },
+      {
+        "id": "bk-w4mvfjo2g",
+        "pnr": "6943080559",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-09-15",
+        "status": "cancelled",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix"
+        ]
+      },
+      {
+        "id": "bk-3fpzmtc51",
+        "pnr": "8258728092",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-09-15",
+        "status": "cancelled",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix"
+        ]
+      },
+      {
+        "id": "bk-z7zy7h8xb",
+        "pnr": "6927700362",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-09-15",
+        "status": "cancelled",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix"
+        ]
+      },
+      {
+        "id": "bk-t8cash6dm",
+        "pnr": "3812808839",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "RAHULPATAKAR92",
+        "passenger_email": "rahulpatakar92@gmail.com",
+        "travel_date": "2026-09-15",
+        "status": "cancelled",
+        "present_in_current_db": false,
+        "found_in_files": [
+          "db.json.backup_after_data_restore",
+          "db.json.backup_before_dummy_cleanup",
+          "db.json.backup_before_passenger_history_ownership_fix"
+        ]
+      }
+    ]
+  },
+  "missing_legitimate_bookings": [
+    {
+      "booking": {
+        "id": "bk-8qqztwkso",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t22",
+        "booking_date": "2026-08-19",
+        "travel_date": "2026-08-20",
+        "pnr_number": "6222939872",
+        "status": "cancelled",
+        "total_fare": 413,
+        "created_at": "2026-08-19T04:38:45.707Z"
+      },
+      "allocations": [],
+      "payment": {
+        "id": "pay-3i6bs9fvd",
+        "booking_id": "bk-8qqztwkso",
+        "payment_gateway_id": "stripe_mock_vvzta1ioj",
+        "amount": 413,
+        "status": "completed",
+        "created_at": "2026-08-19T04:39:06.300Z"
+      },
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.bak.master_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-dxbilbfsx",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "sch-1787547224623",
+        "booking_date": "2026-08-24",
+        "travel_date": "2026-08-26",
+        "pnr_number": "8025589298",
+        "status": "cancelled",
+        "total_fare": 693,
+        "created_at": "2026-08-24T04:58:16.761Z"
+      },
+      "allocations": [],
+      "payment": {
+        "id": "pay-7kguc1a48",
+        "booking_id": "bk-dxbilbfsx",
+        "payment_gateway_id": "stripe_mock_1xy9vn6kg",
+        "amount": 693,
+        "status": "completed",
+        "created_at": "2026-08-24T04:58:52.606Z"
+      },
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.bak.master_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-v4f6abkmj",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "sch-1787547224623",
+        "booking_date": "2026-08-24",
+        "travel_date": "2026-08-26",
+        "pnr_number": "5251193063",
+        "status": "cancelled",
+        "total_fare": 693,
+        "created_at": "2026-08-24T05:30:26.937Z"
+      },
+      "allocations": [],
+      "payment": {
+        "id": "pay-8llkc3xya",
+        "booking_id": "bk-v4f6abkmj",
+        "payment_gateway_id": "stripe_mock_exlm3g2nz",
+        "amount": 693,
+        "status": "completed",
+        "created_at": "2026-08-24T05:30:29.070Z"
+      },
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.bak.master_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-7zt2f0zgi",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-nbo8l2vqj",
+        "booking_date": "2026-08-24",
+        "travel_date": "2026-08-25",
+        "pnr_number": "6884684569",
+        "status": "confirmed",
+        "total_fare": 588,
+        "idempotency_key": "57bef2ef-5bf0-4127-b9ec-8ff4079476b7",
+        "created_at": "2026-08-24T15:13:23.383Z"
+      },
+      "allocations": [],
+      "payment": {
+        "id": "pay-6mbseig6p",
+        "booking_id": "bk-7zt2f0zgi",
+        "payment_gateway_id": "stripe_mock_vlwni0ddf",
+        "amount": 588,
+        "status": "completed",
+        "created_at": "2026-08-24T15:13:26.408Z"
+      },
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.bak.master_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-elnrxsgxv",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-8l22g6t5j",
+        "booking_date": "2026-08-25",
+        "travel_date": "2026-09-15",
+        "pnr_number": "6830165983",
+        "status": "confirmed",
+        "total_fare": 1550,
+        "idempotency_key": "7bd42410-d674-44ef-ac24-82094cd4b4e2",
+        "created_at": "2026-08-25T05:52:38.915Z"
+      },
+      "allocations": [],
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.bak.master_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-zk3mqr6xx",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-euz1v3ygb",
+        "booking_date": "2026-08-25",
+        "travel_date": "2026-09-15",
+        "pnr_number": "7399808108",
+        "status": "cancelled",
+        "total_fare": 1550,
+        "idempotency_key": "0dc8532b-77dd-4765-b940-91a6d29b5dfd",
+        "created_at": "2026-08-25T05:52:58.598Z"
+      },
+      "allocations": [],
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.bak.master_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-meygocfpx",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-gn407vntz",
+        "booking_date": "2026-08-25",
+        "travel_date": "2026-09-15",
+        "pnr_number": "9173527146",
+        "status": "cancelled",
+        "total_fare": 1550,
+        "idempotency_key": "1922277f-23fe-4ace-8095-0f4aedef6536",
+        "created_at": "2026-08-25T05:53:16.964Z"
+      },
+      "allocations": [],
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.bak.master_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-jmtayohzn",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-n4cgfzl2z",
+        "booking_date": "2026-08-25",
+        "travel_date": "2026-09-15",
+        "pnr_number": "9821070744",
+        "status": "cancelled",
+        "total_fare": 1550,
+        "idempotency_key": "f939f344-2755-4e4a-9046-dc42a30e0098",
+        "created_at": "2026-08-25T09:13:34.082Z"
+      },
+      "allocations": [],
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.bak.master_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-xsjdmp0jv",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-f6llzt119",
+        "booking_date": "2026-08-28",
+        "travel_date": "2026-08-28",
+        "pnr_number": "1893224365",
+        "status": "completed",
+        "total_fare": 200,
+        "idempotency_key": "dad769cc-ad2c-4763-859f-db3cb74068fd",
+        "created_at": "2026-08-28T03:30:13.858Z",
+        "completed_at": "2026-08-28T17:30:00.000Z"
+      },
+      "allocations": [
+        {
+          "id": "al-u80m8h3xq",
+          "booking_id": "bk-xsjdmp0jv",
+          "seat_id": "t-f6llzt119-A1-1",
+          "travel_date": "2026-08-28",
+          "passenger_name": "sudhanth",
+          "passenger_age": 45,
+          "passenger_gender": "Male"
+        }
+      ],
+      "payment": {
+        "id": "pay-zo9tffzql",
+        "booking_id": "bk-xsjdmp0jv",
+        "payment_gateway_id": "stripe_mock_b7bi0szgd",
+        "amount": 200,
+        "status": "completed",
+        "created_at": "2026-08-28T03:30:17.770Z"
+      },
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.final_audit_backup"
+    },
+    {
+      "booking": {
+        "id": "bk-lgu8uwr84",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-ldn34nqkb",
+        "booking_date": "2026-09-01",
+        "travel_date": "2026-09-09",
+        "pnr_number": "5870209087",
+        "status": "completed",
+        "total_fare": 475,
+        "idempotency_key": "9a075b47-eb18-4814-a4ce-32220cdddd5a",
+        "created_at": "2026-09-01T05:47:34.387Z",
+        "completed_at": "2026-09-09T16:30:00.000Z"
+      },
+      "allocations": [
+        {
+          "id": "al-83m7ar0fw",
+          "booking_id": "bk-lgu8uwr84",
+          "seat_id": "t-ldn34nqkb-B1-1",
+          "travel_date": "2026-09-09",
+          "passenger_name": "rahul",
+          "passenger_age": 55,
+          "passenger_gender": "Male",
+          "checked_in": true,
+          "checked_by_staff_id": "stf-1788361056826",
+          "checked_at": "2026-09-02T14:57:38.875Z"
+        }
+      ],
+      "payment": {
+        "id": "pay-iugsd3x2m",
+        "booking_id": "bk-lgu8uwr84",
+        "payment_gateway_id": "stripe_mock_az5de0vmo",
+        "amount": 475,
+        "status": "completed",
+        "created_at": "2026-09-01T05:47:36.504Z"
+      },
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.final_audit_backup"
+    },
+    {
+      "booking": {
+        "id": "bk-w4mvfjo2g",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-sp4utdhhf",
+        "booking_date": "2026-09-03",
+        "travel_date": "2026-09-15",
+        "pnr_number": "6943080559",
+        "status": "cancelled",
+        "total_fare": 535,
+        "idempotency_key": "892900c3-0e6c-4be1-b239-52198aa104a6",
+        "created_at": "2026-09-03T09:40:49.127Z",
+        "cancellation_date_time": "2026-09-03T09:40:49.703Z",
+        "cancellation_reason": "Passenger requested cancellation",
+        "cancelled_by": "Passenger",
+        "refund_amount": 295,
+        "penalty_amount": 240,
+        "refund_status": "APPROVED",
+        "is_override": false
+      },
+      "allocations": [],
+      "cancellation": {
+        "id": "canc-bk-w4mvfjo2g",
+        "booking_id": "bk-w4mvfjo2g",
+        "pnr": "6943080559",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "PASSENGER Test User",
+        "train_id": "t-sp4utdhhf",
+        "train_number": "90001",
+        "train_name": "Persistence Test Express",
+        "journey_date": "2026-09-15",
+        "original_fare": 535,
+        "deduction_amount": 240,
+        "refund_amount": 295,
+        "refund_status": "APPROVED",
+        "cancellation_reason": "Passenger requested cancellation",
+        "cancellation_type": "passenger",
+        "cancelled_by_user_id": "usr-demo-passenger",
+        "cancelled_by_role": "passenger",
+        "cancellation_date_time": "2026-09-03T09:40:49.703Z",
+        "admin_override": false,
+        "override_reason": null,
+        "created_at": "2026-09-03T09:40:49.709Z",
+        "updated_at": "2026-09-03T09:40:49.709Z"
+      },
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.backup_before_passenger_history_ownership_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-3fpzmtc51",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-0x5wv9hr3",
+        "booking_date": "2026-09-03",
+        "travel_date": "2026-09-15",
+        "pnr_number": "8258728092",
+        "status": "cancelled",
+        "total_fare": 535,
+        "idempotency_key": "cd07c594-6933-4db5-973b-d139f93b5fa2",
+        "created_at": "2026-09-03T09:47:37.958Z",
+        "cancellation_date_time": "2026-09-03T09:47:38.566Z",
+        "cancellation_reason": "Passenger requested cancellation",
+        "cancelled_by": "Passenger",
+        "refund_amount": 295,
+        "penalty_amount": 240,
+        "refund_status": "APPROVED",
+        "is_override": false
+      },
+      "allocations": [],
+      "cancellation": {
+        "id": "canc-bk-3fpzmtc51",
+        "booking_id": "bk-3fpzmtc51",
+        "pnr": "8258728092",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "PASSENGER Test User",
+        "train_id": "t-0x5wv9hr3",
+        "train_number": "90001",
+        "train_name": "Persistence Test Express",
+        "journey_date": "2026-09-15",
+        "original_fare": 535,
+        "deduction_amount": 240,
+        "refund_amount": 295,
+        "refund_status": "APPROVED",
+        "cancellation_reason": "Passenger requested cancellation",
+        "cancellation_type": "passenger",
+        "cancelled_by_user_id": "usr-demo-passenger",
+        "cancelled_by_role": "passenger",
+        "cancellation_date_time": "2026-09-03T09:47:38.566Z",
+        "admin_override": false,
+        "override_reason": null,
+        "created_at": "2026-09-03T09:47:38.575Z",
+        "updated_at": "2026-09-03T09:47:38.575Z"
+      },
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.backup_before_passenger_history_ownership_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-z7zy7h8xb",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-e9sxk2vq9",
+        "booking_date": "2026-09-03",
+        "travel_date": "2026-09-15",
+        "pnr_number": "6927700362",
+        "status": "cancelled",
+        "total_fare": 535,
+        "idempotency_key": "aad65d0e-83bb-4e50-a89a-aa18800c1d27",
+        "created_at": "2026-09-03T09:48:45.657Z",
+        "cancellation_date_time": "2026-09-03T09:48:46.228Z",
+        "cancellation_reason": "Passenger requested cancellation",
+        "cancelled_by": "Passenger",
+        "refund_amount": 295,
+        "penalty_amount": 240,
+        "refund_status": "APPROVED",
+        "is_override": false
+      },
+      "allocations": [],
+      "cancellation": {
+        "id": "canc-bk-z7zy7h8xb",
+        "booking_id": "bk-z7zy7h8xb",
+        "pnr": "6927700362",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "PASSENGER Test User",
+        "train_id": "t-e9sxk2vq9",
+        "train_number": "90001",
+        "train_name": "Persistence Test Express",
+        "journey_date": "2026-09-15",
+        "original_fare": 535,
+        "deduction_amount": 240,
+        "refund_amount": 295,
+        "refund_status": "APPROVED",
+        "cancellation_reason": "Passenger requested cancellation",
+        "cancellation_type": "passenger",
+        "cancelled_by_user_id": "usr-demo-passenger",
+        "cancelled_by_role": "passenger",
+        "cancellation_date_time": "2026-09-03T09:48:46.228Z",
+        "admin_override": false,
+        "override_reason": null,
+        "created_at": "2026-09-03T09:48:46.234Z",
+        "updated_at": "2026-09-03T09:48:46.234Z"
+      },
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.backup_before_passenger_history_ownership_fix"
+    },
+    {
+      "booking": {
+        "id": "bk-t8cash6dm",
+        "passenger_id": "usr-demo-passenger",
+        "train_id": "t-tb6kdwrz2",
+        "booking_date": "2026-09-03",
+        "travel_date": "2026-09-15",
+        "pnr_number": "3812808839",
+        "status": "cancelled",
+        "total_fare": 535,
+        "idempotency_key": "fa88f464-7bbd-44f8-8733-d0ddd2b72ac6",
+        "created_at": "2026-09-03T09:49:39.420Z",
+        "cancellation_date_time": "2026-09-03T09:49:39.995Z",
+        "cancellation_reason": "Passenger requested cancellation",
+        "cancelled_by": "Passenger",
+        "refund_amount": 295,
+        "penalty_amount": 240,
+        "refund_status": "APPROVED",
+        "is_override": false
+      },
+      "allocations": [],
+      "cancellation": {
+        "id": "canc-bk-t8cash6dm",
+        "booking_id": "bk-t8cash6dm",
+        "pnr": "3812808839",
+        "passenger_id": "usr-demo-passenger",
+        "passenger_name": "Persistence Tester",
+        "train_id": "t-tb6kdwrz2",
+        "train_number": "90001",
+        "train_name": "Persistence Test Express",
+        "journey_date": "2026-09-15",
+        "original_fare": 535,
+        "deduction_amount": 240,
+        "refund_amount": 295,
+        "refund_status": "APPROVED",
+        "cancellation_reason": "Passenger requested cancellation",
+        "cancellation_type": "passenger",
+        "cancelled_by_user_id": "usr-demo-passenger",
+        "cancelled_by_role": "passenger",
+        "cancellation_date_time": "2026-09-03T09:49:39.995Z",
+        "admin_override": false,
+        "override_reason": null,
+        "created_at": "2026-09-03T09:49:40.005Z",
+        "updated_at": "2026-09-03T09:49:40.005Z"
+      },
+      "owner": {
+        "id": "usr-demo-passenger",
+        "email": "rahulpatakar92@gmail.com",
+        "role": "passenger",
+        "full_name": "RAHULPATAKAR92",
+        "phone": "+91 9876543210",
+        "created_at": "2026-09-02T15:29:22.295Z"
+      },
+      "source_file": "db.json.backup_before_passenger_history_ownership_fix"
+    }
+  ],
+  "dummy_or_test_bookings": [
+    {
+      "id": "bk-21luy295n",
+      "pnr": "4677284462",
+      "passenger_id": "usr-duyc8bjx9",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-f6czc37iu",
+      "pnr": "9500749505",
+      "passenger_id": "usr-real-passenger-1788425351200",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-3wmdztp6q",
+      "pnr": "4349641482",
+      "passenger_id": "usr-real-passenger-1788425374751",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-4zaxlhz5i",
+      "pnr": "1954126700",
+      "passenger_id": "usr-real-passenger-1788425405167",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-1400grlhz",
+      "pnr": "6477877271",
+      "passenger_id": "usr-real-passenger-1788425494365",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-rxx0xfjpx",
+      "pnr": "2123097314",
+      "passenger_id": "usr-demo-passenger",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_all_indian_routes",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_auth_upgrade",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.backup_before_payment_realism_upgrade",
+        "db.json.backup_before_rac_wl_payment_flow",
+        "db.json.backup_before_rac_wl_seat_selection_final",
+        "db.json.backup_before_railway_portal_enhancement",
+        "db.json.backup_before_real_rac_wl_rules",
+        "db.json.backup_before_roster_duty_ui_fix",
+        "db.json.backup_before_staff_cleanup",
+        "db.json.backup_before_staff_schedule_fix",
+        "db.json.backup_before_staff_separate_pages",
+        "db.json.backup_before_staff_task_upgrade",
+        "db.json.backup_routes_management",
+        "db.json.backup_staff_management",
+        "db.json.backup_staff_removal",
+        "db.json.backup_train_status",
+        "db.json.bak",
+        "db.json.bak.master_support_fix",
+        "db.json.bak.root_fix",
+        "db.json.bak_status_fix",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-gyvcw78lp",
+      "pnr": "5213102530",
+      "passenger_id": "usr-demo-passenger",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_all_indian_routes",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_auth_upgrade",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.backup_before_payment_realism_upgrade",
+        "db.json.backup_before_rac_wl_payment_flow",
+        "db.json.backup_before_rac_wl_seat_selection_final",
+        "db.json.backup_before_railway_portal_enhancement",
+        "db.json.backup_before_real_rac_wl_rules",
+        "db.json.backup_before_roster_duty_ui_fix",
+        "db.json.backup_before_staff_cleanup",
+        "db.json.backup_before_staff_schedule_fix",
+        "db.json.backup_before_staff_separate_pages",
+        "db.json.backup_before_staff_task_upgrade",
+        "db.json.backup_routes_management",
+        "db.json.backup_staff_management",
+        "db.json.backup_staff_removal",
+        "db.json.backup_train_status",
+        "db.json.bak",
+        "db.json.bak.master_support_fix",
+        "db.json.bak_status_fix",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-jagg5ufwq",
+      "pnr": "7067757887",
+      "passenger_id": "usr-demo-passenger",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_all_indian_routes",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_auth_upgrade",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.backup_before_payment_realism_upgrade",
+        "db.json.backup_before_rac_wl_payment_flow",
+        "db.json.backup_before_rac_wl_seat_selection_final",
+        "db.json.backup_before_railway_portal_enhancement",
+        "db.json.backup_before_real_rac_wl_rules",
+        "db.json.backup_before_roster_duty_ui_fix",
+        "db.json.backup_before_staff_cleanup",
+        "db.json.backup_before_staff_schedule_fix",
+        "db.json.backup_before_staff_separate_pages",
+        "db.json.backup_before_staff_task_upgrade",
+        "db.json.backup_routes_management",
+        "db.json.backup_staff_management",
+        "db.json.backup_staff_removal",
+        "db.json.backup_train_status",
+        "db.json.bak",
+        "db.json.bak_status_fix",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-seed-1",
+      "pnr": "2345678901",
+      "passenger_id": "usr-demo-passenger",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-seed-2",
+      "pnr": "7462573954",
+      "passenger_id": "usr-demo-passenger",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-seed-3",
+      "pnr": "9842105731",
+      "passenger_id": "usr-demo-passenger",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-drovygocs",
+      "pnr": "4998546419",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-cemlxvqtq",
+      "pnr": "6661384863",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-ev3yf7wv2",
+      "pnr": "7549411804",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-7w8zer70g",
+      "pnr": "9374609030",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-irswxdluf",
+      "pnr": "4086084009",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-dopxhde83",
+      "pnr": "2525611243",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-gye1koy8x",
+      "pnr": "5808819003",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-8r3vqh7bl",
+      "pnr": "6766975936",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-nipmse8of",
+      "pnr": "1237068429",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-3pve52yhz",
+      "pnr": "6070750750",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-nf6q41gq7",
+      "pnr": "1539779715",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-xo5n6t1yk",
+      "pnr": "9934906946",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-xnddctjzd",
+      "pnr": "2921472084",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-die99y7dl",
+      "pnr": "6071091532",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-wvwgdal8w",
+      "pnr": "7419969661",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-oxreparkn",
+      "pnr": "4471641957",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-ef7aj5r1i",
+      "pnr": "9463178871",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-eci75a8hp",
+      "pnr": "1487760385",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-le65uhifs",
+      "pnr": "9375436701",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-prxik7w0t",
+      "pnr": "8648573063",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup-before-dummy-cleanup",
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.bak.master_fix"
+      ]
+    },
+    {
+      "id": "bk-9wc7pwbgp",
+      "pnr": "9179609270",
+      "passenger_id": "usr-demo-passenger",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_auth_upgrade",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.backup_before_payment_realism_upgrade",
+        "db.json.backup_before_rac_wl_payment_flow",
+        "db.json.backup_before_rac_wl_seat_selection_final",
+        "db.json.backup_before_railway_portal_enhancement",
+        "db.json.backup_before_real_rac_wl_rules",
+        "db.json.backup_before_roster_duty_ui_fix",
+        "db.json.backup_before_staff_cleanup",
+        "db.json.backup_before_staff_schedule_fix",
+        "db.json.backup_before_staff_separate_pages",
+        "db.json.backup_before_staff_task_upgrade",
+        "db.json.backup_staff_management",
+        "db.json.bak",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-afijvx743",
+      "pnr": "6052394918",
+      "passenger_id": "usr-demo-passenger",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_auth_upgrade",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.backup_before_payment_realism_upgrade",
+        "db.json.backup_before_rac_wl_payment_flow",
+        "db.json.backup_before_rac_wl_seat_selection_final",
+        "db.json.backup_before_railway_portal_enhancement",
+        "db.json.backup_before_real_rac_wl_rules",
+        "db.json.backup_before_roster_duty_ui_fix",
+        "db.json.backup_before_staff_cleanup",
+        "db.json.backup_before_staff_schedule_fix",
+        "db.json.backup_before_staff_separate_pages",
+        "db.json.backup_before_staff_task_upgrade",
+        "db.json.backup_staff_management",
+        "db.json.bak",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-01g3lmcsv",
+      "pnr": "4993798555",
+      "passenger_id": "usr-demo-passenger",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_auth_upgrade",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.backup_before_payment_realism_upgrade",
+        "db.json.backup_before_rac_wl_payment_flow",
+        "db.json.backup_before_rac_wl_seat_selection_final",
+        "db.json.backup_before_railway_portal_enhancement",
+        "db.json.backup_before_real_rac_wl_rules",
+        "db.json.backup_before_roster_duty_ui_fix",
+        "db.json.backup_before_staff_cleanup",
+        "db.json.backup_before_staff_schedule_fix",
+        "db.json.backup_before_staff_separate_pages",
+        "db.json.backup_before_staff_task_upgrade",
+        "db.json.backup_staff_management",
+        "db.json.bak",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-seed-upcoming",
+      "pnr": "8819203941",
+      "passenger_id": "usr-demo-test-account",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_auth_upgrade",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.backup_before_payment_realism_upgrade",
+        "db.json.backup_before_rac_wl_payment_flow",
+        "db.json.backup_before_rac_wl_seat_selection_final",
+        "db.json.backup_before_railway_portal_enhancement",
+        "db.json.backup_before_real_rac_wl_rules",
+        "db.json.backup_before_roster_duty_ui_fix",
+        "db.json.backup_before_staff_separate_pages",
+        "db.json.backup_before_staff_task_upgrade",
+        "db.json.bak",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-seed-completed",
+      "pnr": "7462573954",
+      "passenger_id": "usr-demo-test-account",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_auth_upgrade",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.backup_before_payment_realism_upgrade",
+        "db.json.backup_before_rac_wl_payment_flow",
+        "db.json.backup_before_rac_wl_seat_selection_final",
+        "db.json.backup_before_railway_portal_enhancement",
+        "db.json.backup_before_real_rac_wl_rules",
+        "db.json.backup_before_roster_duty_ui_fix",
+        "db.json.backup_before_staff_separate_pages",
+        "db.json.backup_before_staff_task_upgrade",
+        "db.json.bak",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-seed-cancelled",
+      "pnr": "9842105731",
+      "passenger_id": "usr-demo-test-account",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_auth_upgrade",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.backup_before_payment_realism_upgrade",
+        "db.json.backup_before_rac_wl_payment_flow",
+        "db.json.backup_before_rac_wl_seat_selection_final",
+        "db.json.backup_before_railway_portal_enhancement",
+        "db.json.backup_before_real_rac_wl_rules",
+        "db.json.backup_before_roster_duty_ui_fix",
+        "db.json.backup_before_staff_separate_pages",
+        "db.json.backup_before_staff_task_upgrade",
+        "db.json.bak",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-test-status-88",
+      "pnr": "1122334455",
+      "passenger_id": "usr-passenger-test-88",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-jr9xgykr0",
+      "pnr": "5593729366",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-j87tk67at",
+      "pnr": "5140853960",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-4joxf2v9g",
+      "pnr": "1320651402",
+      "passenger_id": "usr-fresh-passenger-1788428443300",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-test-101",
+      "pnr": "9990001001",
+      "passenger_id": "user-pass-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-test-102",
+      "pnr": "9990001002",
+      "passenger_id": "user-pass-2",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-test-103",
+      "pnr": "9990001003",
+      "passenger_id": "user-pass-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-4umu9ej1q",
+      "pnr": "8837255300",
+      "passenger_id": "usr-real-passenger-1788428445774",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-rac-test-101",
+      "pnr": "5566778899",
+      "passenger_id": "usr-passenger-test",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-fjioaw1hr",
+      "pnr": "7438136038",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-danodu2mi",
+      "pnr": "6479873097",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-5its5ra5q",
+      "pnr": "1898589504",
+      "passenger_id": "usr-fresh-passenger-1788428852048",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-p4zxjjctr",
+      "pnr": "1072848087",
+      "passenger_id": "usr-real-passenger-1788428854497",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-ir4ttud3g",
+      "pnr": "2813894925",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-z0blwjxta",
+      "pnr": "5286662849",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-6ekh03ljj",
+      "pnr": "5753341767",
+      "passenger_id": "usr-fresh-passenger-1788428919810",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-xif5gbgpn",
+      "pnr": "3153759512",
+      "passenger_id": "usr-real-passenger-1788428922416",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-cfoebo37c",
+      "pnr": "1334281424",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-8gde4sng6",
+      "pnr": "5888265040",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-5tep6q74s",
+      "pnr": "2537143224",
+      "passenger_id": "usr-fresh-passenger-1788428973468",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-uvmfe3g2h",
+      "pnr": "5311921809",
+      "passenger_id": "usr-real-passenger-1788428975981",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-iz4xgbgyr",
+      "pnr": "7134699592",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-8chian3b3",
+      "pnr": "4466244873",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-test-pay-2",
+      "pnr": "9988776655",
+      "passenger_id": "usr-pay-test-2",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-test-pay-wallet-1",
+      "pnr": "5544332211",
+      "passenger_id": "usr-pay-test-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-chym9ua3m",
+      "pnr": "6658327831",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-q5iot8bcb",
+      "pnr": "9349100098",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-wmfrxadc6",
+      "pnr": "4771629890",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-be1tnkd1l",
+      "pnr": "4325849503",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-6r1q5i3rw",
+      "pnr": "7014367074",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-vz21vutck",
+      "pnr": "1771668931",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-a3l3isi1d",
+      "pnr": "3065535043",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-fams8u4xs",
+      "pnr": "4403010040",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-vl9zd5bri",
+      "pnr": "9939109668",
+      "passenger_id": "usr-rac-wl-test-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-ofb5t0rzh",
+      "pnr": "9819505227",
+      "passenger_id": "usr-rac-wl-test-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-zj0919jj2",
+      "pnr": "4749804292",
+      "passenger_id": "usr-rac-wl-test-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-936xzfd3y",
+      "pnr": "4773894946",
+      "passenger_id": "usr-rac-wl-test-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-f4yrvoqbi",
+      "pnr": "4727834708",
+      "passenger_id": "usr-rac-wl-test-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-2ogotlyl0",
+      "pnr": "5503375800",
+      "passenger_id": "usr-rac-wl-test-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-q2psz95y7",
+      "pnr": "6843525554",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-952r2ey47",
+      "pnr": "1001906347",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-5v6f034rt",
+      "pnr": "1723510514",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-81z2er7cx",
+      "pnr": "3617404280",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-nx1aeyrmk",
+      "pnr": "3662824114",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-lsq45l7i8",
+      "pnr": "8413084048",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-9okkvrmma",
+      "pnr": "3523811691",
+      "passenger_id": "usr-rac-wl-test-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-dfm0a7hw1",
+      "pnr": "7918930610",
+      "passenger_id": "usr-rac-wl-test-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-y8i94qh1t",
+      "pnr": "4403670505",
+      "passenger_id": "usr-rac-wl-test-1",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-pphrzptpi",
+      "pnr": "3525933732",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-mnxpj3r48",
+      "pnr": "9158871456",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-gv0qpsknj",
+      "pnr": "9853506323",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-b7qqcvod4",
+      "pnr": "8398840509",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-h4706t95f",
+      "pnr": "3052315460",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-1hax1wozf",
+      "pnr": "4436049299",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-tbt3mjjz3",
+      "pnr": "4029617290",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-j3x5boq9m",
+      "pnr": "8842739177",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-bxna44mz6",
+      "pnr": "2309625668",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-hmtnkftwy",
+      "pnr": "1195616802",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-h4i3krtx8",
+      "pnr": "3266778775",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-yuvj2p16q",
+      "pnr": "5322417654",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-om3m2hpot",
+      "pnr": "3143062767",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-xi2kvyn2h",
+      "pnr": "5573477088",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-5hhefsq1y",
+      "pnr": "1526024198",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-m6ecztop4",
+      "pnr": "5761727913",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-5l8n9q0yt",
+      "pnr": "3734658947",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-clw1irlr3",
+      "pnr": "2769770835",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-5woa9m08c",
+      "pnr": "3635261572",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-l6k8fz5tf",
+      "pnr": "7483972692",
+      "passenger_id": "usr-test-user-pnr-check",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-orcknjj7j",
+      "pnr": "7036093157",
+      "passenger_id": "usr-demo-passenger",
+      "reason": "Matched test pattern or dummy user ID/email",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    }
+  ],
+  "unowned_or_uncertain_bookings": [
+    {
+      "id": "bk-2cn78wtcq",
+      "pnr": "9586279223",
+      "passenger_id": "usr-demo-admin",
+      "passenger_email": "",
+      "passenger_name": "der",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_android_capacitor_conversion",
+        "db.json.backup_before_connection_audit",
+        "db.json.backup_before_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_auth_upgrade",
+        "db.json.backup_before_passenger_history_ownership_fix",
+        "db.json.backup_before_payment_realism_upgrade",
+        "db.json.backup_before_rac_wl_payment_flow",
+        "db.json.backup_before_rac_wl_seat_selection_final",
+        "db.json.backup_before_railway_portal_enhancement",
+        "db.json.backup_before_real_rac_wl_rules",
+        "db.json.backup_before_roster_duty_ui_fix",
+        "db.json.backup_before_staff_cleanup",
+        "db.json.backup_before_staff_schedule_fix",
+        "db.json.backup_before_staff_separate_pages",
+        "db.json.backup_before_staff_task_upgrade",
+        "db.json.backup_staff_management",
+        "db.json.bak",
+        "db.json.final_audit_backup"
+      ]
+    },
+    {
+      "id": "bk-staff-test-booking",
+      "pnr": "7788990011",
+      "passenger_id": "usr-passenger-valid",
+      "passenger_email": "",
+      "passenger_name": "",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup"
+      ]
+    },
+    {
+      "id": "bk-7p3yex8vm",
+      "pnr": "7320285828",
+      "passenger_id": "usr-demo-admin",
+      "passenger_email": "",
+      "passenger_name": "",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-is8am6awr",
+      "pnr": "2727558855",
+      "passenger_id": "usr-demo-admin",
+      "passenger_email": "",
+      "passenger_name": "",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-1p6pn1q5n",
+      "pnr": "3310797345",
+      "passenger_id": "usr-demo-admin",
+      "passenger_email": "",
+      "passenger_name": "",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-mmpd4h7dw",
+      "pnr": "9153848612",
+      "passenger_id": "usr-demo-admin",
+      "passenger_email": "",
+      "passenger_name": "",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-1fv5vwc34",
+      "pnr": "8091934816",
+      "passenger_id": "usr-demo-admin",
+      "passenger_email": "",
+      "passenger_name": "",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-f6et4pr7h",
+      "pnr": "8522318609",
+      "passenger_id": "usr-demo-admin",
+      "passenger_email": "",
+      "passenger_name": "",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-zvcz8ywif",
+      "pnr": "3748150083",
+      "passenger_id": "usr-demo-admin",
+      "passenger_email": "",
+      "passenger_name": "",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    },
+    {
+      "id": "bk-qa0s8zowv",
+      "pnr": "2991485093",
+      "passenger_id": "usr-demo-admin",
+      "passenger_email": "",
+      "passenger_name": "",
+      "found_in_files": [
+        "db.json.backup_after_data_restore",
+        "db.json.backup_before_dummy_cleanup",
+        "db.json.backup_before_passenger_history_ownership_fix"
+      ]
+    }
+  ]
+}

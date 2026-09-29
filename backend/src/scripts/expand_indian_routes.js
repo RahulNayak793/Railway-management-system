@@ -80,7 +80,7 @@ function getStationName(code) {
     'OGL': 'Ongole', 'TEL': 'Tenali Junction', 'WL': 'Warangal', 'KZJ': 'Kazipet Junction', 'BPQ': 'Balharshah',
     'SEGM': 'Sewagram Junction', 'BSL': 'Bhusaval Junction', 'JSG': 'Jharsuguda Junction', 'ROU': 'Rourkela Junction',
     'CTC': 'Cuttack', 'BAM': 'Brahmapur', 'VZM': 'Vizianagaram Junction', 'RJY': 'Rajahmundry', 'SPJ': 'Samastipur',
-    'DBG': 'Darbhanga Junction', 'GD': 'Gonda Junction', 'DEC': 'Delhi Cantt', 'GNT': 'Guntur', 'UDU': 'Udupi',
+    'DBG': 'Darbhanga Junction', 'GD': 'Gonda Junction', 'DEC': 'Delhi Cantt', 'GNT': 'Guntur', 'UD': 'Udupi', 'UDU': 'Udupi',
     'MAO': 'Madgaon', 'MAQ': 'Mangaluru Central', 'RNC': 'Ranchi', 'DHN': 'Dhanbad', 'DBRG': 'Dibrugarh',
     'SCL': 'Silchar', 'NTSK': 'New Tinsukia', 'LMG': 'Lumding', 'DURG': 'Durg', 'KRBA': 'Korba', 'RIG': 'Raigarh',
     'RJT': 'Rajkot', 'BVC': 'Bhavnagar', 'GNC': 'Gandhinagar', 'JAM': 'Jamnagar', 'UMB': 'Ambala Cantt',
@@ -156,15 +156,15 @@ const corridors = [
   { nodes: ['CSMT', 'KYN', 'PUNE', 'SUR', 'WADI', 'BZA'], avgSpeed: 65 },
 
   // 10. Konkan Railway Corridor (Mumbai - Goa - Mangaluru - Kerala)
-  { nodes: ['LTT', 'KYN', 'NK', 'PUNE', 'THVM', 'KRMI', 'MAO', 'UDU', 'MAQ'], avgSpeed: 60 },
-  { nodes: ['CSMT', 'DR', 'MAO', 'UDU', 'MAQ', 'CAN', 'CLT', 'SRR', 'ERS', 'TVC'], avgSpeed: 62 },
-  { nodes: ['MAO', 'UDU', 'MAQ', 'CAN', 'CLT', 'SRR', 'PGT', 'CBE'], avgSpeed: 60 },
+  { nodes: ['LTT', 'KYN', 'NK', 'PUNE', 'THVM', 'KRMI', 'MAO', 'UD', 'MAQ'], avgSpeed: 60 },
+  { nodes: ['CSMT', 'DR', 'MAO', 'UD', 'MAQ', 'CAN', 'CLT', 'SRR', 'ERS', 'TVC'], avgSpeed: 62 },
+  { nodes: ['MAO', 'UD', 'MAQ', 'CAN', 'CLT', 'SRR', 'PGT', 'CBE'], avgSpeed: 60 },
 
   // 11. Bengaluru - Chennai - South Corridors
   { nodes: ['SBC', 'BNC', 'JTJ', 'KPD', 'AJJ', 'MAS'], avgSpeed: 70 },
   { nodes: ['SBC', 'BNC', 'JTJ', 'SA', 'ED', 'CBE'], avgSpeed: 68 },
   { nodes: ['SBC', 'MYS'], avgSpeed: 72 },
-  { nodes: ['SBC', 'SMET', 'MAQ', 'UDU'], avgSpeed: 55 },
+  { nodes: ['SBC', 'SMET', 'MAQ', 'UD'], avgSpeed: 55 },
   { nodes: ['SBC', 'BNC', 'SA', 'ED', 'PGT', 'TCR', 'AWY', 'ERS', 'KTYM', 'QLN', 'TVC'], avgSpeed: 62 },
 
   // 12. Chennai - Andhra / Telangana - Eastern Corridors
@@ -219,7 +219,7 @@ const distanceBetweenNodesMap = {
   'LKO_GD': 120, 'GD_GKP': 152, 'DDU_DNR': 202, 'DNR_PNBE': 10, 'DDU_BJU': 240, 'BJU_SPJ': 50, 'SPJ_DBG': 37,
   'MMCT_KYN': 54, 'KYN_PUNE': 138, 'SUR_SC': 345, 'SUR_WADI': 150, 'WADI_BZA': 520,
   'KYN_NK': 115, 'NK_BSL': 240, 'BSL_SEGM': 310, 'SEGM_NGP': 76, 'BSL_ET': 307, 'NK_PUNE': 210,
-  'PUNE_THVM': 410, 'THVM_KRMI': 20, 'KRMI_MAO': 35, 'MAO_UDU': 280, 'UDU_MAQ': 60,
+  'PUNE_THVM': 410, 'THVM_KRMI': 20, 'KRMI_MAO': 35, 'MAO_UD': 280, 'UD_MAQ': 60, 'MAO_UDU': 280, 'UDU_MAQ': 60,
   'DR_MAO': 570, 'MAQ_CAN': 135, 'CAN_CLT': 88, 'CLT_SRR': 86, 'SRR_ERS': 107, 'ERS_TVC': 220,
   'SRR_PGT': 44, 'PGT_CBE': 55,
   'SBC_BNC': 4, 'BNC_JTJ': 140, 'JTJ_KPD': 84, 'KPD_AJJ': 60, 'AJJ_MAS': 68,
@@ -369,7 +369,7 @@ corridors.forEach((corr) => {
 const majorHubs = [
   'NDLS', 'MMCT', 'HWH', 'MAS', 'SBC', 'ADI', 'PNBE', 'JP', 'HYB', 'SC', 'CNB', 'LKO',
   'BSB', 'TVC', 'ERS', 'GHY', 'BPL', 'PUNE', 'NGP', 'BBS', 'VSKP', 'BZA', 'ASR', 'JAT',
-  'CDG', 'RNC', 'MAO', 'MAQ', 'UDU', 'PRYJ', 'AGC', 'VGLJ', 'KOTA', 'RTM', 'BRC', 'ST'
+  'CDG', 'RNC', 'MAO', 'MAQ', 'UD', 'PRYJ', 'AGC', 'VGLJ', 'KOTA', 'RTM', 'BRC', 'ST'
 ];
 
 for (let i = 0; i < majorHubs.length; i++) {
