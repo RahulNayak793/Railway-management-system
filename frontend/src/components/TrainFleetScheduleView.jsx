@@ -787,13 +787,21 @@ const TrainFleetScheduleView = ({ mode = 'admin' }) => {
               ) : filteredSchedules.map((s) => (
                 <tr key={s.id || s.trainNo} className="hover:bg-slate-700/30 transition">
                   
-                  {/* Train Details */}
+                  {/* Train Details (Number, Name, Type) */}
                   <td className="px-5 py-4">
-                    <div className="font-mono font-black text-sm text-blue-400">#{s.trainNo}</div>
-                    <div className="text-xs font-bold text-white truncate max-w-[200px]" title={s.trainName}>{s.trainName}</div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700">
-                      {s.trainType}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-400 uppercase font-mono font-bold">Train No:</span>
+                      <span className="font-mono font-black text-sm text-blue-400">{s.trainNo}</span>
+                    </div>
+                    <div className="text-xs font-bold text-white truncate max-w-[220px] mt-0.5" title={s.trainName}>
+                      {s.trainName}
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-400 uppercase font-mono font-bold">Type:</span>
+                      <span className="text-[10px] font-extrabold text-blue-300 uppercase tracking-wider bg-blue-950/80 px-2 py-0.5 rounded border border-blue-800/60 inline-block">
+                        {s.trainType}
+                      </span>
+                    </div>
                   </td>
 
                   {/* Origin */}

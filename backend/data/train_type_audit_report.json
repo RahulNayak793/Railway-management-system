@@ -1,0 +1,766 @@
+{
+  "sha256": "7a6e98b7911599f57b74c89bffe7cf560ee62440448ec5aab549c644ff3c797a",
+  "entityCounts": {
+    "profiles": 19,
+    "saved_passengers": 4,
+    "trains": 120,
+    "stations": 179,
+    "routes": 1871,
+    "seats": 6966,
+    "bookings": 32,
+    "seat_allocations": 45,
+    "payments": 18,
+    "support_tickets": 2,
+    "support_messages": 5,
+    "feedback": 0,
+    "notifications": 10,
+    "cancellation_requests": 0,
+    "cancellation_records": 20,
+    "train_telemetry": 1,
+    "catering_companies": 5,
+    "company_stations": 32,
+    "catering_menu": 65,
+    "catering_orders": 6,
+    "train_status_history": 9,
+    "train_status_by_date": 0,
+    "audit_logs": 16,
+    "staff_profiles": 2,
+    "staff_permissions": 1,
+    "staff_duties": 0,
+    "staff_daily_reports": 0,
+    "staff_incidents": 0,
+    "staff_audit_logs": 203,
+    "staff_tasks": 1,
+    "service_requests": 0,
+    "policies": 0,
+    "train_services": 7889,
+    "razorpay_payments": 0,
+    "eft_records": 0,
+    "train_onboard_catering": 12,
+    "train_service_dates": 0,
+    "system_policies": 3,
+    "wallets": 2,
+    "wallet_transactions": 21,
+    "refunds": 14
+  },
+  "trainsCount": 120,
+  "trainSummaries": [
+    {
+      "id": "t-co0fa2xs2",
+      "train_number": "12345",
+      "train_name": "udupi express"
+    },
+    {
+      "id": "train-udupi-12345",
+      "train_number": "12345",
+      "train_name": "Udupi Express"
+    },
+    {
+      "id": "t-f6llzt119",
+      "train_number": "09090",
+      "train_name": "vande bharat"
+    },
+    {
+      "id": "t-kii9i4f2x",
+      "train_number": "12954",
+      "train_name": "August Kranti Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-ldn34nqkb",
+      "train_number": "20608",
+      "train_name": "Mysuru - MGR Chennai Central Vande Bharat Express",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-c56ljuwr0",
+      "train_number": "20645",
+      "train_name": "Madgaon - Mangaluru Central Vande Bharat Express",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-9o36itk9w",
+      "train_number": "20642",
+      "train_name": "Coimbatore - KSR Bengaluru Vande Bharat Express",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-riluukz45",
+      "train_number": "12432",
+      "train_name": "Trivandrum Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12951",
+      "train_number": "12951",
+      "train_name": "Mumbai Central - New Delhi Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12001",
+      "train_number": "12001",
+      "train_name": "Bhopal Shatabdi Express",
+      "train_type": "Shatabdi"
+    },
+    {
+      "id": "t-12002",
+      "train_number": "12002",
+      "train_name": "Bhopal Shatabdi Express",
+      "train_type": "Shatabdi"
+    },
+    {
+      "id": "t-22436",
+      "train_number": "22436",
+      "train_name": "Vande Bharat Express",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-22435",
+      "train_number": "22435",
+      "train_name": "Vande Bharat Express",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-12301",
+      "train_number": "12301",
+      "train_name": "Howrah Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12050",
+      "train_number": "12050",
+      "train_name": "Gatimaan Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12625",
+      "train_number": "12625",
+      "train_name": "Kerala Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12137",
+      "train_number": "12137",
+      "train_name": "Punjab Mail",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12639",
+      "train_number": "12639",
+      "train_name": "Brindavan Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12640",
+      "train_number": "12640",
+      "train_name": "Brindavan Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12723",
+      "train_number": "12723",
+      "train_name": "Telangana Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12295",
+      "train_number": "12295",
+      "train_name": "Sanghamitra Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12801",
+      "train_number": "12801",
+      "train_name": "Purushottam Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12619",
+      "train_number": "12619",
+      "train_name": "Matsyagandha Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12952",
+      "train_number": "12952",
+      "train_name": "New Delhi Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12302",
+      "train_number": "12302",
+      "train_name": "New Delhi Howrah Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12008",
+      "train_number": "12008",
+      "train_name": "Mysore Shatabdi Express",
+      "train_type": "Shatabdi"
+    },
+    {
+      "id": "t-16596",
+      "train_number": "16596",
+      "train_name": "Panchaganga Express",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-12423",
+      "train_number": "12423",
+      "train_name": "Dibrugarh Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12424",
+      "train_number": "12424",
+      "train_name": "New Delhi Dibrugarh Rajdhani",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12433",
+      "train_number": "12433",
+      "train_name": "Chennai Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12434",
+      "train_number": "12434",
+      "train_name": "Nizamuddin Chennai Rajdhani",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-22691",
+      "train_number": "22691",
+      "train_name": "Bengaluru Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-22692",
+      "train_number": "22692",
+      "train_name": "Nizamuddin Bengaluru Rajdhani",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12437",
+      "train_number": "12437",
+      "train_name": "Secunderabad Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12438",
+      "train_number": "12438",
+      "train_name": "Nizamuddin Secunderabad Rajdhani",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-20839",
+      "train_number": "20839",
+      "train_name": "Ranchi Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-20840",
+      "train_number": "20840",
+      "train_name": "New Delhi Ranchi Rajdhani",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-20901",
+      "train_number": "20901",
+      "train_name": "Gandhinagar Vande Bharat",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-20902",
+      "train_number": "20902",
+      "train_name": "Mumbai Central Vande Bharat",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-22225",
+      "train_number": "22225",
+      "train_name": "Solapur Vande Bharat Express",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-22226",
+      "train_number": "22226",
+      "train_name": "Mumbai CSMT Vande Bharat",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-22439",
+      "train_number": "22439",
+      "train_name": "Katra Vande Bharat Express",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-22440",
+      "train_number": "22440",
+      "train_name": "New Delhi Vande Bharat Express",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-12003",
+      "train_number": "12003",
+      "train_name": "Lucknow Swarna Shatabdi",
+      "train_type": "Shatabdi"
+    },
+    {
+      "id": "t-12004",
+      "train_number": "12004",
+      "train_name": "New Delhi Lucknow Shatabdi",
+      "train_type": "Shatabdi"
+    },
+    {
+      "id": "t-12626",
+      "train_number": "12626",
+      "train_name": "New Delhi Kerala Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12138",
+      "train_number": "12138",
+      "train_name": "Amritsar Mumbai Punjab Mail",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12621",
+      "train_number": "12621",
+      "train_name": "Tamil Nadu Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12622",
+      "train_number": "12622",
+      "train_name": "New Delhi Tamil Nadu Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12627",
+      "train_number": "12627",
+      "train_name": "Karnataka Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12628",
+      "train_number": "12628",
+      "train_name": "New Delhi Karnataka Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12802",
+      "train_number": "12802",
+      "train_name": "New Delhi Purushottam Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12617",
+      "train_number": "12617",
+      "train_name": "Mangala Lakshadweep Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12618",
+      "train_number": "12618",
+      "train_name": "Nizamuddin Mangala Lakshadweep",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-10103",
+      "train_number": "10103",
+      "train_name": "Mandovi Express",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-10104",
+      "train_number": "10104",
+      "train_name": "Madgaon Mandovi Express",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-12620",
+      "train_number": "12620",
+      "train_name": "Mangaluru Matsyagandha Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12933",
+      "train_number": "12933",
+      "train_name": "Karnavati Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12934",
+      "train_number": "12934",
+      "train_name": "Ahmedabad Karnavati Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-11077",
+      "train_number": "11077",
+      "train_name": "Jhelum Express",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-11078",
+      "train_number": "11078",
+      "train_name": "Jammu Tawi Jhelum Express",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-12839",
+      "train_number": "12839",
+      "train_name": "Howrah Chennai Mail",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12840",
+      "train_number": "12840",
+      "train_name": "Chennai Howrah Mail",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-20646",
+      "train_number": "20646",
+      "train_name": "Madgaon Vande Bharat Express",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-12977",
+      "train_number": "12977",
+      "train_name": "Konkan Rajdhani Express",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-22114",
+      "train_number": "22114",
+      "train_name": "Matsyagandha Superfast Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-20924",
+      "train_number": "20924",
+      "train_name": "Netravati Express",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-20670",
+      "train_number": "20670",
+      "train_name": "Konkan Vande Bharat Express",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-09058",
+      "train_number": "09058",
+      "train_name": "Konkan AC Weekly Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09401",
+      "train_number": "09401",
+      "train_name": "Udupi - New Delhi Special Fare SF Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09403",
+      "train_number": "09403",
+      "train_name": "Konkan Express Festive Special",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-demo-ud-ndls-09405",
+      "train_number": "09405",
+      "train_name": "Karavali Superfast Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09407",
+      "train_number": "09407",
+      "train_name": "Udupi - Hazrat Nizamuddin AC SF Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09411",
+      "train_number": "09411",
+      "train_name": "Dakshina Kannada SF Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09413",
+      "train_number": "09413",
+      "train_name": "Udupi - Delhi Sarai Rohilla Special",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-demo-ud-ndls-09415",
+      "train_number": "09415",
+      "train_name": "Malpe Coastal Superfast Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09417",
+      "train_number": "09417",
+      "train_name": "Panchaganga - Delhi Special Express",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-demo-ud-ndls-09419",
+      "train_number": "09419",
+      "train_name": "Udupi - New Delhi Rajdhani Special",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-demo-ud-ndls-09421",
+      "train_number": "09421",
+      "train_name": "Udupi - Delhi Puja Festival Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09423",
+      "train_number": "09423",
+      "train_name": "Manipal Express Special Fare SF",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09425",
+      "train_number": "09425",
+      "train_name": "Konkan Kanya Northern Extension Special",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-demo-ud-ndls-09427",
+      "train_number": "09427",
+      "train_name": "Karavali - Capital Superfast Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09429",
+      "train_number": "09429",
+      "train_name": "Udupi - New Delhi AC Express Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09431",
+      "train_number": "09431",
+      "train_name": "Krishna Temple Express Special",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-demo-ud-ndls-09441",
+      "train_number": "09441",
+      "train_name": "Udupi - Delhi Diwali Special SF",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09443",
+      "train_number": "09443",
+      "train_name": "Barkur - New Delhi Superfast Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09445",
+      "train_number": "09445",
+      "train_name": "Coastal Karnataka Vande Bharat Special",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-demo-ud-ndls-09447",
+      "train_number": "09447",
+      "train_name": "Udupi - Hazrat Nizamuddin SF Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09449",
+      "train_number": "09449",
+      "train_name": "Swarna River Express Special",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-demo-ud-ndls-09451",
+      "train_number": "09451",
+      "train_name": "Parashurama Express Special",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-demo-ud-ndls-09453",
+      "train_number": "09453",
+      "train_name": "St. Mary's Island Superfast Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09461",
+      "train_number": "09461",
+      "train_name": "Udupi - New Delhi Superfast Festival Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09463",
+      "train_number": "09463",
+      "train_name": "Padubidri - Delhi Express Special",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-demo-ud-ndls-09465",
+      "train_number": "09465",
+      "train_name": "West Coast Northern Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09467",
+      "train_number": "09467",
+      "train_name": "Udupi - Delhi Chhath Puja Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09469",
+      "train_number": "09469",
+      "train_name": "Kollur Mookambika Delhi SF Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09471",
+      "train_number": "09471",
+      "train_name": "Udupi - New Delhi Premium AC Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09481",
+      "train_number": "09481",
+      "train_name": "Udupi - New Delhi Holiday SF Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09483",
+      "train_number": "09483",
+      "train_name": "Kaup Lighthouse Express Special",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-demo-ud-ndls-09485",
+      "train_number": "09485",
+      "train_name": "Netravati Extension Special SF",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09487",
+      "train_number": "09487",
+      "train_name": "Udupi - Hazrat Nizamuddin Special Fare",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09489",
+      "train_number": "09489",
+      "train_name": "Brahmavar - Delhi Superfast Express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09491",
+      "train_number": "09491",
+      "train_name": "Udupi - New Delhi Overnight SF Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09501",
+      "train_number": "09501",
+      "train_name": "Udupi - Delhi Post-Festive SF Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09503",
+      "train_number": "09503",
+      "train_name": "Malpe Port - New Delhi Express Special",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-demo-ud-ndls-09505",
+      "train_number": "09505",
+      "train_name": "Tulu Nadu - Capital Superfast Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09507",
+      "train_number": "09507",
+      "train_name": "Udupi - Delhi Weekly SF Return Special",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-demo-ud-ndls-09509",
+      "train_number": "09509",
+      "train_name": "Konkan Coast Express Special",
+      "train_type": "Express"
+    },
+    {
+      "id": "t-x8vkdp3nd",
+      "train_number": "11111",
+      "train_name": "vande bharat",
+      "train_type": "Vande Bharat"
+    },
+    {
+      "id": "t-s26vbkg3y",
+      "train_number": "22222",
+      "train_name": "vande bharat",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-o425osuif",
+      "train_number": "22223",
+      "train_name": "vande bharat",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-q5ahyhwkd",
+      "train_number": "33333",
+      "train_name": "rajdhani express",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12051",
+      "train_number": "12051",
+      "train_name": "Jan Shatabdi Express",
+      "train_type": "Jan Shatabdi"
+    },
+    {
+      "id": "t-12007",
+      "train_number": "12007",
+      "train_name": "Chennai - Mysuru Shatabdi Express",
+      "train_type": "Shatabdi"
+    },
+    {
+      "id": "t-99051",
+      "train_number": "99051",
+      "train_name": "Mumbai - New Delhi Superfast Express (Project Demo)",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-09433",
+      "train_number": "09433",
+      "train_name": "UDUPI - HAZRAT NIZAMUDDIN SPECIAL SF (PROJECT DEMO)",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12953",
+      "train_number": "12953",
+      "train_name": "AUGUST KRANTI RAJDHANI EXPRESS (PROJECT DEMO)",
+      "train_type": "Rajdhani"
+    },
+    {
+      "id": "t-12649",
+      "train_number": "12649",
+      "train_name": "KARNATAKA SAMPARK KRANTI EXPRESS (PROJECT DEMO)",
+      "train_type": "Sampark Kranti"
+    },
+    {
+      "id": "t-12615",
+      "train_number": "12615",
+      "train_name": "GRAND TRUNK EXPRESS (PROJECT DEMO)",
+      "train_type": "Superfast"
+    },
+    {
+      "id": "t-12643",
+      "train_number": "12643",
+      "train_name": "THIRUVANANTHAPURAM - HAZRAT NIZAMUDDIN SWARNA JAYANTI SF (PROJECT DEMO)",
+      "train_type": "Superfast"
+    }
+  ]
+}

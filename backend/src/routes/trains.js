@@ -207,6 +207,9 @@ router.get('/live-search', async (req, res) => {
     const date = normalizeDateStr(rawDate);
     const time = req.query.time || req.query.searchTime || '18:30';
     const reqQuota = (req.query.quota || req.query.classQuota || 'GN').toUpperCase();
+    const reqTrainType = req.query.train_type || req.query.trainType;
+    const reqTrainName = req.query.train_name || req.query.trainName;
+    const reqTrainNumber = req.query.train_number || req.query.trainNumber;
 
     if (!from || !to || !rawDate) {
       return res.status(400).json({
@@ -252,6 +255,36 @@ router.get('/live-search', async (req, res) => {
 
     for (const t of trainsList) {
       if (!t) continue;
+
+      // Filter by train_type using t.train_type exclusively
+      if (reqTrainType) {
+        const types = String(reqTrainType).split(',').map(s => s.trim().toLowerCase());
+        const tType = String(t.train_type || t.trainType || '').trim().toLowerCase();
+        const matchesType = types.some(type => {
+          if (type === 'special / other' || type === 'other') {
+            return tType === 'special / other' || !['rajdhani', 'shatabdi', 'vande bharat', 'duronto', 'humsafar', 'superfast', 'express'].includes(tType);
+          }
+          return tType === type || tType.includes(type);
+        });
+        if (!matchesType) continue;
+      }
+
+      // Train name searches use t.train_name
+      if (reqTrainName) {
+        const qName = String(reqTrainName).trim().toLowerCase();
+        if (!String(t.train_name || '').toLowerCase().includes(qName)) {
+          continue;
+        }
+      }
+
+      // Train number searches use t.train_number
+      if (reqTrainNumber) {
+        const qNo = String(reqTrainNumber).trim();
+        if (!String(t.train_number || '').includes(qNo)) {
+          continue;
+        }
+      }
+
       const route = routesList.find(r => r && (r.train_id === t.id || String(r.train_number) === String(t.train_number) || r.id === t.route_id)) || { stops: t.stops || [] };
 
       // Validate running date
@@ -766,7 +799,10 @@ router.put('/:id/telemetry', authenticateToken, requireRoles(['staff', 'admin'])
 
 // Get all trains (with optional search and route query)
 router.get('/', async (req, res) => {
-  const { source, destination, date, include_seed, include_all } = req.query;
+  const { source, destination, date, include_seed, include_all, train_type, trainType, train_name, trainName, train_number, trainNumber } = req.query;
+  const reqTrainType = train_type || trainType;
+  const reqTrainName = train_name || trainName;
+  const reqTrainNumber = train_number || trainNumber;
 
   if (isMockMode) {
     let trainsList = Array.from(mockDb.trains.values()).filter(t => !!t && (include_all === 'true' || t.status !== 'inactive'));
@@ -774,6 +810,32 @@ router.get('/', async (req, res) => {
     // Filter out test records unless specifically running tests
     if (process.env.NODE_ENV !== 'test') {
       trainsList = trainsList.filter(t => t.source !== 'test' && t.record_source !== 'test');
+    }
+
+    // Filter by train_type using t.train_type exclusively
+    if (reqTrainType) {
+      const types = String(reqTrainType).split(',').map(s => s.trim().toLowerCase());
+      trainsList = trainsList.filter(t => {
+        const tType = String(t.train_type || t.trainType || '').trim().toLowerCase();
+        return types.some(type => {
+          if (type === 'special / other' || type === 'other') {
+            return tType === 'special / other' || !['rajdhani', 'shatabdi', 'vande bharat', 'duronto', 'humsafar', 'superfast', 'express'].includes(tType);
+          }
+          return tType === type || tType.includes(type);
+        });
+      });
+    }
+
+    // Train name searches use t.train_name
+    if (reqTrainName) {
+      const qName = String(reqTrainName).trim().toLowerCase();
+      trainsList = trainsList.filter(t => String(t.train_name || '').toLowerCase().includes(qName));
+    }
+
+    // Train number searches use t.train_number
+    if (reqTrainNumber) {
+      const qNo = String(reqTrainNumber).trim();
+      trainsList = trainsList.filter(t => String(t.train_number || '').includes(qNo));
     }
 
     const routesList = Array.from(mockDb.routes.values());
@@ -960,6 +1022,29 @@ router.get('/', async (req, res) => {
       let activeTrains = (data || []).filter(t => include_all === 'true' || t.status !== 'inactive');
       if (process.env.NODE_ENV !== 'test') {
         activeTrains = activeTrains.filter(t => t.source !== 'test' && t.record_source !== 'test');
+      }
+
+      if (reqTrainType) {
+        const types = String(reqTrainType).split(',').map(s => s.trim().toLowerCase());
+        activeTrains = activeTrains.filter(t => {
+          const tType = String(t.train_type || t.trainType || '').trim().toLowerCase();
+          return types.some(type => {
+            if (type === 'special / other' || type === 'other') {
+              return tType === 'special / other' || !['rajdhani', 'shatabdi', 'vande bharat', 'duronto', 'humsafar', 'superfast', 'express'].includes(tType);
+            }
+            return tType === type || tType.includes(type);
+          });
+        });
+      }
+
+      if (reqTrainName) {
+        const qName = String(reqTrainName).trim().toLowerCase();
+        activeTrains = activeTrains.filter(t => String(t.train_name || '').toLowerCase().includes(qName));
+      }
+
+      if (reqTrainNumber) {
+        const qNo = String(reqTrainNumber).trim();
+        activeTrains = activeTrains.filter(t => String(t.train_number || '').includes(qNo));
       }
 
       if (source && destination) {
@@ -1437,6 +1522,7 @@ router.post('/', authenticateToken, requireRoles(['staff', 'admin']), requirePer
         .insert({
           train_number: String(train_number).trim(),
           train_name: String(train_name).trim(),
+          train_type: req.body.train_type || req.body.trainType || 'Superfast',
           source_station_code: srcCode,
           destination_station_code: destCode,
           source: srcCode,
@@ -1504,6 +1590,7 @@ router.put('/:id', authenticateToken, requireRoles(['staff', 'admin']), requireP
   const { id } = req.params;
   const train_number = req.body.train_number || req.body.trainNo;
   const train_name = req.body.train_name || req.body.trainName;
+  const train_type = req.body.train_type || req.body.trainType;
   const status = req.body.status;
   const delay_minutes = req.body.delay_minutes;
   const source = req.body.source || req.body.from;
@@ -1599,6 +1686,7 @@ router.put('/:id', authenticateToken, requireRoles(['staff', 'admin']), requireP
     }
 
     if (train_name !== undefined) train.train_name = String(train_name).trim();
+    if (train_type !== undefined) train.train_type = String(train_type).trim();
     if (status !== undefined) train.status = status;
     if (delay_minutes !== undefined) train.delay_minutes = parseInt(delay_minutes);
     if (frequency_type !== undefined) train.frequency_type = frequency_type;
@@ -1712,6 +1800,7 @@ router.put('/:id', authenticateToken, requireRoles(['staff', 'admin']), requireP
         trainUpdates.train_number = cleanNo;
       }
       if (train_name !== undefined) trainUpdates.train_name = String(train_name).trim();
+      if (train_type !== undefined) trainUpdates.train_type = String(train_type).trim();
       if (status !== undefined) trainUpdates.status = status;
       if (delay_minutes !== undefined) trainUpdates.delay_minutes = parseInt(delay_minutes);
       if (source !== undefined) trainUpdates.source_station_code = extractStationCode(source);

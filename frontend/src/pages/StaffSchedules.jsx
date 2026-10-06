@@ -132,7 +132,9 @@ const StaffSchedules = () => {
                         {t.status}
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-400 font-mono">#{t.train_number} &bull; Dep: {t.route?.departure_time || '16:30'}</p>
+                    <p className="text-[10px] text-slate-500 font-mono">
+                      #{t.train_number} &bull; <span className="font-bold text-blue-600">{t.train_type || 'Superfast'}</span> &bull; Dep: {t.route?.departure_time || '16:30'}
+                    </p>
                   </div>
                 );
               })}
@@ -145,8 +147,29 @@ const StaffSchedules = () => {
           {selectedTrain ? (
             <form onSubmit={handleUpdate} className="space-y-6">
               <div>
-                <h3 className="font-extrabold text-slate-800 text-sm">{selectedTrain.train_name}</h3>
-                <span className="text-[10px] text-slate-400 font-mono">Train Number: #{selectedTrain.train_number}</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-extrabold text-slate-800 text-base">{selectedTrain.train_name}</h3>
+                  <span className="font-mono text-slate-600 font-extrabold text-xs bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                    #{selectedTrain.train_number}
+                  </span>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wide">
+                    {selectedTrain.train_type || 'Superfast'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-slate-100 text-xs">
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Train Number</span>
+                    <span className="font-mono font-bold text-slate-800 text-sm">{selectedTrain.train_number}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Train Name</span>
+                    <span className="font-bold text-slate-800 text-sm truncate block" title={selectedTrain.train_name}>{selectedTrain.train_name}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Train Type</span>
+                    <span className="font-bold text-blue-600 text-sm block">{selectedTrain.train_type || 'Superfast'}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Status Select Buttons */}

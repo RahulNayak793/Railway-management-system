@@ -55,7 +55,7 @@ const FILTER_TRAIN_TYPES = [
   { code: 'Humsafar', name: 'Humsafar' },
   { code: 'Superfast', name: 'Superfast' },
   { code: 'Express', name: 'Express' },
-  { code: 'Other', name: 'Special / Other' }
+  { code: 'Special / Other', name: 'Special / Other' }
 ];
 
 const TIME_SLOTS = [
@@ -252,10 +252,10 @@ const SearchTrainResults = () => {
   const initialQuota = (rawInitQuota.toUpperCase() === 'GENERAL' || rawInitQuota.toUpperCase() === 'GN') ? 'GN' : rawInitQuota;
   const initialClass = searchParams.get('class') || searchParams.get('selectedClass') || 'ALL';
 
-  const [currentSource, setCurrentSource] = useState(initialSrc);
-  const [currentDestination, setCurrentDestination] = useState(initialDest);
-  const [selectedSearchDate, setSelectedSearchDate] = useState(initialDate);
-  const [baseSearchDate, setBaseSearchDate] = useState(initialDate);
+  const [currentSource, setCurrentSource] = useState('');
+  const [currentDestination, setCurrentDestination] = useState('');
+  const [selectedSearchDate, setSelectedSearchDate] = useState('');
+  const [baseSearchDate, setBaseSearchDate] = useState('');
   const [currentClass, setCurrentClass] = useState(initialClass);
   const [currentQuota, setCurrentQuota] = useState(initialQuota);
   const [currentPassengers, setCurrentPassengers] = useState(initialPax);
@@ -708,7 +708,7 @@ const SearchTrainResults = () => {
     if (!srcCode || !destCode || srcCode === destCode) {
       setTrains([]);
       setFilteredTrains([]);
-      setHasSearched(true);
+      setHasSearched(false);
       setLoading(false);
       return;
     }
@@ -973,48 +973,24 @@ const SearchTrainResults = () => {
     handleBook(t.id, clsCode, box.fare, t, chosenDate);
   };
 
-  // Initial train search on mount
+  // On mount: clear any query parameters from URL and ensure form starts completely blank
   useEffect(() => {
     try {
       localStorage.removeItem('rail_last_search_source');
       localStorage.removeItem('rail_last_search_dest');
     } catch (e) {}
 
-    const urlSrc = searchParams.get('source');
-    const urlDest = searchParams.get('destination');
-    const urlDate = searchParams.get('date');
-
-    const effectiveSrc = (urlSrc || '').trim();
-    const effectiveDest = (urlDest || '').trim();
-    const effectiveDate = normalizeDateStr(urlDate) || '';
-
-    if (effectiveSrc && effectiveDest) {
-      setCurrentSource(effectiveSrc);
-      setCurrentDestination(effectiveDest);
-      const chosenDate = effectiveDate || new Date().toISOString().split('T')[0];
-      setSelectedSearchDate(chosenDate);
-      setBaseSearchDate(chosenDate);
-
-      const params = new URLSearchParams(searchParams);
-      if (!params.has('source')) params.set('source', effectiveSrc);
-      if (!params.has('destination')) params.set('destination', effectiveDest);
-      if (!params.has('date')) params.set('date', effectiveDate);
-      if (!params.has('passengers')) params.set('passengers', currentPassengers);
-      if (!params.has('class')) params.set('class', currentClass);
-      if (!params.has('quota')) params.set('quota', currentQuota);
-      setSearchParams(params, { replace: true });
-
-      executeTrainSearch({
-        source: effectiveSrc,
-        destination: effectiveDest,
-        date: effectiveDate,
-        time: searchTime,
-        passengers: currentPassengers,
-        class: currentClass,
-        quota: currentQuota,
-        isNewSubmission: true
-      });
+    // Reset everything so the form starts clean and no details are pre-filled
+    if (searchParams.toString()) {
+      setSearchParams({}, { replace: true });
     }
+    setCurrentSource('');
+    setCurrentDestination('');
+    setSelectedSearchDate('');
+    setBaseSearchDate('');
+    setHasSearched(false);
+    setTrains([]);
+    setFilteredTrains([]);
   }, []);
 
   // Real-time polling auto-refresh (every 25s safe interval for running trains)
@@ -1119,13 +1095,13 @@ const SearchTrainResults = () => {
     // Train Type Filter - uses stored train type/category, not train name
     if (selectedTrainTypes.length > 0) {
       result = result.filter(t => {
-        const tType = (t.train_type || t.trainType || t.category || '').toLowerCase();
+        const tType = String(t.train_type || t.trainType || t.category || '').trim().toLowerCase();
         return selectedTrainTypes.some(type => {
-          const typeLower = type.toLowerCase();
-          if (typeLower === 'other') {
-            return !['rajdhani', 'shatabdi', 'vande bharat', 'duronto', 'humsafar', 'superfast', 'express'].some(k => tType.includes(k));
+          const typeLower = String(type).trim().toLowerCase();
+          if (typeLower === 'special / other' || typeLower === 'other') {
+            return tType === 'special / other' || !['rajdhani', 'shatabdi', 'vande bharat', 'duronto', 'humsafar', 'superfast', 'express'].some(k => tType.includes(k));
           }
-          return tType.includes(typeLower);
+          return tType === typeLower || tType.includes(typeLower);
         });
       });
     }
@@ -1607,26 +1583,31 @@ const SearchTrainResults = () => {
       <div className="rounded-3xl bg-white border border-slate-200 shadow-sm relative overflow-visible z-20">
         <TrainSearchForm 
           initialData={{
-            source: '',
-            sourceCode: '',
-            destination: '',
-            destCode: '',
-            travelDate: '',
-            passengers: passengers,
-            selectedClass: classParam,
-            quota: quota,
+            source: hasSearched && currentSource ? `${extractName(currentSource)} (${extractCode(currentSource)})` : '',
+            sourceCode: hasSearched && currentSource ? extractCode(currentSource) : '',
+            destination: hasSearched && currentDestination ? `${extractName(currentDestination)} (${extractCode(currentDestination)})` : '',
+            destCode: hasSearched && currentDestination ? extractCode(currentDestination) : '',
+            travelDate: hasSearched && selectedSearchDate ? selectedSearchDate : '',
+            passengers: currentPassengers || '1',
+            selectedClass: currentClass || 'ALL',
+            quota: currentQuota || 'GN',
             disabilityConcession: disabilityConcession,
             railwayPassConcession: railwayPassConcession
           }}
           onSearchSubmit={(data) => {
-            let src = (data.source || currentSource || '').trim();
+            let src = (data.source || '').trim();
             if (src.toUpperCase() === 'UDU' || src.toUpperCase() === 'UDUPI') src = 'UD';
-            let dest = (data.destination || currentDestination || '').trim();
+            let dest = (data.destination || '').trim();
             if (dest.toUpperCase() === 'UDU' || dest.toUpperCase() === 'UDUPI') dest = 'UD';
-            const dStr = normalizeDateStr(data.date) || selectedSearchDate;
+            const dStr = normalizeDateStr(data.date);
             const clsVal = data.selectedClass || data.class || currentClass || 'ALL';
             const quotaVal = data.quota || currentQuota || 'GN';
             const paxVal = data.passengers || currentPassengers || '1';
+
+            if (!src || !dest) {
+              alert('Please select both From and To stations.');
+              return;
+            }
 
             setCurrentSource(src);
             setCurrentDestination(dest);
@@ -1635,8 +1616,6 @@ const SearchTrainResults = () => {
             setCurrentClass(clsVal);
             setCurrentQuota(quotaVal);
             setCurrentPassengers(paxVal);
-
-            // Keep state updated without saving force-fill items
 
             const params = new URLSearchParams({
               source: src,
@@ -1825,7 +1804,18 @@ const SearchTrainResults = () => {
       )}
 
       {/* 2-COLUMN MAIN CONTENT: FILTERS SIDEBAR + RESULTS */}
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
+      {!hasSearched || !currentSource || !currentDestination ? (
+        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 sm:p-16 text-center text-slate-400 shadow-xs max-w-2xl mx-auto space-y-4 my-8">
+          <div className="w-16 h-16 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto text-primary-600 shadow-inner">
+            <Train className="h-8 w-8" />
+          </div>
+          <h3 className="font-black text-slate-800 text-lg">Search for Trains</h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            Select your source station, destination station, and journey date above, then click <strong className="text-slate-700">"SEARCH TRAINS"</strong> to check live schedules, seat availability, and fares.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
         
         {/* DESKTOP FILTERS SIDEBAR */}
         <div className="hidden lg:block w-72 shrink-0">
@@ -1948,13 +1938,7 @@ const SearchTrainResults = () => {
           </div>
 
           {/* Trains Loop */}
-          {!hasSearched ? (
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center text-slate-400 shadow-xs">
-              <Train className="mx-auto h-12 w-12 text-slate-300 mb-4" />
-              <p className="font-bold text-slate-700 text-sm mb-1">Search for trains to view available services</p>
-              <p className="text-xs text-slate-500">Enter your From, To, Journey Date, Class and Quota and click "SEARCH TRAINS".</p>
-            </div>
-          ) : loading ? (
+          {loading ? (
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
                 <div key={i} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm animate-pulse">
@@ -2043,21 +2027,26 @@ const SearchTrainResults = () => {
                   <div className="p-4 pb-2">
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                       <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-black text-slate-900 text-base sm:text-lg flex items-center gap-2 leading-none uppercase">
-                            <span>{t.train_name}</span>
-                            <span className="font-mono text-slate-500 font-bold text-sm lowercase">({t.train_number})</span>
+                        <div>
+                          <h4 className="font-black text-slate-900 text-base sm:text-lg uppercase leading-tight">
+                            {t.train_name}
                           </h4>
-                          <span className="bg-slate-100 text-slate-700 text-[10px] font-extrabold px-2 py-0.5 rounded border border-slate-200 uppercase">
-                            {t.train_type || 'Superfast'}
-                          </span>
-                          <button
-                            onClick={() => setActiveScheduleTrain(t)}
-                            className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 ml-1"
-                          >
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>Train Schedule</span>
-                          </button>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="font-mono text-slate-700 font-extrabold text-sm tracking-wide">
+                              {t.train_number}
+                            </span>
+                            <span className="text-slate-300 font-mono">&bull;</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wide">
+                              {t.train_type || 'Superfast'}
+                            </span>
+                            <button
+                              onClick={() => setActiveScheduleTrain(t)}
+                              className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 ml-1 cursor-pointer"
+                            >
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span>Train Schedule</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -2428,6 +2417,7 @@ const SearchTrainResults = () => {
         </div>
 
       </div>
+      )}
 
       {/* MOBILE FILTERS DRAWER */}
       {mobileFiltersOpen && (

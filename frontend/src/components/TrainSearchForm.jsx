@@ -83,7 +83,16 @@ const TrainSearchForm = ({ initialData = {}, onSearchSubmit, darkVariant = false
     setDestination(initialData.destination || '');
     setDestCode(initialData.destCode || '');
     setTravelDate(normalizeDateStr(initialData.travelDate || initialData.date) || '');
-  }, [initialData.source, initialData.sourceCode, initialData.destination, initialData.destCode, initialData.travelDate, initialData.date]);
+    if (initialData.passengers) setPassengerCount(initialData.passengers);
+    if (initialData.selectedClass || initialData.class) setSelectedClass(initialData.selectedClass || initialData.class);
+    if (initialData.quota) setQuota(initialData.quota);
+    if (initialData.disabilityConcession !== undefined) setDisabilityConcession(initialData.disabilityConcession === true || initialData.disabilityConcession === 'true');
+    if (initialData.railwayPassConcession !== undefined) setRailwayPassConcession(initialData.railwayPassConcession === true || initialData.railwayPassConcession === 'true');
+  }, [
+    initialData.source, initialData.sourceCode, initialData.destination, initialData.destCode, 
+    initialData.travelDate, initialData.date, initialData.passengers, initialData.selectedClass, 
+    initialData.class, initialData.quota, initialData.disabilityConcession, initialData.railwayPassConcession
+  ]);
 
   const [isSwapping, setIsSwapping] = useState(false);
   const [stations, setStations] = useState([]);

@@ -706,13 +706,19 @@ const AdminTrainStatus = ({ mode = 'admin' }) => {
                     
                     return (
                       <tr key={t.id} className="hover:bg-slate-50/60 transition-colors text-xs">
-                        {/* Train No & Name */}
+                        {/* Train No, Name, Type */}
                         <td className="px-5 py-4">
-                          <div className="font-mono font-black text-slate-900 text-xs">#{t.train_number}</div>
-                          <div className="font-extrabold text-slate-800 text-xs truncate max-w-[150px]" title={t.train_name}>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-slate-400 uppercase font-mono font-bold">No:</span>
+                            <span className="font-mono font-black text-slate-900 text-xs">#{t.train_number}</span>
+                          </div>
+                          <div className="font-extrabold text-slate-800 text-xs truncate max-w-[160px] mt-0.5" title={t.train_name}>
                             {t.train_name}
                           </div>
-                          <span className="text-[10px] text-blue-600 font-semibold">{t.train_type || 'Superfast'}</span>
+                          <div className="mt-1 flex items-center gap-1">
+                            <span className="text-[10px] text-slate-400 uppercase font-mono font-bold">Type:</span>
+                            <span className="text-[10px] text-blue-700 font-extrabold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 uppercase">{t.train_type || 'Superfast'}</span>
+                          </div>
                         </td>
 
                         {/* Route & Intermediate Stops */}

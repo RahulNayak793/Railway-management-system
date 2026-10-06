@@ -7,16 +7,14 @@ export const DAYS_LIST = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export const FULL_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export const TRAIN_TYPE_OPTIONS = [
-  'Express',
-  'Superfast',
-  'Vande Bharat',
   'Rajdhani',
   'Shatabdi',
+  'Vande Bharat',
   'Duronto',
-  'Mail',
-  'Passenger',
-  'Local',
-  'Other'
+  'Humsafar',
+  'Superfast',
+  'Express',
+  'Special / Other'
 ];
 
 export const SCHEDULE_CLASSES = [
@@ -35,16 +33,15 @@ export const normalizeTrainType = (typeStr) => {
   if (!typeStr) return 'Superfast';
   const clean = String(typeStr).trim();
   if (TRAIN_TYPE_OPTIONS.includes(clean)) return clean;
-  if (clean.toLowerCase().includes('vande bharat')) return 'Vande Bharat';
-  if (clean.toLowerCase().includes('rajdhani')) return 'Rajdhani';
-  if (clean.toLowerCase().includes('shatabdi')) return 'Shatabdi';
-  if (clean.toLowerCase().includes('duronto')) return 'Duronto';
-  if (clean.toLowerCase().includes('superfast')) return 'Superfast';
-  if (clean.toLowerCase().includes('mail')) return 'Mail';
-  if (clean.toLowerCase().includes('passenger')) return 'Passenger';
-  if (clean.toLowerCase().includes('local')) return 'Local';
-  if (clean.toLowerCase().includes('express')) return 'Express';
-  return 'Other';
+  const lower = clean.toLowerCase();
+  if (lower.includes('rajdhani')) return 'Rajdhani';
+  if (lower.includes('shatabdi')) return 'Shatabdi';
+  if (lower.includes('vande bharat')) return 'Vande Bharat';
+  if (lower.includes('duronto')) return 'Duronto';
+  if (lower.includes('humsafar')) return 'Humsafar';
+  if (lower.includes('superfast') || lower.includes('tejas') || lower.includes('sampark kranti')) return 'Superfast';
+  if (lower.includes('express') || lower.includes('mail')) return 'Express';
+  return 'Special / Other';
 };
 
 const convertTo24Hour = (timeStr) => {
@@ -807,7 +804,7 @@ const TrainScheduleModal = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-600 uppercase">Category / Type</label>
+                <label className="text-[10px] font-bold text-slate-600 uppercase">Train Type *</label>
                 <select
                   value={trainType}
                   onChange={(e) => setTrainType(e.target.value)}
